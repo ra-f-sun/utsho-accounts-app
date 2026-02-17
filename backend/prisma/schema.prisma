@@ -1,0 +1,391 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// Auth & Users
+// ============================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN
+  DIRECTOR
+  ACCOUNTANT_UAC
+  ACCOUNTANT_MBCS
+  ACCOUNTANT_MEC
+}
+
+// ============================================
+// UAC Models (Coaching Center)
+// ============================================
+
+model UacStudent {
+  id                 String       @id @default(uuid())
+  name               String
+  gender             String // 'male', 'female', 'other'
+  dateOfBirth        DateTime
+  class              Int // 8-12
+  group              String? // 'science', 'business' (class >= 9 only)
+  section            String? // 'A', 'B', etc.
+  school             String? // Which school they attend
+  serialNo           String? // Institution roll/serial number
+  // Personal details
+  nationality        String?      @default("Bangladeshi")
+  religion           String?
+  bloodGroup         String? // 'A+', 'B-', 'O+', etc.
+  healthCondition    String? // Health notes
+  presentAddress     String?
+  studentLivingWith  String? // 'both_parents', 'father', 'mother', 'other'
+  lastSchoolAttended String?
+  // Father info
+  fatherName         String?
+  fatherMobile       String?
+  fatherOccupation   String?
+  fatherEmail        String?
+  // Mother info
+  motherName         String?
+  motherMobile       String?
+  motherOccupation   String?
+  motherEmail        String?
+  // Primary contact
+  guardianName       String // Primary contact person
+  contactNumber      String // Primary contact number
+  // Fees
+  monthlyTuitionFee  Float
+  admissionFee       Float?
+  admissionDate      DateTime?
+  // System
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  payments           UacPayment[]
+
+  @@index([class, group])
+  @@index([school])
+  @@index([isActive])
+  @@map("uac_students")
+}
+
+model UacTeacher {
+  id             String                 @id @default(uuid())
+  name           String
+  contactNumber  String
+  paymentType    String // 'fixed' or 'lecture_based'
+  monthlySalary  Float? // For fixed payment
+  perLectureRate Float? // For lecture-based
+  subjects       Json? // Array of {class, subject}
+  isActive       Boolean                @default(true)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  attendance     UacTeacherAttendance[]
+
+  @@map("uac_teachers")
+}
+
+model UacStaff {
+  id            String   @id @default(uuid())
+  name          String
+  contactNumber String
+  designation   String?
+  monthlySalary Float
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("uac_staff")
+}
+
+model UacPayment {
+  id            String     @id @default(uuid())
+  studentId     String
+  student       UacStudent @relation(fields: [studentId], references: [id])
+  paymentType   String // 'tuition','admission','readmission','exam','sheet','session_charge','study_materials','study_tour','other'
+  amount        Float
+  paymentMonth  DateTime // YYYY-MM-01 format
+  paymentDate   DateTime
+  paymentMethod String // 'cash', 'bank', 'mobile'
+  invoiceNumber String     @unique
+  notes         String? // Description when paymentType is 'other'
+  createdBy     String // FK → users.id (audit trail)
+  createdAt     DateTime   @default(now())
+
+  @@index([studentId, paymentMonth])
+  @@index([paymentDate])
+  @@map("uac_payments")
+}
+
+model UacTeacherAttendance {
+  id             String     @id @default(uuid())
+  teacherId      String
+  teacher        UacTeacher @relation(fields: [teacherId], references: [id])
+  class          Int?
+  subject        String?
+  attendanceDate DateTime
+  lecturesTaken  Int        @default(1)
+  createdAt      DateTime   @default(now())
+
+  @@index([teacherId, attendanceDate])
+  @@map("uac_teacher_attendance")
+}
+
+model UacPayroll {
+  id            String   @id @default(uuid())
+  payableType   String // 'teacher' or 'staff'
+  payableId     String // Teacher or Staff UUID
+  paymentMonth  DateTime // YYYY-MM-01 format
+  amount        Float
+  totalLectures Int? // For lecture-based teachers only
+  paymentDate   DateTime
+  paymentMethod String // 'cash', 'bank', 'mobile'
+  invoiceNumber String   @unique
+  notes         String?
+  createdBy     String // FK → users.id (audit trail)
+  createdAt     DateTime @default(now())
+
+  @@index([payableType, payableId, paymentMonth])
+  @@map("uac_payroll")
+}
+
+// ============================================
+// MBCS Models (Kindergarten)
+// ============================================
+
+model MbcsStudent {
+  id                 String        @id @default(uuid())
+  name               String
+  gender             String // 'male', 'female', 'other'
+  dateOfBirth        DateTime
+  class              Int
+  shift              String? // 'morning', 'day' (instead of group)
+  section            String? // 'A', 'B', etc.
+  branch             String? // 'Basabo Branch' (instead of school)
+  serialNo           String? // Institution roll/serial number
+  // Personal details
+  nationality        String?       @default("Bangladeshi")
+  religion           String?
+  bloodGroup         String?
+  healthCondition    String?
+  presentAddress     String?
+  studentLivingWith  String? // 'both_parents', 'father', 'mother', 'other'
+  lastSchoolAttended String?
+  // Father info
+  fatherName         String?
+  fatherMobile       String?
+  fatherOccupation   String?
+  fatherEmail        String?
+  // Mother info
+  motherName         String?
+  motherMobile       String?
+  motherOccupation   String?
+  motherEmail        String?
+  // Primary contact
+  guardianName       String
+  contactNumber      String
+  // Fees
+  monthlyTuitionFee  Float
+  admissionFee       Float?
+  admissionDate      DateTime?
+  // System
+  isActive           Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  payments           MbcsPayment[]
+
+  @@index([class, shift])
+  @@index([branch])
+  @@index([isActive])
+  @@map("mbcs_students")
+}
+
+model MbcsTeacher {
+  id             String                  @id @default(uuid())
+  name           String
+  contactNumber  String
+  paymentType    String // 'fixed' or 'lecture_based'
+  monthlySalary  Float?
+  perLectureRate Float?
+  subjects       Json?
+  isActive       Boolean                 @default(true)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  attendance     MbcsTeacherAttendance[]
+
+  @@map("mbcs_teachers")
+}
+
+model MbcsStaff {
+  id            String   @id @default(uuid())
+  name          String
+  contactNumber String
+  designation   String?
+  monthlySalary Float
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("mbcs_staff")
+}
+
+model MbcsPayment {
+  id            String      @id @default(uuid())
+  studentId     String
+  student       MbcsStudent @relation(fields: [studentId], references: [id])
+  paymentType   String // 'tuition','admission','readmission','exam','session_charge','study_materials','study_tour','stationary','other'
+  amount        Float
+  paymentMonth  DateTime
+  paymentDate   DateTime
+  paymentMethod String
+  invoiceNumber String      @unique
+  notes         String?
+  createdBy     String // FK → users.id
+  createdAt     DateTime    @default(now())
+
+  @@index([studentId, paymentMonth])
+  @@index([paymentDate])
+  @@map("mbcs_payments")
+}
+
+model MbcsTeacherAttendance {
+  id             String      @id @default(uuid())
+  teacherId      String
+  teacher        MbcsTeacher @relation(fields: [teacherId], references: [id])
+  class          Int?
+  subject        String?
+  attendanceDate DateTime
+  lecturesTaken  Int         @default(1)
+  createdAt      DateTime    @default(now())
+
+  @@index([teacherId, attendanceDate])
+  @@map("mbcs_teacher_attendance")
+}
+
+model MbcsPayroll {
+  id            String   @id @default(uuid())
+  payableType   String // 'teacher' or 'staff'
+  payableId     String
+  paymentMonth  DateTime
+  amount        Float
+  totalLectures Int?
+  paymentDate   DateTime
+  paymentMethod String
+  invoiceNumber String   @unique
+  notes         String?
+  createdBy     String // FK → users.id
+  createdAt     DateTime @default(now())
+
+  @@index([payableType, payableId, paymentMonth])
+  @@map("mbcs_payroll")
+}
+
+// ============================================
+// MEC Models (English Tutoring - Simplified)
+// ============================================
+
+model MecStudent {
+  id                 String       @id @default(uuid())
+  name               String
+  gender             String
+  dateOfBirth        DateTime
+  class              Int?
+  group              String?
+  section            String?
+  serialNo           String?
+  // Personal details (all optional)
+  nationality        String?      @default("Bangladeshi")
+  religion           String?
+  bloodGroup         String?
+  healthCondition    String?
+  presentAddress     String?
+  studentLivingWith  String?
+  lastSchoolAttended String?
+  // Father info (all optional)
+  fatherName         String?
+  fatherMobile       String?
+  fatherOccupation   String?
+  fatherEmail        String?
+  // Mother info (all optional)
+  motherName         String?
+  motherMobile       String?
+  motherOccupation   String?
+  motherEmail        String?
+  // Primary contact
+  guardianName       String
+  contactNumber      String
+  // Fees
+  monthlyTuitionFee  Float
+  admissionFee       Float?
+  admissionDate      DateTime?
+  // System
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  payments           MecPayment[]
+
+  @@index([isActive])
+  @@map("mec_students")
+}
+
+model MecPayment {
+  id            String     @id @default(uuid())
+  studentId     String
+  student       MecStudent @relation(fields: [studentId], references: [id])
+  // Note: MEC only has tuition payments, no paymentType enum needed
+  amount        Float
+  paymentMonth  DateTime
+  paymentDate   DateTime
+  paymentMethod String
+  invoiceNumber String     @unique
+  notes         String?
+  createdBy     String // FK → users.id
+  createdAt     DateTime   @default(now())
+
+  @@index([studentId, paymentMonth])
+  @@index([paymentDate])
+  @@map("mec_payments")
+}
+
+// ============================================
+// Shared Models
+// ============================================
+
+model Expense {
+  id            String   @id @default(uuid())
+  organization  String // 'uac', 'mbcs', 'mec'
+  expenseType   String // 'rent', 'electricity', 'water', 'internet', 'other'
+  amount        Float
+  expenseMonth  DateTime // YYYY-MM-01 format
+  paymentDate   DateTime
+  paymentMethod String // 'cash', 'bank', 'mobile'
+  notes         String?
+  createdBy     String // FK → users.id
+  createdAt     DateTime @default(now())
+
+  @@index([organization, expenseMonth])
+  @@map("expenses")
+}
+
+model InvoiceCounter {
+  year     Int @id
+  sequence Int @default(0)
+
+  @@map("invoice_counters")
+}

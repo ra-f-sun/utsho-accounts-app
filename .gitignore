@@ -1,0 +1,62 @@
+# Utsho Accounting System - Git Ignore
+
+# Agentic & AI Files
+.agent/
+.gemini/
+.cortex/
+browser_recordings/
+.tmp/
+brain/
+artifacts/
+
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Documentation & Temporary Files
+doc/
+docs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+API_TESTING.md
+POSTGRES_SETUP.md
+
+# Node / Dependencies
+node_modules/
+# package-lock.json # Keep unless using yarn exclusively
+
+# Backend Specific
+backend/dist/
+backend/coverage/
+backend/generated/
+backend/prisma/migrations/*/migration.sql # Keep specific migration files
+# backend/prisma/*.db (PostgreSQL used instead)
+
+# Frontend Specific
+frontend/dist/
+frontend/dist-ssr/
+frontend/coverage/
+frontend/*.local
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Testing
+test-results/
+playwright-report/
+blob-report/
