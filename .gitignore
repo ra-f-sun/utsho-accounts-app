@@ -33,6 +33,7 @@ yarn-error.log*
 pnpm-debug.log*
 API_TESTING.md
 POSTGRES_SETUP.md
+TEST_UAC_STUDENTS.md
 
 # Node / Dependencies
 node_modules/

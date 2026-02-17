@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { UacModule } from './uac/uac.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -24,6 +25,7 @@ import { HealthController } from './health/health.controller';
     PrismaModule,
     AuthModule,
     UsersModule,
+    UacModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
