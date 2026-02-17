@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -23,7 +24,7 @@ export class ExpensesService {
     expenseType?: string,
     expenseMonth?: string,
   ) {
-    const where: any = {};
+    const where: Prisma.ExpenseWhereInput = {};
 
     if (organization) {
       where.organization = organization;
@@ -59,7 +60,7 @@ export class ExpensesService {
     // Check if expense exists
     await this.findOne(id);
 
-    const data: any = { ...updateExpenseDto };
+    const data: Prisma.ExpenseUpdateInput = { ...updateExpenseDto };
     if (updateExpenseDto.expenseMonth) {
       data.expenseMonth = new Date(updateExpenseDto.expenseMonth);
     }

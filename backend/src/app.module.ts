@@ -5,6 +5,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UacModule } from './uac/uac.module';
@@ -24,6 +25,7 @@ import { HealthController } from './health/health.controller';
       },
     ]),
     PrismaModule,
+    CommonModule,
     AuthModule,
     UsersModule,
     UacModule,

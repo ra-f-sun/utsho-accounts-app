@@ -4,16 +4,18 @@ export interface Payment {
   id: string;
   studentId: string;
   student?: {
+    id: string;
     name: string;
     class: number;
+    group?: string;
     contactNumber: string;
   };
-  paymentType: "tuition" | "admission" | "exam" | "other";
+  paymentType: string;
   amount: number;
-  paymentMethod: "cash" | "bkash" | "nagad" | "bank_transfer";
+  paymentMethod: string;
+  paymentMonth: string;
+  paymentDate: string;
   invoiceNumber: string;
-  month?: string;
-  year?: number;
   notes?: string;
   createdBy?: string;
   createdAt: string;
@@ -22,18 +24,18 @@ export interface Payment {
 
 export interface CreatePaymentDto {
   studentId: string;
-  paymentType: "tuition" | "admission" | "exam" | "other";
+  paymentType: string;
   amount: number;
-  paymentMethod: "cash" | "bkash" | "nagad" | "bank_transfer";
-  month?: string;
-  year?: number;
+  paymentMethod: string;
+  paymentMonth: string;
+  paymentDate: string;
   notes?: string;
 }
 
 export interface FilterPaymentDto {
   studentId?: string;
   paymentType?: string;
-  month?: string;
+  paymentMonth?: string;
   paymentMethod?: string;
 }
 
@@ -42,7 +44,8 @@ export const paymentsService = {
     const params = new URLSearchParams();
     if (filters?.studentId) params.append("studentId", filters.studentId);
     if (filters?.paymentType) params.append("paymentType", filters.paymentType);
-    if (filters?.month) params.append("month", filters.month);
+    if (filters?.paymentMonth)
+      params.append("paymentMonth", filters.paymentMonth);
     if (filters?.paymentMethod)
       params.append("paymentMethod", filters.paymentMethod);
 
@@ -55,13 +58,14 @@ export const paymentsService = {
     return api.get<{ success: boolean; data: Payment }>(`/uac/payments/${id}`);
   },
 
-  getStudentPayments: (studentId: string) => {
+  getStudentSummary: (studentId: string) => {
     return api.get<{
       success: boolean;
       data: {
-        student: any;
+        studentId: string;
+        totalPaid: number;
+        paymentCount: number;
         payments: Payment[];
-        total: { amount: number; count: number };
       };
     }>(`/uac/payments/student/${studentId}/summary`);
   },

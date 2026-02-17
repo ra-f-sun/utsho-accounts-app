@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -53,7 +54,7 @@ export class PaymentsService {
   }
 
   async findAll(filters?: FilterPaymentDto) {
-    const where: any = {};
+    const where: Prisma.UacPaymentWhereInput = {};
 
     if (filters?.studentId) {
       where.studentId = filters.studentId;

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
@@ -74,7 +75,7 @@ export class PayrollService {
     payableId?: string,
     paymentMonth?: string,
   ) {
-    const where: any = {};
+    const where: Prisma.UacPayrollWhereInput = {};
 
     if (payableType) {
       where.payableType = payableType;
@@ -110,7 +111,7 @@ export class PayrollService {
     // Check if payroll exists
     await this.findOne(id);
 
-    const data: any = { ...updatePayrollDto };
+    const data: Prisma.UacPayrollUpdateInput = { ...updatePayrollDto };
     if (updatePayrollDto.paymentMonth) {
       data.paymentMonth = new Date(updatePayrollDto.paymentMonth);
     }

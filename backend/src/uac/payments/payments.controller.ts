@@ -19,6 +19,7 @@ import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { JwtUser } from '../../common/interfaces/jwt-user.interface';
 import { Role } from '@prisma/client';
 
 @Controller('uac/payments')
@@ -28,7 +29,10 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto, @CurrentUser() user: any) {
+  create(
+    @Body() createPaymentDto: CreatePaymentDto,
+    @CurrentUser() user: JwtUser,
+  ) {
     return this.paymentsService.create(createPaymentDto, user.id);
   }
 

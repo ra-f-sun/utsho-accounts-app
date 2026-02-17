@@ -22,11 +22,20 @@ import dayjs from "dayjs";
 const { Option } = Select;
 const { TextArea } = Input;
 
+interface RecordPaymentFormValues {
+  studentId: string;
+  paymentType: string;
+  amount: number;
+  paymentMethod: string;
+  paymentMonth?: ReturnType<typeof dayjs>;
+  paymentDate: ReturnType<typeof dayjs>;
+  notes?: string;
+}
+
 export default function RecordPayment() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedStudent, setSelectedStudent] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
   // Fetch all students for selector
@@ -51,11 +60,19 @@ export default function RecordPayment() {
     },
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: RecordPaymentFormValues) => {
     const data: CreatePaymentDto = {
-      ...values,
-      month: values.month ? dayjs(values.month).format("MMMM") : undefined,
-      year: values.month ? dayjs(values.month).year() : undefined,
+      studentId: values.studentId,
+      paymentType: values.paymentType,
+      amount: values.amount,
+      paymentMethod: values.paymentMethod,
+      paymentMonth: values.paymentMonth
+        ? values.paymentMonth.startOf("month").toISOString()
+        : new Date().toISOString(),
+      paymentDate: values.paymentDate
+        ? values.paymentDate.toISOString()
+        : new Date().toISOString(),
+      notes: values.notes,
     };
     createMutation.mutate(data);
   };
@@ -87,7 +104,6 @@ export default function RecordPayment() {
             <Select
               placeholder="Search and select student"
               showSearch
-              onChange={(value) => setSelectedStudent(value)}
               options={students.map((student) => ({
                 value: student.id,
                 label: `${student.name} - Class ${student.class} (${student.contactNumber})`,
@@ -115,7 +131,12 @@ export default function RecordPayment() {
                 <Select placeholder="Select payment type">
                   <Option value="tuition">Tuition Fee</Option>
                   <Option value="admission">Admission Fee</Option>
+                  <Option value="readmission">Re-admission Fee</Option>
                   <Option value="exam">Exam Fee</Option>
+                  <Option value="sheet">Sheet Fee</Option>
+                  <Option value="session_charge">Session Charge</Option>
+                  <Option value="study_materials">Study Materials</Option>
+                  <Option value="study_tour">Study Tour</Option>
                   <Option value="other">Other</Option>
                 </Select>
               </Form.Item>
@@ -150,12 +171,30 @@ export default function RecordPayment() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Month (Optional for tuition)" name="month">
+              <Form.Item
+                label="Payment Month"
+                name="paymentMonth"
+                rules={[
+                  { required: true, message: "Please select payment month" },
+                ]}
+              >
                 <DatePicker
                   picker="month"
                   style={{ width: "100%" }}
                   format="MMMM YYYY"
                 />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Payment Date"
+                name="paymentDate"
+                initialValue={dayjs()}
+                rules={[
+                  { required: true, message: "Please select payment date" },
+                ]}
+              >
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={24}>

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -14,7 +15,7 @@ export class StaffService {
   }
 
   async findAll(search?: string) {
-    const where: any = {
+    const where: Prisma.UacStaffWhereInput = {
       isActive: true,
     };
 

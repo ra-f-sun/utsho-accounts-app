@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -38,7 +39,7 @@ export class TeachersService {
   }
 
   async findAll(filters?: FilterTeacherDto) {
-    const where: any = {
+    const where: Prisma.UacTeacherWhereInput = {
       isActive: true,
     };
 

@@ -42,7 +42,12 @@ export default function PaymentsList() {
     const colors: Record<string, string> = {
       tuition: "blue",
       admission: "green",
+      readmission: "cyan",
       exam: "orange",
+      sheet: "purple",
+      session_charge: "magenta",
+      study_materials: "geekblue",
+      study_tour: "lime",
       other: "default",
     };
     return colors[type] || "default";
@@ -58,6 +63,10 @@ export default function PaymentsList() {
     return colors[method] || "default";
   };
 
+  const formatPaymentType = (type: string) => {
+    return type.replace(/_/g, " ").toUpperCase();
+  };
+
   const columns: ColumnsType<Payment> = [
     {
       title: "Invoice #",
@@ -69,7 +78,7 @@ export default function PaymentsList() {
     {
       title: "Student",
       key: "student",
-      render: (_: any, record: Payment) => (
+      render: (_: unknown, record: Payment) => (
         <div>
           <div>
             <strong>{record.student?.name}</strong>
@@ -84,9 +93,9 @@ export default function PaymentsList() {
       title: "Payment Type",
       dataIndex: "paymentType",
       key: "paymentType",
-      width: 120,
+      width: 140,
       render: (type: string) => (
-        <Tag color={getPaymentTypeColor(type)}>{type.toUpperCase()}</Tag>
+        <Tag color={getPaymentTypeColor(type)}>{formatPaymentType(type)}</Tag>
       ),
     },
     {
@@ -105,29 +114,29 @@ export default function PaymentsList() {
       width: 130,
       render: (method: string) => (
         <Tag color={getPaymentMethodColor(method)}>
-          {method.replace("_", " ").toUpperCase()}
+          {method.replace(/_/g, " ").toUpperCase()}
         </Tag>
       ),
     },
     {
-      title: "Month/Year",
-      key: "monthYear",
-      width: 110,
-      render: (_: any, record: Payment) =>
-        record.month && record.year ? `${record.month}/${record.year}` : "-",
+      title: "Payment Month",
+      dataIndex: "paymentMonth",
+      key: "paymentMonth",
+      width: 130,
+      render: (date: string) => (date ? dayjs(date).format("MMMM YYYY") : "-"),
     },
     {
-      title: "Date",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      title: "Payment Date",
+      dataIndex: "paymentDate",
+      key: "paymentDate",
       width: 110,
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
     },
     {
       title: "Actions",
       key: "actions",
       width: 100,
-      render: (_: any, record: Payment) => (
+      render: (_: unknown, record: Payment) => (
         <Space>
           <Button
             type="link"
@@ -161,12 +170,7 @@ export default function PaymentsList() {
         <Space>
           <Select
             placeholder="Payment Type"
-            style={{ width: 150 }}
-            filterOption={(input, option) =>
-              ((option?.label as string) || "")
-                .toLowerCase()
-                .includes(input.toLowerCase())
-            }
+            style={{ width: 160 }}
             onChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
@@ -177,7 +181,12 @@ export default function PaymentsList() {
           >
             <Option value="tuition">Tuition</Option>
             <Option value="admission">Admission</Option>
+            <Option value="readmission">Re-admission</Option>
             <Option value="exam">Exam</Option>
+            <Option value="sheet">Sheet</Option>
+            <Option value="session_charge">Session Charge</Option>
+            <Option value="study_materials">Study Materials</Option>
+            <Option value="study_tour">Study Tour</Option>
             <Option value="other">Other</Option>
           </Select>
           <Select

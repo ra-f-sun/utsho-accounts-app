@@ -18,6 +18,7 @@ import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import type { JwtUser } from '../../common/interfaces/jwt-user.interface';
 import { Role } from '@prisma/client';
 
 @Controller('uac/payroll')
@@ -27,7 +28,10 @@ export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @Post()
-  create(@Body() createPayrollDto: CreatePayrollDto, @CurrentUser() user: any) {
+  create(
+    @Body() createPayrollDto: CreatePayrollDto,
+    @CurrentUser() user: JwtUser,
+  ) {
     return this.payrollService.create(createPayrollDto, user.id);
   }
 

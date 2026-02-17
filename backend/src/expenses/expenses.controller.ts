@@ -17,6 +17,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { JwtUser } from '../common/interfaces/jwt-user.interface';
 import { Role } from '@prisma/client';
 
 @Controller('expenses')
@@ -32,7 +33,10 @@ export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
   @Post()
-  create(@Body() createExpenseDto: CreateExpenseDto, @CurrentUser() user: any) {
+  create(
+    @Body() createExpenseDto: CreateExpenseDto,
+    @CurrentUser() user: JwtUser,
+  ) {
     return this.expensesService.create(createExpenseDto, user.id);
   }
 

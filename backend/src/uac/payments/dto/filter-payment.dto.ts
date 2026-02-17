@@ -24,6 +24,6 @@ export class FilterPaymentDto {
   paymentMonth?: string; // Filter by month (YYYY-MM-01)
 
   @IsOptional()
-  @IsEnum(['cash', 'bank', 'mobile'])
+  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
   paymentMethod?: string;
 }

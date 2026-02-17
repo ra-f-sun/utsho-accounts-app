@@ -6,15 +6,8 @@ import { RegisterDto } from './dto/register.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../guards/roles.guard';
+import type { JwtUser } from '../common/interfaces/jwt-user.interface';
 import { Role } from '@prisma/client';
-
-interface JwtUser {
-  id: string;
-  email: string;
-  fullName: string;
-  role: Role;
-  isActive: boolean;
-}
 
 @Controller('auth')
 export class AuthController {

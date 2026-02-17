@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateAttendanceDto } from './dto/create-attendance.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
@@ -37,7 +38,7 @@ export class TeacherAttendanceService {
   }
 
   async findAll(teacherId?: string, startDate?: string, endDate?: string) {
-    const where: any = {};
+    const where: Prisma.UacTeacherAttendanceWhereInput = {};
 
     if (teacherId) {
       where.teacherId = teacherId;
@@ -87,7 +88,9 @@ export class TeacherAttendanceService {
     // Check if attendance exists
     await this.findOne(id);
 
-    const data: any = { ...updateAttendanceDto };
+    const data: Prisma.UacTeacherAttendanceUpdateInput = {
+      ...updateAttendanceDto,
+    };
     if (updateAttendanceDto.attendanceDate) {
       data.attendanceDate = new Date(updateAttendanceDto.attendanceDate);
     }

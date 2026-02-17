@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -15,7 +16,7 @@ export class StudentsService {
   }
 
   async findAll(filters?: FilterStudentDto) {
-    const where: any = {
+    const where: Prisma.UacStudentWhereInput = {
       isActive: true,
     };
 
