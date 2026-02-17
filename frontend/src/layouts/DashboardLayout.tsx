@@ -35,6 +35,54 @@ export default function DashboardLayout() {
       onClick: () => navigate("/users"),
       disabled: user?.role !== "SUPER_ADMIN",
     },
+    {
+      key: "uac",
+      icon: <TeamOutlined />,
+      label: "UAC Module",
+      children: [
+        {
+          key: "/uac/students",
+          label: "Students",
+          onClick: () => navigate("/uac/students"),
+        },
+        {
+          key: "/uac/teachers",
+          label: "Teachers",
+          onClick: () => navigate("/uac/teachers"),
+        },
+        {
+          key: "/uac/staff",
+          label: "Staff",
+          onClick: () => navigate("/uac/staff"),
+        },
+        {
+          key: "/uac/payments",
+          label: "Payments",
+          onClick: () => navigate("/uac/payments"),
+        },
+        {
+          key: "/uac/payroll",
+          label: "Payroll",
+          onClick: () => navigate("/uac/payroll"),
+        },
+      ],
+      disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_UAC"].includes(
+        user?.role || "",
+      ),
+    },
+    {
+      key: "/expenses",
+      icon: <TeamOutlined />,
+      label: "Expenses",
+      onClick: () => navigate("/expenses"),
+      disabled: ![
+        "SUPER_ADMIN",
+        "DIRECTOR",
+        "ACCOUNTANT_UAC",
+        "ACCOUNTANT_MBCS",
+        "ACCOUNTANT_MEC",
+      ].includes(user?.role || ""),
+    },
   ];
 
   const userMenuItems = [
