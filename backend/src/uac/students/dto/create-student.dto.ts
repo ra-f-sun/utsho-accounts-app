@@ -128,4 +128,14 @@ export class CreateStudentDto {
   @IsOptional()
   @IsEmail()
   motherEmail?: string;
+
+  // === Optional admission fields ===
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  admissionFee?: number;
+
+  @IsOptional()
+  @IsDateString()
+  admissionDate?: string;
 }

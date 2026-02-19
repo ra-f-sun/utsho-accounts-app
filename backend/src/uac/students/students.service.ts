@@ -10,8 +10,16 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createStudentDto: CreateStudentDto) {
+    const data: Prisma.UacStudentCreateInput = {
+      ...createStudentDto,
+      dateOfBirth: new Date(createStudentDto.dateOfBirth),
+      admissionDate: createStudentDto.admissionDate
+        ? new Date(createStudentDto.admissionDate)
+        : undefined,
+    };
+
     return this.prisma.uacStudent.create({
-      data: createStudentDto,
+      data,
     });
   }
 
@@ -67,9 +75,21 @@ export class StudentsService {
     // Check if student exists
     await this.findOne(id);
 
+    const data: Prisma.UacStudentUpdateInput = {
+      ...updateStudentDto,
+    };
+
+    // Convert date strings to Date objects if provided
+    if (updateStudentDto.dateOfBirth) {
+      data.dateOfBirth = new Date(updateStudentDto.dateOfBirth);
+    }
+    if (updateStudentDto.admissionDate) {
+      data.admissionDate = new Date(updateStudentDto.admissionDate);
+    }
+
     return this.prisma.uacStudent.update({
       where: { id },
-      data: updateStudentDto,
+      data,
     });
   }
 

@@ -24,7 +24,7 @@ export default function PaymentsList() {
     queryFn: () => paymentsService.getAll(filters),
   });
 
-  const payments = data?.data.data || [];
+  const payments = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

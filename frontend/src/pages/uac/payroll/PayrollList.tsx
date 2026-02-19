@@ -34,7 +34,7 @@ export default function PayrollList() {
     queryFn: () => payrollService.getAll(filters),
   });
 
-  const payrolls = data?.data.data || [];
+  const payrolls = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

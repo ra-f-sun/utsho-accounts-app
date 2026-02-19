@@ -37,7 +37,7 @@ export default function StudentsList() {
     queryFn: () => studentsService.getAll(filters),
   });
 
-  const students = data?.data.data || [];
+  const students: Student[] = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

@@ -37,7 +37,7 @@ export default function TeachersList() {
     queryFn: () => teachersService.getAll(filters),
   });
 
-  const teachers = data?.data.data || [];
+  const teachers = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

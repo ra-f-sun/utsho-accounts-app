@@ -23,7 +23,7 @@ export default function StaffList() {
     queryFn: () => staffService.getAll(search || undefined),
   });
 
-  const staff = data?.data.data || [];
+  const staff = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

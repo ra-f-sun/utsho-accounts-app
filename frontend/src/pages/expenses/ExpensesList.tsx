@@ -24,7 +24,7 @@ export default function ExpensesList() {
     queryFn: () => expensesService.getAll(search || undefined),
   });
 
-  const expenses = data?.data.data || [];
+  const expenses = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({

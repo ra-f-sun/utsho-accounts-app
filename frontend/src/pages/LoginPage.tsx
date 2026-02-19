@@ -21,6 +21,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       const { user, accessToken } = data.data;
       setAuth(user, accessToken);
+      setLoading(false);
       message.success("Login successful!");
       navigate("/dashboard");
     },
