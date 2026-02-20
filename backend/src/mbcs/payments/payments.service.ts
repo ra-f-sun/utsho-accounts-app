@@ -1,0 +1,138 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
+import { InvoiceService } from '../../common/services/invoice.service';
+import { CreatePaymentDto } from './dto/create-payment.dto';
+import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { FilterPaymentDto } from './dto/filter-payment.dto';
+
+@Injectable()
+export class PaymentsService {
+  constructor(
+    private prisma: PrismaService,
+    private invoiceService: InvoiceService,
+  ) {}
+
+  async create(createPaymentDto: CreatePaymentDto, createdBy: string) {
+    // Verify student exists
+    const student = await this.prisma.mbcsStudent.findUnique({
+      where: { id: createPaymentDto.studentId },
+    });
+
+    if (!student) {
+      throw new NotFoundException(
+        `Student with ID ${createPaymentDto.studentId} not found`,
+      );
+    }
+
+    // Generate invoice number using shared counter → MBCS/2026/XXXX
+    const invoiceNumber =
+      await this.invoiceService.generateInvoiceNumber('mbcs');
+
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.mbcsPayment.create({
+        data: {
+          ...createPaymentDto,
+          invoiceNumber,
+          createdBy,
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              class: true,
+              shift: true,
+            },
+          },
+        },
+      });
+
+      return payment;
+    });
+  }
+
+  async findAll(filters?: FilterPaymentDto) {
+    const where: Prisma.MbcsPaymentWhereInput = {};
+
+    if (filters?.studentId) {
+      where.studentId = filters.studentId;
+    }
+
+    if (filters?.paymentType) {
+      where.paymentType = filters.paymentType;
+    }
+
+    if (filters?.paymentMonth) {
+      where.paymentMonth = new Date(filters.paymentMonth);
+    }
+
+    if (filters?.paymentMethod) {
+      where.paymentMethod = filters.paymentMethod;
+    }
+
+    return this.prisma.mbcsPayment.findMany({
+      where,
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            class: true,
+            shift: true,
+            contactNumber: true,
+          },
+        },
+      },
+      orderBy: { paymentDate: 'desc' },
+    });
+  }
+
+  async findOne(id: string) {
+    const payment = await this.prisma.mbcsPayment.findUnique({
+      where: { id },
+      include: { student: true },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID ${id} not found`);
+    }
+
+    return payment;
+  }
+
+  async update(id: string, updatePaymentDto: UpdatePaymentDto) {
+    await this.findOne(id);
+
+    return this.prisma.mbcsPayment.update({
+      where: { id },
+      data: updatePaymentDto,
+      include: {
+        student: {
+          select: { id: true, name: true, class: true, shift: true },
+        },
+      },
+    });
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    return this.prisma.mbcsPayment.delete({ where: { id } });
+  }
+
+  async getStudentPaymentSummary(studentId: string) {
+    const payments = await this.prisma.mbcsPayment.findMany({
+      where: { studentId },
+      orderBy: { paymentDate: 'desc' },
+    });
+
+    const total = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    return {
+      studentId,
+      totalPaid: total,
+      paymentCount: payments.length,
+      payments,
+    };
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -10,8 +10,8 @@ import {
   Col,
   message,
 } from "antd";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { teachersService } from "../../../services/teachersService";
 import type { CreateTeacherDto } from "../../../services/teachersService";
 
@@ -22,9 +22,28 @@ export default function AddTeacher() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
   const [paymentType, setPaymentType] = useState<"fixed" | "lecture_based">(
     "fixed",
   );
+
+  // Fetch existing teacher for edit
+  const { data: existingData } = useQuery({
+    queryKey: ["teacher", id],
+    queryFn: () => teachersService.getOne(id!),
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (existingData) {
+      const teacher = (existingData as any)?.data;
+      if (teacher) {
+        form.setFieldsValue(teacher);
+        setPaymentType(teacher.paymentType || "fixed");
+      }
+    }
+  }, [existingData, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateTeacherDto) => teachersService.create(data),
@@ -38,16 +57,32 @@ export default function AddTeacher() {
     },
   });
 
-  const onFinish = (values: any) => {
-    const data: CreateTeacherDto = {
-      ...values,
-    };
-    createMutation.mutate(data);
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<CreateTeacherDto>) =>
+      teachersService.update(id!, data),
+    onSuccess: () => {
+      message.success("Teacher updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      navigate("/uac/teachers");
+    },
+    onError: () => {
+      message.error("Failed to update teacher");
+    },
+  });
+
+  const onFinish = (values: CreateTeacherDto) => {
+    if (isEditMode) {
+      updateMutation.mutate(values);
+    } else {
+      createMutation.mutate(values);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto" }}>
-      <h2>Add New Teacher</h2>
+      <h2>{isEditMode ? "Edit Teacher" : "Add New Teacher"}</h2>
       <Form form={form} layout="vertical" onFinish={onFinish}>
         {/* Basic Information */}
         <Card title="Basic Information" style={{ marginBottom: 16 }}>
@@ -158,10 +193,10 @@ export default function AddTeacher() {
           <Button
             type="primary"
             htmlType="submit"
-            loading={createMutation.isPending}
+            loading={isPending}
             size="large"
           >
-            Add Teacher
+            {isEditMode ? "Update Teacher" : "Add Teacher"}
           </Button>
           <Button
             style={{ marginLeft: 8 }}

@@ -1,0 +1,133 @@
+import { useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Button, Space, Spin } from "antd";
+import {
+  PrinterOutlined,
+  DownloadOutlined,
+  ArrowLeftOutlined,
+} from "@ant-design/icons";
+import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
+import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
+import { mbcsStaffService } from "../../../services/mbcsStaffService";
+import InvoiceTemplate from "../../../components/InvoiceTemplate";
+import type { InvoiceData } from "../../../components/InvoiceTemplate";
+
+export default function MbcsPayrollInvoice() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["mbcs-payroll-record", id],
+    queryFn: () => mbcsPayrollService.getOne(id!),
+    enabled: !!id,
+  });
+
+  const payroll = (data as any)?.data;
+
+  const { data: teacherData } = useQuery({
+    queryKey: ["mbcs-teacher", payroll?.payableId],
+    queryFn: () => mbcsTeachersService.getOne(payroll!.payableId),
+    enabled: !!payroll?.payableId && payroll?.payableType === "teacher",
+  });
+
+  const { data: staffData } = useQuery({
+    queryKey: ["mbcs-staff", payroll?.payableId],
+    queryFn: () => mbcsStaffService.getOne(payroll!.payableId),
+    enabled: !!payroll?.payableId && payroll?.payableType === "staff",
+  });
+
+  const payableName =
+    (teacherData as any)?.data?.name ||
+    (staffData as any)?.data?.name ||
+    payroll?.payableType;
+
+  const handlePrint = () => {
+    const content = invoiceRef.current;
+    if (!content) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Payroll Invoice ${payroll?.invoiceNumber || ""}</title>
+          <style>
+            body { margin: 0; padding: 20px; font-family: 'Segoe UI', sans-serif; }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 15mm; }
+            }
+          </style>
+        </head>
+        <body>${content.innerHTML}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: 60 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!payroll) {
+    return <div>Payroll record not found</div>;
+  }
+
+  const invoiceData: InvoiceData = {
+    invoiceNumber: payroll.invoiceNumber,
+    amount: payroll.amount,
+    paymentDate: payroll.paymentDate,
+    paymentMonth: payroll.paymentMonth,
+    paymentMethod: payroll.paymentMethod,
+    notes: payroll.notes,
+    createdAt: payroll.createdAt,
+    payableType: payroll.payableType,
+    payableName,
+    totalLectures: payroll.totalLectures,
+  };
+
+  return (
+    <div>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
+          Back
+        </Button>
+        <Space>
+          <Button icon={<PrinterOutlined />} onClick={handlePrint}>
+            Print
+          </Button>
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={handlePrint}
+          >
+            Download / Print
+          </Button>
+        </Space>
+      </div>
+
+      <InvoiceTemplate
+        ref={invoiceRef}
+        data={invoiceData}
+        organization="mbcs"
+        type="payroll"
+      />
+    </div>
+  );
+}

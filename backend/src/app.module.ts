@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UacModule } from './uac/uac.module';
+import { MbcsModule } from './mbcs/mbcs.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { HealthController } from './health/health.controller';
 
@@ -29,6 +30,7 @@ import { HealthController } from './health/health.controller';
     AuthModule,
     UsersModule,
     UacModule,
+    MbcsModule,
     ExpensesModule,
   ],
   controllers: [AppController, HealthController],

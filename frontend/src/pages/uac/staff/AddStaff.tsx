@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Form,
   Input,
@@ -8,8 +9,8 @@ import {
   Col,
   message,
 } from "antd";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { staffService } from "../../../services/staffService";
 import type { CreateStaffDto } from "../../../services/staffService";
 
@@ -17,6 +18,24 @@ export default function AddStaff() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
+
+  // Fetch existing staff for edit
+  const { data: existingData } = useQuery({
+    queryKey: ["staff-member", id],
+    queryFn: () => staffService.getOne(id!),
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (existingData) {
+      const staff = (existingData as any)?.data;
+      if (staff) {
+        form.setFieldsValue(staff);
+      }
+    }
+  }, [existingData, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateStaffDto) => staffService.create(data),
@@ -30,13 +49,32 @@ export default function AddStaff() {
     },
   });
 
-  const onFinish = (values: any) => {
-    createMutation.mutate(values);
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<CreateStaffDto>) =>
+      staffService.update(id!, data),
+    onSuccess: () => {
+      message.success("Staff updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      navigate("/uac/staff");
+    },
+    onError: () => {
+      message.error("Failed to update staff");
+    },
+  });
+
+  const onFinish = (values: CreateStaffDto) => {
+    if (isEditMode) {
+      updateMutation.mutate(values);
+    } else {
+      createMutation.mutate(values);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto" }}>
-      <h2>Add New Staff</h2>
+      <h2>{isEditMode ? "Edit Staff" : "Add New Staff"}</h2>
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Card title="Staff Information">
           <Row gutter={16}>
@@ -97,10 +135,10 @@ export default function AddStaff() {
           <Button
             type="primary"
             htmlType="submit"
-            loading={createMutation.isPending}
+            loading={isPending}
             size="large"
           >
-            Add Staff
+            {isEditMode ? "Update Staff" : "Add Staff"}
           </Button>
           <Button
             style={{ marginLeft: 8 }}

@@ -2,46 +2,41 @@ import { api } from "../lib/axios";
 
 export interface Payroll {
   id: string;
-  teacherId?: string;
-  staffId?: string;
-  teacher?: {
-    name: string;
-    paymentType: string;
-  };
-  staff?: {
-    name: string;
-  };
-  paymentType: "teacher" | "staff";
+  payableType: string; // 'teacher' | 'staff'
+  payableId: string;
+  paymentMonth: string;
   amount: number;
-  month: string;
-  year: number;
-  lectureCount?: number;
+  totalLectures?: number;
+  paymentDate: string;
+  paymentMethod: string;
   invoiceNumber: string;
+  notes?: string;
   createdBy?: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface CreatePayrollDto {
-  teacherId?: string;
-  staffId?: string;
-  paymentType: "teacher" | "staff";
+  payableType: string;
+  payableId: string;
+  paymentMonth: string; // ISO DateString (e.g., 2024-01-01T00:00:00.000Z)
   amount: number;
-  month: string;
-  year: number;
-  lectureCount?: number;
+  totalLectures?: number;
+  paymentDate: string; // ISO DateString
+  paymentMethod: string; // 'cash' | 'bkash' | 'nagad' | 'bank_transfer'
+  notes?: string;
 }
 
 export const payrollService = {
   getAll: (filters?: {
-    month?: string;
-    year?: number;
-    paymentType?: string;
+    payableType?: string;
+    payableId?: string;
+    paymentMonth?: string;
   }) => {
     const params = new URLSearchParams();
-    if (filters?.month) params.append("month", filters.month);
-    if (filters?.year) params.append("year", filters.year.toString());
-    if (filters?.paymentType) params.append("paymentType", filters.paymentType);
+    if (filters?.payableType) params.append("payableType", filters.payableType);
+    if (filters?.payableId) params.append("payableId", filters.payableId);
+    if (filters?.paymentMonth)
+      params.append("paymentMonth", filters.paymentMonth);
 
     return api.get<{ success: boolean; data: Payroll[] }>(
       `/uac/payroll?${params.toString()}`,
@@ -52,17 +47,18 @@ export const payrollService = {
     return api.get<{ success: boolean; data: Payroll }>(`/uac/payroll/${id}`);
   },
 
-  calculateTeacherPayroll: (teacherId: string, month: string, year: number) => {
+  calculateTeacherPayroll: (teacherId: string, month: string) => {
+    // month format: YYYY-MM
     return api.get<{
       success: boolean;
       data: {
-        teacher: any;
-        amount: number;
-        lectureCount?: number;
+        teacherId: string;
         month: string;
-        year: number;
+        paymentType: string;
+        amount: number;
+        totalLectures: number | null;
       };
-    }>(`/uac/payroll/calculate/${teacherId}?month=${month}&year=${year}`);
+    }>(`/uac/payroll/calculate/teacher/${teacherId}/${month}`);
   },
 
   create: (data: CreatePayrollDto) => {

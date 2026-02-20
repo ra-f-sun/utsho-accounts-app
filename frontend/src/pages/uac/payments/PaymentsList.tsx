@@ -141,9 +141,7 @@ export default function PaymentsList() {
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() =>
-              message.info(`View details for ${record.invoiceNumber}`)
-            }
+            onClick={() => navigate(`/uac/payments/${record.id}/invoice`)}
           />
           <Popconfirm
             title="Are you sure to delete this payment?"

@@ -23,9 +23,8 @@ export default function PayrollList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<{
-    month?: string;
-    year?: number;
-    paymentType?: string;
+    payableType?: string;
+    paymentMonth?: string;
   }>({});
 
   // Fetch payroll with filters
@@ -34,7 +33,7 @@ export default function PayrollList() {
     queryFn: () => payrollService.getAll(filters),
   });
 
-  const payrolls = (data as any)?.data || [];
+  const payrolls: Payroll[] = (data as any)?.data || [];
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -57,31 +56,15 @@ export default function PayrollList() {
       render: (text: string) => <strong>{text}</strong>,
     },
     {
-      title: "Name",
-      key: "name",
-      render: (_: any, record: Payroll) => (
-        <div>
-          <strong>{record.teacher?.name || record.staff?.name}</strong>
-          <div style={{ fontSize: 12, color: "#888" }}>
-            {record.paymentType === "teacher" ? "Teacher" : "Staff"}
-          </div>
-        </div>
-      ),
-    },
-    {
       title: "Type",
-      key: "type",
-      width: 120,
-      render: (_: any, record: Payroll) => {
-        if (record.paymentType === "teacher") {
-          return (
-            <Tag color="blue">
-              {record.teacher?.paymentType === "fixed" ? "Fixed" : "Lecture"}
-            </Tag>
-          );
-        }
-        return <Tag color="green">Staff</Tag>;
-      },
+      dataIndex: "payableType",
+      key: "payableType",
+      width: 100,
+      render: (type: string) => (
+        <Tag color={type === "teacher" ? "blue" : "green"}>
+          {type === "teacher" ? "Teacher" : "Staff"}
+        </Tag>
+      ),
     },
     {
       title: "Amount",
@@ -94,36 +77,51 @@ export default function PayrollList() {
     },
     {
       title: "Lectures",
-      dataIndex: "lectureCount",
-      key: "lectureCount",
+      dataIndex: "totalLectures",
+      key: "totalLectures",
       width: 100,
       render: (count: number | undefined) => count || "-",
     },
     {
-      title: "Month/Year",
-      key: "monthYear",
+      title: "Payment Month",
+      dataIndex: "paymentMonth",
+      key: "paymentMonth",
       width: 130,
-      render: (_: any, record: Payroll) => `${record.month} ${record.year}`,
+      render: (date: string) => dayjs(date).format("MMMM YYYY"),
     },
     {
-      title: "Date",
-      dataIndex: "createdAt",
-      key: "createdAt",
+      title: "Payment Date",
+      dataIndex: "paymentDate",
+      key: "paymentDate",
       width: 110,
       render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
     },
     {
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 110,
+      render: (method: string) => {
+        const labels: Record<string, string> = {
+          cash: "Cash",
+          bkash: "bKash",
+          nagad: "Nagad",
+          bank_transfer: "Bank Transfer",
+        };
+        return labels[method] || method;
+      },
+    },
+    {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 80,
       render: (_: any, record: Payroll) => (
         <Space>
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() =>
-              message.info(`View details for ${record.invoiceNumber}`)
-            }
+            onClick={() => navigate(`/uac/payroll/${record.id}/invoice`)}
+            title="View Invoice"
           />
           <Popconfirm
             title="Are you sure to delete this payroll?"
@@ -154,19 +152,20 @@ export default function PayrollList() {
             onChange={(date) =>
               setFilters((prev) => ({
                 ...prev,
-                month: date ? date.format("MMMM") : undefined,
-                year: date ? date.year() : undefined,
+                paymentMonth: date
+                  ? date.startOf("month").toISOString()
+                  : undefined,
               }))
             }
             format="MMMM YYYY"
           />
           <Select
-            placeholder="Payment Type"
+            placeholder="Payable Type"
             style={{ width: 130 }}
             onChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
-                paymentType: value || undefined,
+                payableType: value || undefined,
               }))
             }
             allowClear

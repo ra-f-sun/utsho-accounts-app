@@ -120,6 +120,42 @@ export class TeacherAttendanceService {
   }
 
   /**
+   * Simplified mode: Record total lectures for a month in one go
+   * Creates a single attendance record on the 1st of the month
+   */
+  async createMonthlySummary(data: {
+    teacherId: string;
+    month: string; // YYYY-MM
+    totalLectures: number;
+  }) {
+    const teacher = await this.prisma.uacTeacher.findUnique({
+      where: { id: data.teacherId },
+    });
+
+    if (!teacher) {
+      throw new NotFoundException(
+        `Teacher with ID ${data.teacherId} not found`,
+      );
+    }
+
+    // Use first day of the month as the attendance date
+    const attendanceDate = new Date(`${data.month}-01`);
+
+    return this.prisma.uacTeacherAttendance.create({
+      data: {
+        teacherId: data.teacherId,
+        attendanceDate,
+        lecturesTaken: data.totalLectures,
+      },
+      include: {
+        teacher: {
+          select: { id: true, name: true, paymentType: true },
+        },
+      },
+    });
+  }
+
+  /**
    * Get monthly summary of lectures for a teacher
    * Used for calculating lecture-based payroll
    */

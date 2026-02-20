@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Form,
   Input,
@@ -10,10 +11,11 @@ import {
   Col,
   message,
 } from "antd";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { studentsService } from "../../../services/studentsService";
 import type { CreateStudentDto } from "../../../services/studentsService";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -22,6 +24,29 @@ export default function AddStudent() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = Boolean(id);
+
+  // Fetch existing student for edit
+  const { data: existingData } = useQuery({
+    queryKey: ["student", id],
+    queryFn: () => studentsService.getOne(id!),
+    enabled: isEditMode,
+  });
+
+  useEffect(() => {
+    if (existingData) {
+      const student = (existingData as any)?.data;
+      if (student) {
+        form.setFieldsValue({
+          ...student,
+          dateOfBirth: student.dateOfBirth
+            ? dayjs(student.dateOfBirth)
+            : undefined,
+        });
+      }
+    }
+  }, [existingData, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateStudentDto) => studentsService.create(data),
@@ -35,17 +60,36 @@ export default function AddStudent() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<CreateStudentDto>) =>
+      studentsService.update(id!, data),
+    onSuccess: () => {
+      message.success("Student updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      navigate("/uac/students");
+    },
+    onError: () => {
+      message.error("Failed to update student");
+    },
+  });
+
   const onFinish = (values: any) => {
-    const data: CreateStudentDto = {
+    const data = {
       ...values,
-      dateOfBirth: values.dateOfBirth.format("YYYY-MM-DD"),
+      dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
     };
-    createMutation.mutate(data);
+    if (isEditMode) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data as CreateStudentDto);
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <h2>Add New Student</h2>
+      <h2>{isEditMode ? "Edit Student" : "Add New Student"}</h2>
       <Form
         form={form}
         layout="vertical"
@@ -290,10 +334,10 @@ export default function AddStudent() {
           <Button
             type="primary"
             htmlType="submit"
-            loading={createMutation.isPending}
+            loading={isPending}
             size="large"
           >
-            Add Student
+            {isEditMode ? "Update Student" : "Add Student"}
           </Button>
           <Button
             style={{ marginLeft: 8 }}

@@ -32,6 +32,13 @@ export class TeacherAttendanceController {
     return this.teacherAttendanceService.create(createAttendanceDto);
   }
 
+  @Post('monthly-summary')
+  createMonthlySummary(
+    @Body() body: { teacherId: string; month: string; totalLectures: number },
+  ) {
+    return this.teacherAttendanceService.createMonthlySummary(body);
+  }
+
   @Get()
   findAll(
     @Query('teacherId') teacherId?: string,

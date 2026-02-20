@@ -15,6 +15,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { studentsService } from "../../../services/studentsService";
@@ -100,6 +101,12 @@ export default function StudentsList() {
       width: 120,
       render: (_: any, record: Student) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => navigate(`/uac/students/${record.id}/payments`)}
+            title="Payment History"
+          />
           <Button
             type="link"
             icon={<EditOutlined />}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Form,
   Input,
@@ -13,46 +13,97 @@ import {
   Alert,
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { EyeOutlined } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
 import type { CreatePaymentDto } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
 
-interface RecordPaymentFormValues {
-  studentId: string;
-  paymentType: string;
-  amount: number;
-  paymentMethod: string;
-  paymentMonth?: ReturnType<typeof dayjs>;
-  paymentDate: ReturnType<typeof dayjs>;
-  notes?: string;
-}
-
 export default function RecordPayment() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+  const [lastPaymentId, setLastPaymentId] = useState<string>("");
 
-  // Fetch all students for selector
+  // Cascading filter state
+  const [selectedClass, setSelectedClass] = useState<number | undefined>();
+  const [selectedGroup, setSelectedGroup] = useState<string | undefined>();
+  const [selectedStudentId, setSelectedStudentId] = useState<
+    string | undefined
+  >();
+
+  // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["students"],
     queryFn: () => studentsService.getAll(),
   });
 
-  const students = studentsData?.data.data || [];
+  const allStudents: Student[] = (studentsData as any)?.data || [];
+
+  // Derive unique classes and groups from students
+  const availableClasses = useMemo(
+    () => [...new Set(allStudents.map((s) => s.class))].sort((a, b) => a - b),
+    [allStudents],
+  );
+
+  const availableGroups = useMemo(() => {
+    const students = selectedClass
+      ? allStudents.filter((s) => s.class === selectedClass)
+      : allStudents;
+    return [
+      ...new Set(students.map((s) => s.group).filter(Boolean) as string[]),
+    ];
+  }, [allStudents, selectedClass]);
+
+  // Filter students for the dropdown
+  const filteredStudents = useMemo(() => {
+    let result = allStudents;
+    if (selectedClass) result = result.filter((s) => s.class === selectedClass);
+    if (selectedGroup) result = result.filter((s) => s.group === selectedGroup);
+    return result;
+  }, [allStudents, selectedClass, selectedGroup]);
+
+  // Auto-populate from URL query params
+  useEffect(() => {
+    const studentId = searchParams.get("studentId");
+    if (studentId && allStudents.length > 0) {
+      const student = allStudents.find((s) => s.id === studentId);
+      if (student) {
+        setSelectedClass(student.class);
+        setSelectedGroup(student.group);
+        setSelectedStudentId(studentId);
+        form.setFieldsValue({ studentId });
+      }
+    }
+  }, [searchParams, allStudents, form]);
+
+  // Get currently selected student object
+  const selectedStudent = allStudents.find((s) => s.id === selectedStudentId);
+
+  // When payment type changes, auto-fill tuition amount
+  const onPaymentTypeChange = (type: string) => {
+    if (type === "tuition" && selectedStudent?.monthlyTuitionFee) {
+      form.setFieldValue("amount", selectedStudent.monthlyTuitionFee);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: CreatePaymentDto) => paymentsService.create(data),
     onSuccess: (response) => {
-      const invoice = response.data.data.invoiceNumber;
-      setInvoiceNumber(invoice);
+      const invoice = (response as any)?.data?.invoiceNumber;
+      const paymentId = (response as any)?.data?.id;
+      setInvoiceNumber(invoice || "");
+      setLastPaymentId(paymentId || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["uac-payment-history"] });
       form.resetFields();
     },
     onError: () => {
@@ -60,7 +111,7 @@ export default function RecordPayment() {
     },
   });
 
-  const onFinish = (values: RecordPaymentFormValues) => {
+  const onFinish = (values: any) => {
     const data: CreatePaymentDto = {
       studentId: values.studentId,
       paymentType: values.paymentType,
@@ -84,18 +135,86 @@ export default function RecordPayment() {
       {invoiceNumber && (
         <Alert
           message="Payment Recorded Successfully!"
-          description={`Invoice Number: ${invoiceNumber}`}
+          description={
+            <div>
+              <div>
+                Invoice Number: <strong>{invoiceNumber}</strong>
+              </div>
+              {lastPaymentId && (
+                <Button
+                  type="link"
+                  icon={<EyeOutlined />}
+                  onClick={() =>
+                    navigate(`/uac/payments/${lastPaymentId}/invoice`)
+                  }
+                  style={{ padding: 0, marginTop: 4 }}
+                >
+                  View / Print Invoice
+                </Button>
+              )}
+            </div>
+          }
           type="success"
           showIcon
           closable
-          onClose={() => setInvoiceNumber("")}
+          onClose={() => {
+            setInvoiceNumber("");
+            setLastPaymentId("");
+          }}
           style={{ marginBottom: 16 }}
         />
       )}
 
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        {/* Student Selection */}
+        {/* Student Selection with Cascading Filters */}
         <Card title="Student Information" style={{ marginBottom: 16 }}>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="Filter by Class">
+                <Select
+                  placeholder="All Classes"
+                  value={selectedClass}
+                  onChange={(value) => {
+                    setSelectedClass(value);
+                    setSelectedGroup(undefined);
+                    form.setFieldValue("studentId", undefined);
+                  }}
+                  allowClear
+                >
+                  {availableClasses.map((cls) => (
+                    <Option key={cls} value={cls}>
+                      Class {cls}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Filter by Group">
+                <Select
+                  placeholder="All Groups"
+                  value={selectedGroup}
+                  onChange={(value) => {
+                    setSelectedGroup(value);
+                    form.setFieldValue("studentId", undefined);
+                  }}
+                  allowClear
+                  disabled={availableGroups.length === 0}
+                >
+                  {availableGroups.map((g) => (
+                    <Option key={g} value={g}>
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <div style={{ fontSize: 12, color: "#888", marginTop: 30 }}>
+                {filteredStudents.length} students available
+              </div>
+            </Col>
+          </Row>
           <Form.Item
             label="Select Student"
             name="studentId"
@@ -104,15 +223,26 @@ export default function RecordPayment() {
             <Select
               placeholder="Search and select student"
               showSearch
-              options={students.map((student) => ({
+              options={filteredStudents.map((student) => ({
                 value: student.id,
-                label: `${student.name} - Class ${student.class} (${student.contactNumber})`,
+                label: `${student.name} - Class ${student.class}${student.group ? ` (${student.group})` : ""} · ${student.contactNumber}`,
               }))}
               filterOption={(input, option) =>
                 ((option?.label as string) || "")
                   .toLowerCase()
                   .includes(input.toLowerCase())
               }
+              onChange={(value) => {
+                setSelectedStudentId(value);
+                // If tuition is already selected, auto-fill the fee for new student
+                const type = form.getFieldValue("paymentType");
+                if (type === "tuition") {
+                  const student = allStudents.find((s) => s.id === value);
+                  if (student?.monthlyTuitionFee) {
+                    form.setFieldValue("amount", student.monthlyTuitionFee);
+                  }
+                }
+              }}
             />
           </Form.Item>
         </Card>
@@ -128,7 +258,10 @@ export default function RecordPayment() {
                   { required: true, message: "Please select payment type" },
                 ]}
               >
-                <Select placeholder="Select payment type">
+                <Select
+                  placeholder="Select payment type"
+                  onChange={onPaymentTypeChange}
+                >
                   <Option value="tuition">Tuition Fee</Option>
                   <Option value="admission">Admission Fee</Option>
                   <Option value="readmission">Re-admission Fee</Option>

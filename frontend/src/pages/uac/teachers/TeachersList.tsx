@@ -15,6 +15,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { teachersService } from "../../../services/teachersService";
@@ -98,6 +99,12 @@ export default function TeachersList() {
       width: 120,
       render: (_: any, record: Teacher) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => navigate(`/uac/teachers/${record.id}/payroll`)}
+            title="Payroll History"
+          />
           <Button
             type="link"
             icon={<EditOutlined />}

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import {
   Form,
+  Input,
   Select,
+  InputNumber,
   Button,
   Card,
   Row,
@@ -19,17 +21,17 @@ import { teachersService } from "../../../services/teachersService";
 import { staffService } from "../../../services/staffService";
 
 const { Option } = Select;
+const { TextArea } = Input;
 
 export default function CreatePayroll() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [paymentType, setPaymentType] = useState<"teacher" | "staff">(
+  const [payableType, setPayableType] = useState<"teacher" | "staff">(
     "teacher",
   );
-  const [selectedTeacher, setSelectedTeacher] = useState<string>("");
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedYear, setSelectedYear] = useState<number>(0);
   const [calculatedData, setCalculatedData] = useState<any>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
@@ -45,27 +47,21 @@ export default function CreatePayroll() {
     queryFn: () => staffService.getAll(),
   });
 
-  const teachers = teachersData?.data.data || [];
-  const staff = staffData?.data.data || [];
+  const teachers = (teachersData as any)?.data || [];
+  const staff = (staffData as any)?.data || [];
 
-  // Calculate payroll mutation
+  // Calculate payroll from attendance
   const calculateMutation = useMutation({
-    mutationFn: ({
-      teacherId,
-      month,
-      year,
-    }: {
-      teacherId: string;
-      month: string;
-      year: number;
-    }) => payrollService.calculateTeacherPayroll(teacherId, month, year),
+    mutationFn: ({ teacherId, month }: { teacherId: string; month: string }) =>
+      payrollService.calculateTeacherPayroll(teacherId, month),
     onSuccess: (response) => {
-      setCalculatedData(response.data.data);
+      const calc = (response as any)?.data;
+      setCalculatedData(calc);
       form.setFieldsValue({
-        amount: response.data.data.amount,
-        lectureCount: response.data.data.lectureCount,
+        amount: calc?.amount,
+        totalLectures: calc?.totalLectures,
       });
-      message.success("Payroll calculated successfully");
+      message.success("Payroll calculated from attendance");
     },
     onError: (error: any) => {
       message.error(
@@ -78,7 +74,7 @@ export default function CreatePayroll() {
   const createMutation = useMutation({
     mutationFn: (data: CreatePayrollDto) => payrollService.create(data),
     onSuccess: (response) => {
-      const invoice = response.data.data.invoiceNumber;
+      const invoice = (response as any)?.data?.invoiceNumber;
       setInvoiceNumber(invoice);
       message.success(`Payroll created! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["payroll"] });
@@ -93,25 +89,29 @@ export default function CreatePayroll() {
   });
 
   const handleCalculate = () => {
-    if (
-      paymentType === "teacher" &&
-      selectedTeacher &&
-      selectedMonth &&
-      selectedYear
-    ) {
+    if (selectedTeacherId && selectedMonth) {
       calculateMutation.mutate({
-        teacherId: selectedTeacher,
+        teacherId: selectedTeacherId,
         month: selectedMonth,
-        year: selectedYear,
       });
     }
   };
 
   const onFinish = (values: any) => {
     const data: CreatePayrollDto = {
-      ...values,
-      amount: calculatedData?.amount || values.amount,
-      lectureCount: calculatedData?.lectureCount,
+      payableType: values.payableType,
+      payableId:
+        values.payableType === "teacher" ? values.teacherId : values.staffId,
+      paymentMonth: values.paymentMonthPicker
+        ? values.paymentMonthPicker.startOf("month").toISOString()
+        : new Date().toISOString(),
+      amount: calculatedData?.amount ?? values.amount,
+      totalLectures: calculatedData?.totalLectures,
+      paymentDate: values.paymentDate
+        ? values.paymentDate.toISOString()
+        : new Date().toISOString(),
+      paymentMethod: values.paymentMethod,
+      notes: values.notes,
     };
     createMutation.mutate(data);
   };
@@ -133,179 +133,199 @@ export default function CreatePayroll() {
       )}
 
       <Form form={form} layout="vertical" onFinish={onFinish}>
-        {/* Payment Type Selection */}
+        {/* Payroll Type */}
         <Card title="Payroll Type" style={{ marginBottom: 16 }}>
-          <Row gutter={16}>
-            <Col span={24}>
-              <Form.Item
-                label="Payment Type"
-                name="paymentType"
-                rules={[
-                  { required: true, message: "Please select payment type" },
-                ]}
-              >
-                <Select
-                  placeholder="Select payment type"
-                  onChange={(value) => {
-                    setPaymentType(value);
-                    setCalculatedData(null);
-                    form.resetFields([
-                      "teacherId",
-                      "staffId",
-                      "amount",
-                      "lectureCount",
-                    ]);
-                  }}
-                >
-                  <Option value="teacher">Teacher Payroll</Option>
-                  <Option value="staff">Staff Payroll</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item
+            label="Payable Type"
+            name="payableType"
+            initialValue="teacher"
+            rules={[{ required: true }]}
+          >
+            <Select
+              onChange={(value) => {
+                setPayableType(value);
+                setCalculatedData(null);
+                form.resetFields([
+                  "teacherId",
+                  "staffId",
+                  "amount",
+                  "totalLectures",
+                ]);
+              }}
+            >
+              <Option value="teacher">Teacher Payroll</Option>
+              <Option value="staff">Staff Payroll</Option>
+            </Select>
+          </Form.Item>
         </Card>
 
         {/* Person Selection */}
         <Card title="Select Person" style={{ marginBottom: 16 }}>
-          <Row gutter={16}>
-            {paymentType === "teacher" ? (
-              <Col span={24}>
-                <Form.Item
-                  label="Select Teacher"
-                  name="teacherId"
-                  rules={[
-                    { required: true, message: "Please select a teacher" },
-                  ]}
-                >
-                  <Select
-                    placeholder="Search and select teacher"
-                    showSearch
-                    onChange={(value) => {
-                      setSelectedTeacher(value);
-                      setCalculatedData(null);
-                    }}
-                    options={teachers.map((teacher) => ({
-                      value: teacher.id,
-                      label: `${teacher.name} - ${teacher.paymentType === "fixed" ? "Fixed Salary" : "Lecture Based"}`,
-                    }))}
-                    filterOption={(input, option) =>
-                      ((option?.label as string) || "")
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                  />
-                </Form.Item>
-              </Col>
-            ) : (
-              <Col span={24}>
-                <Form.Item
-                  label="Select Staff"
-                  name="staffId"
-                  rules={[{ required: true, message: "Please select staff" }]}
-                >
-                  <Select
-                    placeholder="Search and select staff"
-                    showSearch
-                    options={staff.map((s) => ({
-                      value: s.id,
-                      label: `${s.name} - ${s.designation}`,
-                    }))}
-                    filterOption={(input, option) =>
-                      ((option?.label as string) || "")
-                        .toLowerCase()
-                        .includes(input.toLowerCase())
-                    }
-                  />
-                </Form.Item>
-              </Col>
-            )}
-          </Row>
+          {payableType === "teacher" ? (
+            <Form.Item
+              label="Select Teacher"
+              name="teacherId"
+              rules={[{ required: true, message: "Please select a teacher" }]}
+            >
+              <Select
+                placeholder="Search and select teacher"
+                showSearch
+                onChange={(value) => {
+                  setSelectedTeacherId(value);
+                  setCalculatedData(null);
+                }}
+                options={teachers.map((teacher: any) => ({
+                  value: teacher.id,
+                  label: `${teacher.name} - ${teacher.paymentType === "fixed" ? "Fixed Salary" : "Lecture Based"}`,
+                }))}
+                filterOption={(input, option) =>
+                  ((option?.label as string) || "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+              />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              label="Select Staff"
+              name="staffId"
+              rules={[{ required: true, message: "Please select staff" }]}
+            >
+              <Select
+                placeholder="Search and select staff"
+                showSearch
+                options={staff.map((s: any) => ({
+                  value: s.id,
+                  label: `${s.name}${s.designation ? ` - ${s.designation}` : ""}`,
+                }))}
+                filterOption={(input, option) =>
+                  ((option?.label as string) || "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+              />
+            </Form.Item>
+          )}
         </Card>
 
-        {/* Month/Year Selection */}
-        <Card title="Period" style={{ marginBottom: 16 }}>
+        {/* Period & Payment */}
+        <Card title="Period & Payment" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Month"
-                name="month"
-                rules={[{ required: true, message: "Please select month" }]}
+                label="Payment Month"
+                name="paymentMonthPicker"
+                rules={[
+                  { required: true, message: "Please select payment month" },
+                ]}
               >
                 <DatePicker
                   picker="month"
                   style={{ width: "100%" }}
                   format="MMMM YYYY"
                   onChange={(date) => {
-                    if (date) {
-                      setSelectedMonth(date.format("MMMM"));
-                      setSelectedYear(date.year());
-                      form.setFieldsValue({
-                        year: date.year(),
-                      });
-                      setCalculatedData(null);
-                    }
+                    setSelectedMonth(date ? date.format("YYYY-MM") : "");
+                    setCalculatedData(null);
                   }}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Year" name="year">
-                <Select disabled placeholder="Auto-filled">
-                  <Option value={selectedYear}>{selectedYear}</Option>
+              <Form.Item
+                label="Payment Date"
+                name="paymentDate"
+                rules={[
+                  { required: true, message: "Please select payment date" },
+                ]}
+              >
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Payment Method"
+                name="paymentMethod"
+                rules={[
+                  { required: true, message: "Please select payment method" },
+                ]}
+              >
+                <Select placeholder="Select method">
+                  <Option value="cash">Cash</Option>
+                  <Option value="bkash">bKash</Option>
+                  <Option value="nagad">Nagad</Option>
+                  <Option value="bank_transfer">Bank Transfer</Option>
                 </Select>
               </Form.Item>
             </Col>
+            {payableType === "teacher" &&
+              selectedTeacherId &&
+              selectedMonth && (
+                <Col span={24}>
+                  <Button
+                    type="dashed"
+                    onClick={handleCalculate}
+                    loading={calculateMutation.isPending}
+                    block
+                    style={{ marginBottom: 16 }}
+                  >
+                    Calculate from Attendance
+                  </Button>
+                </Col>
+              )}
+            <Col span={12}>
+              <Form.Item
+                label="Amount (৳)"
+                name="amount"
+                rules={[{ required: true, message: "Please enter amount" }]}
+              >
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  placeholder="Auto-filled or enter manually"
+                  disabled={!!calculatedData}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item label="Notes" name="notes">
+                <TextArea rows={2} placeholder="Additional notes (optional)" />
+              </Form.Item>
+            </Col>
           </Row>
-
-          {paymentType === "teacher" && selectedTeacher && selectedMonth && (
-            <Button
-              type="dashed"
-              onClick={handleCalculate}
-              loading={calculateMutation.isPending}
-              block
-            >
-              Calculate Payroll from Attendance
-            </Button>
-          )}
         </Card>
 
-        {/* Calculated Data Display */}
+        {/* Calculated Preview */}
         {calculatedData && (
           <Card
             title="Calculated Payroll"
             style={{ marginBottom: 16, backgroundColor: "#f0f9ff" }}
           >
             <Descriptions bordered column={2}>
-              <Descriptions.Item label="Teacher">
-                {calculatedData.teacher.name}
-              </Descriptions.Item>
               <Descriptions.Item label="Payment Type">
-                {calculatedData.teacher.paymentType === "fixed"
+                {calculatedData.paymentType === "fixed"
                   ? "Fixed Salary"
                   : "Lecture Based"}
               </Descriptions.Item>
-              {calculatedData.lectureCount && (
+              {calculatedData.totalLectures && (
                 <Descriptions.Item label="Total Lectures">
-                  {calculatedData.lectureCount}
+                  {calculatedData.totalLectures}
                 </Descriptions.Item>
               )}
               <Descriptions.Item label="Amount">
                 <strong style={{ color: "#1565c0", fontSize: 18 }}>
-                  ৳{calculatedData.amount.toLocaleString()}
+                  ৳{calculatedData.amount?.toLocaleString()}
                 </strong>
               </Descriptions.Item>
             </Descriptions>
           </Card>
         )}
 
-        {/* Action Buttons */}
         <Form.Item>
           <Button
             type="primary"
             htmlType="submit"
             loading={createMutation.isPending}
             size="large"
-            disabled={!calculatedData && paymentType === "teacher"}
           >
             Create Payroll
           </Button>
