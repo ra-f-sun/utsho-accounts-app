@@ -39,6 +39,9 @@ export default function DashboardLayout() {
     "/mbcs/payment-history",
     "/mbcs/teacher-attendance",
     "/mbcs/payroll",
+    "/mec/students",
+    "/mec/payments/record",
+    "/mec/payment-history",
     "/expenses",
   ];
   const selectedKey =
@@ -51,7 +54,9 @@ export default function DashboardLayout() {
     ? ["uac"]
     : pathname.startsWith("/mbcs")
       ? ["mbcs"]
-      : [];
+      : pathname.startsWith("/mec")
+        ? ["mec"]
+        : [];
 
   const handleLogout = () => {
     logout();
@@ -165,6 +170,33 @@ export default function DashboardLayout() {
         },
       ],
       disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_MBCS"].includes(
+        user?.role || "",
+      ),
+    },
+    {
+      key: "mec",
+      icon: <TeamOutlined />,
+      label: "MEC Module",
+      children: [
+        {
+          key: "/mec/students",
+          label: "Students",
+          onClick: () => navigate("/mec/students"),
+        },
+        {
+          key: "/mec/payments/record",
+          icon: <DollarOutlined />,
+          label: "Record Payment",
+          onClick: () => navigate("/mec/payments/record"),
+        },
+        {
+          key: "/mec/payment-history",
+          icon: <HistoryOutlined />,
+          label: "Payment History",
+          onClick: () => navigate("/mec/payment-history"),
+        },
+      ],
+      disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_MEC"].includes(
         user?.role || "",
       ),
     },

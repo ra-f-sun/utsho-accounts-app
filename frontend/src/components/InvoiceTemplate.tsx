@@ -31,24 +31,31 @@ export interface InvoiceData {
 
 interface InvoiceTemplateProps {
   data: InvoiceData;
-  organization: "uac" | "mbcs";
+  organization: "uac" | "mbcs" | "mec";
   type: "payment" | "payroll";
 }
 
 const orgConfig = {
   uac: {
-    name: "Universal Academic Center",
-    shortName: "UAC",
-    address: "Kaliakair, Gazipur",
+    name: "Utsho Coaching",
+    shortName: "UC",
+    address: "Bashabo, Dhaka",
     phone: "",
     color: "#667eea",
   },
   mbcs: {
-    name: "Mother's Brain Child School",
+    name: "Morning Bell Childhood School",
     shortName: "MBCS",
-    address: "Kaliakair, Gazipur",
+    address: "Bashabo, Dhaka",
     phone: "",
     color: "#7c3aed",
+  },
+  mec: {
+    name: "M@hee's English Care",
+    shortName: "MEC",
+    address: "Bashabo, Dhaka",
+    phone: "",
+    color: "#059669",
   },
 };
 

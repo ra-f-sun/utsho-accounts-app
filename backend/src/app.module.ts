@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UacModule } from './uac/uac.module';
 import { MbcsModule } from './mbcs/mbcs.module';
+import { MecModule } from './mec/mec.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { HealthController } from './health/health.controller';
 
@@ -31,6 +32,7 @@ import { HealthController } from './health/health.controller';
     UsersModule,
     UacModule,
     MbcsModule,
+    MecModule,
     ExpensesModule,
   ],
   controllers: [AppController, HealthController],

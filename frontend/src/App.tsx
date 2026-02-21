@@ -41,6 +41,12 @@ import TeacherAttendanceList from "./pages/uac/teacher-attendance/TeacherAttenda
 import AddTeacherAttendance from "./pages/uac/teacher-attendance/AddTeacherAttendance";
 import MbcsTeacherAttendanceList from "./pages/mbcs/teacher-attendance/MbcsTeacherAttendanceList";
 import AddMbcsTeacherAttendance from "./pages/mbcs/teacher-attendance/AddMbcsTeacherAttendance";
+import MecStudentsList from "./pages/mec/students/MecStudentsList";
+import AddMecStudent from "./pages/mec/students/AddMecStudent";
+import MecStudentPaymentHistory from "./pages/mec/students/MecStudentPaymentHistory";
+import MecRecordPayment from "./pages/mec/payments/MecRecordPayment";
+import MecPaymentInvoice from "./pages/mec/payments/MecPaymentInvoice";
+import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -186,6 +192,30 @@ function App() {
                 <Route
                   path="mbcs/payroll/:id/invoice"
                   element={<MbcsPayrollInvoice />}
+                />
+                {/* MEC Students Routes */}
+                <Route path="mec/students" element={<MecStudentsList />} />
+                <Route path="mec/students/add" element={<AddMecStudent />} />
+                <Route
+                  path="mec/students/edit/:id"
+                  element={<AddMecStudent />}
+                />
+                <Route
+                  path="mec/students/:id/payments"
+                  element={<MecStudentPaymentHistory />}
+                />
+                {/* MEC Payments Routes */}
+                <Route
+                  path="mec/payments/record"
+                  element={<MecRecordPayment />}
+                />
+                <Route
+                  path="mec/payments/:id/invoice"
+                  element={<MecPaymentInvoice />}
+                />
+                <Route
+                  path="mec/payment-history"
+                  element={<MecPaymentHistory />}
                 />
               </Route>
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
