@@ -66,6 +66,7 @@ export default function MecRecordPayment() {
       setLastPaymentId(created?.id || "");
       setInvoiceNumber(invoice);
       message.success(`Payment recorded! Invoice: ${invoice}`);
+      queryClient.invalidateQueries({ queryKey: ["mec-payment-history"] });
       queryClient.invalidateQueries({ queryKey: ["mec-payments"] });
       queryClient.invalidateQueries({ queryKey: ["mec-students"] });
       setSelectedStudentId(undefined);
@@ -77,8 +78,12 @@ export default function MecRecordPayment() {
   const onFinish = (values: any) => {
     createMutation.mutate({
       ...values,
-      paymentMonth: values.paymentMonth.format("YYYY-MM-01"),
-      paymentDate: values.paymentDate.format("YYYY-MM-DD"),
+      paymentMonth: values.paymentMonth
+        ? values.paymentMonth.startOf("month").toISOString()
+        : new Date().toISOString(),
+      paymentDate: values.paymentDate
+        ? values.paymentDate.toISOString()
+        : new Date().toISOString(),
     });
   };
 
@@ -214,7 +219,7 @@ export default function MecRecordPayment() {
           >
             Record Payment
           </Button>
-          <Button onClick={() => navigate("/mec/payments")} size="large">
+          <Button onClick={() => navigate("/mec/payment-history")} size="large">
             Cancel
           </Button>
         </Space>

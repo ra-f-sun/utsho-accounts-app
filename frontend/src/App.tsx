@@ -47,6 +47,7 @@ import MecStudentPaymentHistory from "./pages/mec/students/MecStudentPaymentHist
 import MecRecordPayment from "./pages/mec/payments/MecRecordPayment";
 import MecPaymentInvoice from "./pages/mec/payments/MecPaymentInvoice";
 import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,8 +69,9 @@ function App() {
         }}
       >
         <AntApp>
-          <BrowserRouter>
-            <Routes>
+          <ErrorBoundary>
+            <BrowserRouter>
+              <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route
                 path="/"
@@ -221,6 +223,7 @@ function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </BrowserRouter>
+        </ErrorBoundary>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>

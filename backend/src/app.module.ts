@@ -12,6 +12,7 @@ import { UacModule } from './uac/uac.module';
 import { MbcsModule } from './mbcs/mbcs.module';
 import { MecModule } from './mec/mec.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { HealthController } from './health/health.controller';
 
 @Module({
@@ -34,6 +35,7 @@ import { HealthController } from './health/health.controller';
     MbcsModule,
     MecModule,
     ExpensesModule,
+    AnalyticsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

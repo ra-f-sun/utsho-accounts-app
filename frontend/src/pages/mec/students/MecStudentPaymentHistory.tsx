@@ -10,8 +10,24 @@ import { Space } from "antd";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecPayment } from "../../../services/mecPaymentsService";
+import type { MecStudent } from "../../../services/mecStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export default function MecStudentPaymentHistory() {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +39,7 @@ export default function MecStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const student = (studentData as any)?.data;
+  const student = (studentData as { data: MecStudent })?.data;
 
   const { data: paymentsData, isLoading: loadingPayments } = useQuery({
     queryKey: ["mec-payments", { studentId: id }],
@@ -31,8 +47,14 @@ export default function MecStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const payments: MecPayment[] = (paymentsData as any)?.data || [];
+  const payments: MecPayment[] = (paymentsData as { data: MecPayment[] })?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Build paid months set for current year
+  const currentYear = new Date().getFullYear();
+  const paidMonths = new Set(
+    payments.map((p) => dayjs(p.paymentMonth).format("YYYY-MM")),
+  );
 
   const columns: ColumnsType<MecPayment> = [
     {
@@ -149,7 +171,45 @@ export default function MecStudentPaymentHistory() {
         </Row>
       </Card>
 
-      <Card title="Payment History">
+      {/* Monthly Status Grid */}
+      <Card
+        title="Tuition Payment Status (Current Year)"
+        style={{ marginBottom: 16 }}
+      >
+        <Row gutter={[8, 8]}>
+          {MONTHS.map((month, idx) => {
+            const monthKey = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
+            const isPaid = paidMonths.has(monthKey);
+            return (
+              <Col span={4} key={monthKey}>
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    textAlign: "center",
+                    borderRadius: 6,
+                    background: isPaid ? "#f6ffed" : "#fff2f0",
+                    border: `1px solid ${isPaid ? "#b7eb8f" : "#ffccc7"}`,
+                    fontSize: 12,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                    {month.slice(0, 3)}
+                  </div>
+                  <Tag
+                    color={isPaid ? "success" : "error"}
+                    style={{ margin: 0 }}
+                  >
+                    {isPaid ? "Paid" : "Unpaid"}
+                  </Tag>
+                </div>
+              </Col>
+            );
+          })}
+        </Row>
+      </Card>
+
+      {/* Payment Records Table */}
+      <Card title="All Payment Records">
         <Table
           columns={columns}
           dataSource={payments}

@@ -24,3 +24,74 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Print styles for dashboard export */
+@media print {
+  .ant-layout-sider,
+  .ant-layout-header,
+  button:not(.print-keep),
+  .no-print {
+    display: none !important;
+  }
+
+  .ant-layout-content {
+    padding: 20px !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 2cm;
+  }
+}
+
+/* Ensure tables are responsive */
+.ant-table-wrapper {
+  overflow-x: auto;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+  .ant-row {
+    flex-direction: column;
+  }
+
+  .ant-col {
+    max-width: 100% !important;
+    flex: 0 0 100%;
+  }
+
+  .ant-statistic {
+    margin-bottom: 16px;
+  }
+
+  .recharts-responsive-container {
+    min-height: 250px !important;
+  }
+
+  .ant-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* Loading state improvements */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Empty state styles */
+.empty-state {
+  padding: 50px 0;
+  text-align: center;
+}
+
+/* Unpaid row highlighting */
+.unpaid-row {
+  background-color: #fff1f0;
+}
+
+.unpaid-row:hover {
+  background-color: #ffe7e7 !important;
+}

@@ -34,6 +34,7 @@ pnpm-debug.log*
 API_TESTING.md
 POSTGRES_SETUP.md
 TEST_UAC_STUDENTS.md
+IMPLEMENTATION_ANALYSIS.md
 
 # Node / Dependencies
 node_modules/

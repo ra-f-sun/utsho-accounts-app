@@ -87,7 +87,7 @@ export default function MecPaymentInvoice() {
       >
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/mec/payments")}
+          onClick={() => navigate("/mec/payment-history")}
         >
           Back to Payments
         </Button>
