@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Form,
   Input,
@@ -14,7 +14,7 @@ import {
   Descriptions,
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { payrollService } from "../../../services/payrollService";
 import type { CreatePayrollDto } from "../../../services/payrollService";
 import { teachersService } from "../../../services/teachersService";
@@ -26,14 +26,16 @@ const { TextArea } = Input;
 export default function CreatePayroll() {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [payableType, setPayableType] = useState<"teacher" | "staff">(
     "teacher",
   );
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
+  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [calculatedData, setCalculatedData] = useState<any>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+  const [createdPayrollId, setCreatedPayrollId] = useState<string>("");
 
   // Fetch teachers
   const { data: teachersData } = useQuery({
@@ -49,6 +51,22 @@ export default function CreatePayroll() {
 
   const teachers = (teachersData as any)?.data || [];
   const staff = (staffData as any)?.data || [];
+
+  // Auto-populate from URL params (e.g. navigating from teacher payroll history)
+  useEffect(() => {
+    const teacherId = searchParams.get("teacherId");
+    if (teacherId && teachers.length > 0) {
+      const teacher = teachers.find((t: any) => t.id === teacherId);
+      if (teacher) {
+        setSelectedTeacher(teacher);
+        form.setFieldsValue({ teacherId, payableType: "teacher" });
+        setPayableType("teacher");
+        if (teacher.paymentType === "fixed" && teacher.monthlySalary) {
+          form.setFieldValue("amount", teacher.monthlySalary);
+        }
+      }
+    }
+  }, [teachers, searchParams, form]);
 
   // Calculate payroll from attendance
   const calculateMutation = useMutation({
@@ -74,10 +92,13 @@ export default function CreatePayroll() {
   const createMutation = useMutation({
     mutationFn: (data: CreatePayrollDto) => payrollService.create(data),
     onSuccess: (response) => {
-      const invoice = (response as any)?.data?.invoiceNumber;
+      const created = (response as any)?.data;
+      const invoice = created?.invoiceNumber;
+      setCreatedPayrollId(created?.id || "");
       setInvoiceNumber(invoice);
       message.success(`Payroll created! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      setSelectedTeacher(null);
       form.resetFields();
       setCalculatedData(null);
     },
@@ -89,9 +110,9 @@ export default function CreatePayroll() {
   });
 
   const handleCalculate = () => {
-    if (selectedTeacherId && selectedMonth) {
+    if (selectedTeacher?.id && selectedMonth) {
       calculateMutation.mutate({
-        teacherId: selectedTeacherId,
+        teacherId: selectedTeacher.id,
         month: selectedMonth,
       });
     }
@@ -123,11 +144,30 @@ export default function CreatePayroll() {
       {invoiceNumber && (
         <Alert
           message="Payroll Created Successfully!"
-          description={`Invoice Number: ${invoiceNumber}`}
+          description={
+            <span>
+              Invoice Number: <strong>{invoiceNumber}</strong>
+              {createdPayrollId && (
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ marginLeft: 12 }}
+                  onClick={() =>
+                    navigate(`/uac/payroll/${createdPayrollId}/invoice`)
+                  }
+                >
+                  View Invoice
+                </Button>
+              )}
+            </span>
+          }
           type="success"
           showIcon
           closable
-          onClose={() => setInvoiceNumber("")}
+          onClose={() => {
+            setInvoiceNumber("");
+            setCreatedPayrollId("");
+          }}
           style={{ marginBottom: 16 }}
         />
       )}
@@ -171,8 +211,18 @@ export default function CreatePayroll() {
                 placeholder="Search and select teacher"
                 showSearch
                 onChange={(value) => {
-                  setSelectedTeacherId(value);
+                  const teacher = teachers.find((t: any) => t.id === value);
+                  setSelectedTeacher(teacher || null);
                   setCalculatedData(null);
+                  // Auto-fill salary for fixed-salary teachers
+                  if (
+                    teacher?.paymentType === "fixed" &&
+                    teacher.monthlySalary
+                  ) {
+                    form.setFieldValue("amount", teacher.monthlySalary);
+                  } else {
+                    form.setFieldValue("amount", undefined);
+                  }
                 }}
                 options={teachers.map((teacher: any) => ({
                   value: teacher.id,
@@ -258,7 +308,8 @@ export default function CreatePayroll() {
               </Form.Item>
             </Col>
             {payableType === "teacher" &&
-              selectedTeacherId &&
+              selectedTeacher?.paymentType === "lecture_based" &&
+              selectedTeacher?.id &&
               selectedMonth && (
                 <Col span={24}>
                   <Button
