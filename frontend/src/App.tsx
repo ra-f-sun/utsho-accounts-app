@@ -47,6 +47,8 @@ import MecStudentPaymentHistory from "./pages/mec/students/MecStudentPaymentHist
 import MecRecordPayment from "./pages/mec/payments/MecRecordPayment";
 import MecPaymentInvoice from "./pages/mec/payments/MecPaymentInvoice";
 import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
+import UsersList from "./pages/users/UsersList";
+import AddUser from "./pages/users/AddUser";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
@@ -83,10 +85,10 @@ function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
-                <Route
-                  path="users"
-                  element={<div>Users Page (Coming Soon)</div>}
-                />
+                {/* Users Routes */}
+                <Route path="users" element={<UsersList />} />
+                <Route path="users/add" element={<AddUser />} />
+                <Route path="users/edit/:id" element={<AddUser />} />
                 {/* UAC Students Routes */}
                 <Route path="uac/students" element={<StudentsList />} />
                 <Route path="uac/students/add" element={<AddStudent />} />
