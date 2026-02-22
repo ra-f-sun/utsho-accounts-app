@@ -88,7 +88,12 @@ export default function AddMecStudent() {
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       <h2>{isEditMode ? "Edit Student" : "Add MEC Student"}</h2>
 
-      <Form form={form} layout="vertical" onFinish={onFinish}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        initialValues={{ admissionDate: dayjs() }}
+      >
         {/* Basic Info */}
         <Card title="Basic Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>

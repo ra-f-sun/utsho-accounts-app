@@ -43,6 +43,9 @@ export default function AddStudent() {
           dateOfBirth: student.dateOfBirth
             ? dayjs(student.dateOfBirth)
             : undefined,
+          admissionDate: student.admissionDate
+            ? dayjs(student.admissionDate)
+            : undefined,
         });
       }
     }
@@ -77,6 +80,7 @@ export default function AddStudent() {
     const data = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
+      admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
     };
     if (isEditMode) {
       updateMutation.mutate(data);
@@ -96,6 +100,7 @@ export default function AddStudent() {
         onFinish={onFinish}
         initialValues={{
           nationality: "Bangladeshi",
+          admissionDate: dayjs(),
         }}
       >
         {/* Basic Information */}
@@ -312,7 +317,7 @@ export default function AddStudent() {
                 <Input placeholder="+8801XXXXXXXXX" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Monthly Tuition Fee (৳)"
                 name="monthlyTuitionFee"
@@ -325,6 +330,24 @@ export default function AddStudent() {
                   style={{ width: "100%" }}
                   placeholder="Enter amount"
                 />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Admission Fee (৳)" name="admissionFee">
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  placeholder="Enter amount"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Admission Date"
+                name="admissionDate"
+                rules={[{ required: true, message: "Please select admission date" }]}
+              >
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
           </Row>

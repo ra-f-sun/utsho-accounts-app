@@ -93,7 +93,7 @@ export default function AddMbcsStudent() {
         form={form}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{ nationality: "Bangladeshi" }}
+        initialValues={{ nationality: "Bangladeshi", admissionDate: dayjs() }}
       >
         {/* Basic Information */}
         <Card title="Basic Information" style={{ marginBottom: 16 }}>
