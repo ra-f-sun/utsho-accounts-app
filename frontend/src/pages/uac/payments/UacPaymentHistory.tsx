@@ -439,7 +439,7 @@ export default function UacPaymentHistory() {
             <Statistic
               title="Paid"
               value={paidCount}
-              valueStyle={{ color: "#52c41a" }}
+              styles={{ content: { color: "#52c41a" } }}
             />
           </Card>
         </Col>
@@ -448,7 +448,7 @@ export default function UacPaymentHistory() {
             <Statistic
               title="Unpaid"
               value={unpaidCount}
-              valueStyle={{ color: "#ff4d4f" }}
+              styles={{ content: { color: "#ff4d4f" } }}
             />
           </Card>
         </Col>
@@ -462,12 +462,7 @@ export default function UacPaymentHistory() {
                   : 0
               }
               suffix="%"
-              valueStyle={{
-                color:
-                  paidCount / (tuitionStatusRows.length || 1) > 0.7
-                    ? "#52c41a"
-                    : "#fa8c16",
-              }}
+              styles={{ content: { color: paidCount / (tuitionStatusRows.length || 1) > 0.7 ? "#52c41a" : "#fa8c16" } }}
             />
           </Card>
         </Col>

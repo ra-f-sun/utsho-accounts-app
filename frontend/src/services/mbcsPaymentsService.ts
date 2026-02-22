@@ -32,6 +32,20 @@ export interface CreateMbcsPaymentDto {
   notes?: string;
 }
 
+export interface MbcsPaymentLineItem {
+  paymentType: string;
+  amount: number;
+  paymentMonth: string;
+  notes?: string;
+}
+
+export interface CreateMbcsMultiPaymentDto {
+  studentId: string;
+  paymentDate: string;
+  paymentMethod: string;
+  lineItems: MbcsPaymentLineItem[];
+}
+
 export interface FilterMbcsPaymentDto {
   studentId?: string;
   paymentType?: string;
@@ -88,6 +102,19 @@ export const mbcsPaymentsService = {
     return api.post<{ success: boolean; data: MbcsPayment }>(
       "/mbcs/payments",
       data,
+    );
+  },
+
+  createMulti: (data: CreateMbcsMultiPaymentDto) => {
+    return api.post<{ success: boolean; data: { invoiceNumber: string; payments: MbcsPayment[] } }>(
+      "/mbcs/payments/multi",
+      data,
+    );
+  },
+
+  getByInvoice: (invoiceNumber: string) => {
+    return api.get<{ success: boolean; data: MbcsPayment[] }>(
+      `/mbcs/payments/invoice/${invoiceNumber}`,
     );
   },
 

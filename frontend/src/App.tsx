@@ -16,6 +16,7 @@ import AddStaff from "./pages/uac/staff/AddStaff";
 import PaymentsList from "./pages/uac/payments/PaymentsList";
 import RecordPayment from "./pages/uac/payments/RecordPayment";
 import PaymentInvoice from "./pages/uac/payments/PaymentInvoice";
+import InvoiceByNumber from "./pages/uac/payments/InvoiceByNumber";
 import UacPaymentHistory from "./pages/uac/payments/UacPaymentHistory";
 import UacExpensesList from "./pages/uac/expenses/UacExpensesList";
 import AddUacExpense from "./pages/uac/expenses/AddUacExpense";
@@ -37,6 +38,7 @@ import AddMbcsStaff from "./pages/mbcs/staff/AddMbcsStaff";
 import MbcsPaymentsList from "./pages/mbcs/payments/MbcsPaymentsList";
 import MbcsRecordPayment from "./pages/mbcs/payments/MbcsRecordPayment";
 import MbcsPaymentInvoice from "./pages/mbcs/payments/MbcsPaymentInvoice";
+import MbcsInvoiceByNumber from "./pages/mbcs/payments/MbcsInvoiceByNumber";
 import MbcsPaymentHistory from "./pages/mbcs/payments/MbcsPaymentHistory";
 import MbcsPayrollList from "./pages/mbcs/payroll/MbcsPayrollList";
 import MbcsCreatePayroll from "./pages/mbcs/payroll/MbcsCreatePayroll";
@@ -50,6 +52,7 @@ import AddMecStudent from "./pages/mec/students/AddMecStudent";
 import MecStudentPaymentHistory from "./pages/mec/students/MecStudentPaymentHistory";
 import MecRecordPayment from "./pages/mec/payments/MecRecordPayment";
 import MecPaymentInvoice from "./pages/mec/payments/MecPaymentInvoice";
+import MecInvoiceByNumber from "./pages/mec/payments/MecInvoiceByNumber";
 import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
 import UsersList from "./pages/users/UsersList";
 import AddUser from "./pages/users/AddUser";
@@ -117,6 +120,10 @@ function App() {
                 <Route path="uac/payments" element={<PaymentsList />} />
                 <Route path="uac/payments/record" element={<RecordPayment />} />
                 <Route
+                  path="uac/payments/invoice/:invoiceNumber"
+                  element={<InvoiceByNumber />}
+                />
+                <Route
                   path="uac/payments/:id/invoice"
                   element={<PaymentInvoice />}
                 />
@@ -183,6 +190,10 @@ function App() {
                   element={<MbcsRecordPayment />}
                 />
                 <Route
+                  path="mbcs/payments/invoice/:invoiceNumber"
+                  element={<MbcsInvoiceByNumber />}
+                />
+                <Route
                   path="mbcs/payments/:id/invoice"
                   element={<MbcsPaymentInvoice />}
                 />
@@ -224,6 +235,10 @@ function App() {
                 <Route
                   path="mec/payments/record"
                   element={<MecRecordPayment />}
+                />
+                <Route
+                  path="mec/payments/invoice/:invoiceNumber"
+                  element={<MecInvoiceByNumber />}
                 />
                 <Route
                   path="mec/payments/:id/invoice"

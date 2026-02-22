@@ -45,8 +45,8 @@ export class InvoiceService {
       return counter;
     });
 
-    // Format: UAC/2024/0001
+    // Format: UAC-2024-0001
     const sequence = result.sequence.toString().padStart(4, '0');
-    return `${prefix}/${year}/${sequence}`;
+    return `${prefix}-${year}-${sequence}`;
   }
 }

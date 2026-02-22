@@ -11,9 +11,18 @@ export interface StudentInfo {
   guardianName?: string;
 }
 
+/** One row in a multi-payment invoice. */
+export interface PaymentLineItem {
+  paymentType?: string; // undefined for MEC (tuition only)
+  amount: number;
+  paymentMonth: string;
+  notes?: string;
+}
+
 /** Data contract for student payment invoices (UAC, MBCS, MEC). */
 export interface StudentPaymentInvoiceData {
   invoiceNumber: string;
+  /** Total amount — sum of all lineItems if present, else single amount. */
   amount: number;
   paymentDate: string;
   paymentMonth: string;
@@ -22,7 +31,10 @@ export interface StudentPaymentInvoiceData {
   notes?: string;
   createdAt?: string;
   student?: StudentInfo;
+  /** Present when the invoice has multiple line items. */
+  lineItems?: PaymentLineItem[];
 }
+
 
 /** Data contract for teacher / staff payroll invoices. */
 export interface PayrollInvoiceData {

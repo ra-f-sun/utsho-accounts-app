@@ -123,13 +123,14 @@ model UacPayment {
   paymentMonth  DateTime // YYYY-MM-01 format
   paymentDate   DateTime
   paymentMethod String // 'cash', 'bank', 'mobile'
-  invoiceNumber String     @unique
+  invoiceNumber String
   notes         String? // Description when paymentType is 'other'
   createdBy     String // FK → users.id (audit trail)
   createdAt     DateTime   @default(now())
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@map("uac_payments")
 }
 
@@ -254,13 +255,14 @@ model MbcsPayment {
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod String
-  invoiceNumber String      @unique
+  invoiceNumber String
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime    @default(now())
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@map("mbcs_payments")
 }
 
@@ -353,13 +355,14 @@ model MecPayment {
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod String
-  invoiceNumber String     @unique
+  invoiceNumber String
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime   @default(now())
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@map("mec_payments")
 }
 

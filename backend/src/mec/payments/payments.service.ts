@@ -5,6 +5,7 @@ import { InvoiceService } from '../../common/services/invoice.service';
 import { CreateMecPaymentDto } from './dto/create-payment.dto';
 import { UpdateMecPaymentDto } from './dto/update-payment.dto';
 import { FilterMecPaymentDto } from './dto/filter-payment.dto';
+import { CreateMecMultiPaymentDto } from './dto/create-multi-payment.dto';
 
 @Injectable()
 export class MecPaymentsService {
@@ -120,6 +121,66 @@ export class MecPaymentsService {
   async remove(id: string) {
     await this.findOne(id);
     return this.prisma.mecPayment.delete({ where: { id } });
+  }
+
+  async createMulti(dto: CreateMecMultiPaymentDto, createdBy: string) {
+    const student = await this.prisma.mecStudent.findUnique({
+      where: { id: dto.studentId },
+    });
+    if (!student) {
+      throw new NotFoundException(`Student with ID ${dto.studentId} not found`);
+    }
+
+    const invoiceNumber =
+      await this.invoiceService.generateInvoiceNumber('mec');
+
+    return this.prisma.$transaction(async (tx) => {
+      const payments = await Promise.all(
+        dto.lineItems.map((item) =>
+          tx.mecPayment.create({
+            data: {
+              studentId: dto.studentId,
+              amount: item.amount,
+              paymentMonth: new Date(item.paymentMonth),
+              paymentDate: new Date(dto.paymentDate),
+              paymentMethod: dto.paymentMethod,
+              notes: item.notes,
+              invoiceNumber,
+              createdBy,
+            },
+            include: {
+              student: {
+                select: { id: true, name: true, class: true },
+              },
+            },
+          }),
+        ),
+      );
+      return { invoiceNumber, payments };
+    });
+  }
+
+  async findByInvoice(invoiceNumber: string) {
+    const payments = await this.prisma.mecPayment.findMany({
+      where: { invoiceNumber },
+      include: {
+        student: {
+          select: {
+            id: true,
+            name: true,
+            class: true,
+            contactNumber: true,
+          },
+        },
+      },
+      orderBy: { paymentMonth: 'asc' },
+    });
+    if (!payments.length) {
+      throw new NotFoundException(
+        `No payments found for invoice ${invoiceNumber}`,
+      );
+    }
+    return payments;
   }
 
   async getStudentPaymentSummary(studentId: string) {

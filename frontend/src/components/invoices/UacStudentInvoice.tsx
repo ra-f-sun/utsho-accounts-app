@@ -126,10 +126,18 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           </p>
           <table style={{ width: "100%", fontSize: 13, color: "#555" }}>
             <tbody>
+              {!data.lineItems && (
+                <tr>
+                  <td style={{ paddingBottom: 4, color: "#888" }}>For Month:</td>
+                  <td style={{ fontWeight: 600, textAlign: "right" }}>
+                    {dayjs(data.paymentMonth).format("MMMM YYYY")}
+                  </td>
+                </tr>
+              )}
               <tr>
-                <td style={{ paddingBottom: 4, color: "#888" }}>For Month:</td>
+                <td style={{ paddingBottom: 4, color: "#888" }}>Date:</td>
                 <td style={{ fontWeight: 600, textAlign: "right" }}>
-                  {dayjs(data.paymentMonth).format("MMMM YYYY")}
+                  {dayjs(data.paymentDate).format("DD MMM YYYY")}
                 </td>
               </tr>
               <tr>
@@ -138,7 +146,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                   {fmt(data.paymentMethod)}
                 </td>
               </tr>
-              {data.paymentType && (
+              {!data.lineItems && data.paymentType && (
                 <tr>
                   <td style={{ paddingBottom: 4, color: "#888" }}>Type:</td>
                   <td style={{ fontWeight: 600, textAlign: "right" }}>
@@ -150,6 +158,38 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           </table>
         </div>
       </div>
+
+      {/* Line Items Table (multi-payment) */}
+      {data.lineItems && data.lineItems.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: COLOR, color: "#fff" }}>
+                <th style={{ padding: "8px 12px", textAlign: "left", borderRadius: "4px 0 0 4px" }}>#</th>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>Payment Type</th>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>Month</th>
+                <th style={{ padding: "8px 12px", textAlign: "right", borderRadius: "0 4px 4px 0" }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.lineItems.map((item, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? "#f5f6ff" : "#fff" }}>
+                  <td style={{ padding: "8px 12px", color: "#888" }}>{i + 1}</td>
+                  <td style={{ padding: "8px 12px", fontWeight: 600 }}>
+                    {item.paymentType ? fmt(item.paymentType) : "Tuition"}
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    {dayjs(item.paymentMonth).format("MMM YYYY")}
+                  </td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
+                    ৳{item.amount.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Amount */}
       <div

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Select, Space, message, Popconfirm, Tag } from "antd";
+import { Table, Button, Select, Space, App, Popconfirm, Tag } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -35,7 +35,19 @@ const PAYMENT_TYPE_COLORS: Record<string, string> = {
   other: "default",
 };
 
+interface GroupedMbcsPayment {
+  invoiceNumber: string;
+  student: MbcsPayment["student"];
+  paymentTypes: string[];
+  totalAmount: number;
+  paymentMethod: string;
+  paymentMonth: string;
+  paymentDate: string;
+  ids: string[];
+}
+
 export default function MbcsPaymentsList() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterMbcsPaymentDto>({});
@@ -45,10 +57,32 @@ export default function MbcsPaymentsList() {
     queryFn: () => mbcsPaymentsService.getAll(filters),
   });
 
-  const payments: MbcsPayment[] = (data as any)?.data || [];
+  const groupedPayments = useMemo((): GroupedMbcsPayment[] => {
+    const payments: MbcsPayment[] = (data as unknown as { data?: MbcsPayment[] })?.data || [];
+    const groups: Record<string, GroupedMbcsPayment> = {};
+    payments.forEach((p: MbcsPayment) => {
+      if (!groups[p.invoiceNumber]) {
+        groups[p.invoiceNumber] = {
+          invoiceNumber: p.invoiceNumber,
+          student: p.student,
+          paymentTypes: [],
+          totalAmount: 0,
+          paymentMethod: p.paymentMethod,
+          paymentMonth: p.paymentMonth,
+          paymentDate: p.paymentDate,
+          ids: [],
+        };
+      }
+      groups[p.invoiceNumber].paymentTypes.push(p.paymentType);
+      groups[p.invoiceNumber].totalAmount += p.amount;
+      groups[p.invoiceNumber].ids.push(p.id);
+    });
+    return Object.values(groups);
+  }, [data]);
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mbcsPaymentsService.delete(id),
+    mutationFn: (ids: string[]) =>
+      Promise.all(ids.map((id) => mbcsPaymentsService.delete(id))),
     onSuccess: () => {
       message.success("Payment deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["mbcs-payments"] });
@@ -56,7 +90,7 @@ export default function MbcsPaymentsList() {
     onError: () => message.error("Failed to delete payment"),
   });
 
-  const columns: ColumnsType<MbcsPayment> = [
+  const columns: ColumnsType<GroupedMbcsPayment> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
@@ -67,36 +101,37 @@ export default function MbcsPaymentsList() {
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: MbcsPayment) => (
+      render: (_: unknown, record: GroupedMbcsPayment) => (
         <div>
-          <div>
-            <strong>{record.student?.name}</strong>
-          </div>
+          <div><strong>{record.student?.name}</strong></div>
           <div style={{ fontSize: 12, color: "#888" }}>
-            Class {record.student?.class}{" "}
-            {record.student?.shift ? `· ${record.student.shift}` : ""}
+            Class {record.student?.class}
+            {record.student?.shift ? ` \u00b7 ${record.student.shift}` : ""}
           </div>
         </div>
       ),
     },
     {
-      title: "Payment Type",
-      dataIndex: "paymentType",
-      key: "paymentType",
-      width: 150,
-      render: (type: string) => (
-        <Tag color={PAYMENT_TYPE_COLORS[type] || "default"}>
-          {type.replace(/_/g, " ").toUpperCase()}
-        </Tag>
+      title: "Payment Types",
+      key: "paymentTypes",
+      render: (_: unknown, record: GroupedMbcsPayment) => (
+        <Space size={[4, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={PAYMENT_TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
+      title: "Total",
+      key: "totalAmount",
       width: 120,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      render: (_: unknown, record: GroupedMbcsPayment) => (
+        <strong style={{ color: "#2e7d32" }}>
+          \u09f3{record.totalAmount.toLocaleString()}
+        </strong>
       ),
     },
     {
@@ -128,16 +163,20 @@ export default function MbcsPaymentsList() {
       title: "Actions",
       key: "actions",
       width: 100,
-      render: (_: unknown, record: MbcsPayment) => (
+      render: (_: unknown, record: GroupedMbcsPayment) => (
         <Space>
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/mbcs/payments/${record.id}/invoice`)}
+            onClick={() =>
+              navigate(
+                `/mbcs/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`,
+              )
+            }
           />
           <Popconfirm
-            title="Are you sure to delete this payment?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
+            title="Delete all payments in this invoice?"
+            onConfirm={() => deleteMutation.mutate(record.ids)}
             okText="Yes"
             cancelText="No"
           >
@@ -202,13 +241,13 @@ export default function MbcsPaymentsList() {
       </div>
       <Table
         columns={columns}
-        dataSource={payments}
-        rowKey="id"
+        dataSource={groupedPayments}
+        rowKey="invoiceNumber"
         loading={isLoading}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} payments`,
+          showTotal: (total) => `Total ${total} invoices`,
         }}
       />
     </div>

@@ -28,6 +28,19 @@ export interface CreateMecPaymentDto {
   notes?: string;
 }
 
+export interface MecPaymentLineItem {
+  amount: number;
+  paymentMonth: string;
+  notes?: string;
+}
+
+export interface CreateMecMultiPaymentDto {
+  studentId: string;
+  paymentDate: string;
+  paymentMethod: string;
+  lineItems: MecPaymentLineItem[];
+}
+
 export const mecPaymentsService = {
   getAll: (params?: {
     studentId?: string;
@@ -41,6 +54,17 @@ export const mecPaymentsService = {
     api.get(`/mec/payments/student/${studentId}/summary`),
 
   create: (data: CreateMecPaymentDto) => api.post("/mec/payments", data),
+
+  createMulti: (data: CreateMecMultiPaymentDto) =>
+    api.post<{ success: boolean; data: { invoiceNumber: string; payments: MecPayment[] } }>(
+      "/mec/payments/multi",
+      data,
+    ),
+
+  getByInvoice: (invoiceNumber: string) =>
+    api.get<{ success: boolean; data: MecPayment[] }>(
+      `/mec/payments/invoice/${invoiceNumber}`,
+    ),
 
   update: (id: string, data: Partial<CreateMecPaymentDto>) =>
     api.patch(`/mec/payments/${id}`, data),

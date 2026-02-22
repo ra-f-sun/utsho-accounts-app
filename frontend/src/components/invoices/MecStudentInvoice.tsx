@@ -92,10 +92,12 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           color: "#555",
         }}
       >
-        <div>
-          <span style={{ color: "#888" }}>Payment Month: </span>
-          <strong>{dayjs(data.paymentMonth).format("MMMM YYYY")}</strong>
-        </div>
+        {!data.lineItems && (
+          <div>
+            <span style={{ color: "#888" }}>Payment Month: </span>
+            <strong>{dayjs(data.paymentMonth).format("MMMM YYYY")}</strong>
+          </div>
+        )}
         <div>
           <span style={{ color: "#888" }}>Payment Date: </span>
           <strong>{dayjs(data.paymentDate).format("DD MMM YYYY")}</strong>
@@ -104,13 +106,41 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           <span style={{ color: "#888" }}>Method: </span>
           <strong>{fmt(data.paymentMethod)}</strong>
         </div>
-        {data.paymentType && (
+        {!data.lineItems && data.paymentType && (
           <div>
             <span style={{ color: "#888" }}>Type: </span>
             <strong>{fmt(data.paymentType)}</strong>
           </div>
         )}
       </div>
+
+      {/* Line Items Table (multi-payment, tuition months) */}
+      {data.lineItems && data.lineItems.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: COLOR, color: "#fff" }}>
+                <th style={{ padding: "8px 12px", textAlign: "left", borderRadius: "4px 0 0 4px" }}>#</th>
+                <th style={{ padding: "8px 12px", textAlign: "left" }}>Month</th>
+                <th style={{ padding: "8px 12px", textAlign: "right", borderRadius: "0 4px 4px 0" }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.lineItems.map((item, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? COLOR_LIGHT : "#fff" }}>
+                  <td style={{ padding: "8px 12px", color: "#888" }}>{i + 1}</td>
+                  <td style={{ padding: "8px 12px", fontWeight: 600 }}>
+                    {dayjs(item.paymentMonth).format("MMMM YYYY")}
+                  </td>
+                  <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
+                    ৳{item.amount.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Amount — centered */}
       <div

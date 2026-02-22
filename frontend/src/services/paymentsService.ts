@@ -32,12 +32,38 @@ export interface CreatePaymentDto {
   notes?: string;
 }
 
+export interface PaymentLineItem {
+  paymentType: string;
+  amount: number;
+  paymentMonth: string;
+  notes?: string;
+}
+
+export interface CreateMultiPaymentDto {
+  studentId: string;
+  paymentDate: string;
+  paymentMethod: string;
+  lineItems: PaymentLineItem[];
+}
+
 export interface FilterPaymentDto {
   studentId?: string;
   paymentType?: string;
   paymentMonth?: string;
   paymentMethod?: string;
 }
+
+export const UAC_PAYMENT_TYPES = [
+  { value: "tuition", label: "Tuition Fee" },
+  { value: "admission", label: "Admission Fee" },
+  { value: "readmission", label: "Re-admission Fee" },
+  { value: "exam", label: "Exam Fee" },
+  { value: "sheet", label: "Sheet Fee" },
+  { value: "session_charge", label: "Session Charge" },
+  { value: "study_materials", label: "Study Materials" },
+  { value: "study_tour", label: "Study Tour" },
+  { value: "other", label: "Other" },
+];
 
 export const paymentsService = {
   getAll: (filters?: FilterPaymentDto) => {
@@ -72,6 +98,19 @@ export const paymentsService = {
 
   create: (data: CreatePaymentDto) => {
     return api.post<{ success: boolean; data: Payment }>("/uac/payments", data);
+  },
+
+  createMulti: (data: CreateMultiPaymentDto) => {
+    return api.post<{ success: boolean; data: { invoiceNumber: string; payments: Payment[] } }>(
+      "/uac/payments/multi",
+      data,
+    );
+  },
+
+  getByInvoice: (invoiceNumber: string) => {
+    return api.get<{ success: boolean; data: Payment[] }>(
+      `/uac/payments/invoice/${invoiceNumber}`,
+    );
   },
 
   update: (id: string, data: Partial<CreatePaymentDto>) => {

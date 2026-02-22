@@ -312,7 +312,7 @@ export default function DashboardPage() {
                   title="Total Revenue (Student Payments)"
                   value={totals.studentPayments}
                   prefix="৳"
-                  valueStyle={{ color: COLORS.revenue }}
+                  styles={{ content: { color: COLORS.revenue } }}
                   suffix={<RiseOutlined />}
                 />
               </Card>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                   title="Teacher Payroll"
                   value={totals.teacherPayroll}
                   prefix="৳"
-                  valueStyle={{ color: COLORS.expense }}
+                  styles={{ content: { color: COLORS.expense } }}
                   suffix={<WalletOutlined />}
                 />
               </Card>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                   title="Total Expenses"
                   value={totals.expenses}
                   prefix="৳"
-                  valueStyle={{ color: COLORS.expense }}
+                  styles={{ content: { color: COLORS.expense } }}
                   suffix={<FallOutlined />}
                 />
               </Card>
@@ -345,9 +345,7 @@ export default function DashboardPage() {
                   title="Net Profit"
                   value={totals.netRevenue}
                   prefix="৳"
-                  valueStyle={{
-                    color: totals.netRevenue >= 0 ? COLORS.revenue : COLORS.expense,
-                  }}
+                  styles={{ content: { color: totals.netRevenue >= 0 ? COLORS.revenue : COLORS.expense } }}
                   suffix={<DollarOutlined />}
                 />
               </Card>

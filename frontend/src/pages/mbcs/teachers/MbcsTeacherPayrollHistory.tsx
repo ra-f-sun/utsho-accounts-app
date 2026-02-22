@@ -153,7 +153,7 @@ export default function MbcsTeacherPayrollHistory() {
             <Statistic
               title="Teacher"
               value={teacher?.name || "Loading..."}
-              valueStyle={{ fontSize: 18 }}
+              styles={{ content: { fontSize: 18 } }}
             />
             <div style={{ color: "#888", fontSize: 13 }}>
               {teacher?.paymentType === "lecture_based"
@@ -165,7 +165,7 @@ export default function MbcsTeacherPayrollHistory() {
             <Statistic
               title="Total Paid"
               value={`৳${totalPaid.toLocaleString()}`}
-              valueStyle={{ color: "#2e7d32" }}
+              styles={{ content: { color: "#2e7d32" } }}
             />
           </Col>
           <Col span={8}>

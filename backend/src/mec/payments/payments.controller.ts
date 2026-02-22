@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { MecPaymentsService } from './payments.service';
 import { CreateMecPaymentDto } from './dto/create-payment.dto';
+import { CreateMecMultiPaymentDto } from './dto/create-multi-payment.dto';
 import { UpdateMecPaymentDto } from './dto/update-payment.dto';
 import { FilterMecPaymentDto } from './dto/filter-payment.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -34,6 +35,19 @@ export class MecPaymentsController {
     @CurrentUser() user: JwtUser,
   ) {
     return this.paymentsService.create(createPaymentDto, user.id);
+  }
+
+  @Post('multi')
+  createMulti(
+    @Body() dto: CreateMecMultiPaymentDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.paymentsService.createMulti(dto, user.id);
+  }
+
+  @Get('invoice/:invoiceNumber')
+  findByInvoice(@Param('invoiceNumber') invoiceNumber: string) {
+    return this.paymentsService.findByInvoice(invoiceNumber);
   }
 
   @Get()

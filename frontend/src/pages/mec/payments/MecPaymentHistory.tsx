@@ -43,6 +43,16 @@ interface StudentStatus {
   isAvailable: boolean;
 }
 
+interface GroupedMecPayment {
+  invoiceNumber: string;
+  student: MecPayment["student"];
+  paymentMonths: string[];
+  totalAmount: number;
+  paymentMethod: string;
+  paymentDate: string;
+  ids: string[];
+}
+
 export default function MecPaymentHistory() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({
@@ -67,6 +77,27 @@ export default function MecPaymentHistory() {
       }),
   });
   const allPayments: MecPayment[] = (paymentsData as any)?.data || [];
+
+  const groupedMecPayments = useMemo((): GroupedMecPayment[] => {
+    const groups: Record<string, GroupedMecPayment> = {};
+    allPayments.forEach((p: MecPayment) => {
+      if (!groups[p.invoiceNumber]) {
+        groups[p.invoiceNumber] = {
+          invoiceNumber: p.invoiceNumber,
+          student: p.student,
+          paymentMonths: [],
+          totalAmount: 0,
+          paymentMethod: p.paymentMethod,
+          paymentDate: p.paymentDate,
+          ids: [],
+        };
+      }
+      groups[p.invoiceNumber].paymentMonths.push(p.paymentMonth);
+      groups[p.invoiceNumber].totalAmount += p.amount;
+      groups[p.invoiceNumber].ids.push(p.id);
+    });
+    return Object.values(groups);
+  }, [allPayments]);
 
   // Cross-reference: every student × payments for selected month
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -187,7 +218,7 @@ export default function MecPaymentHistory() {
             size="small"
             icon={<FilePdfOutlined />}
             onClick={() =>
-              navigate(`/mec/payments/${record.payment!.id}/invoice`)
+              navigate(`/mec/payments/invoice/${encodeURIComponent(record.payment!.invoiceNumber)}`)
             }
           >
             View
@@ -224,18 +255,18 @@ export default function MecPaymentHistory() {
   ];
 
   // --- All Payments columns ---
-  const paymentsColumns: ColumnsType<MecPayment> = [
+  const paymentsColumns: ColumnsType<GroupedMecPayment> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
-      width: 150,
+      width: 160,
       render: (text: string) => <strong>{text}</strong>,
     },
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: MecPayment) => {
+      render: (_: unknown, record: GroupedMecPayment) => {
         const student = record.student;
         return (
           <div>
@@ -250,27 +281,32 @@ export default function MecPaymentHistory() {
       },
     },
     {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
-      width: 110,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      title: "Month(s)",
+      key: "paymentMonths",
+      render: (_: unknown, record: GroupedMecPayment) => (
+        <Space size={[4, 4]} wrap>
+          {record.paymentMonths.map((m, i) => (
+            <Tag key={i} color="blue">{dayjs(m).format("MMM YYYY")}</Tag>
+          ))}
+        </Space>
       ),
     },
     {
-      title: "Month",
-      dataIndex: "paymentMonth",
-      key: "paymentMonth",
+      title: "Total",
+      key: "totalAmount",
       width: 110,
-      render: (date: string) => (date ? dayjs(date).format("MMM YYYY") : "—"),
+      render: (_: unknown, record: GroupedMecPayment) => (
+        <strong style={{ color: "#2e7d32" }}>
+          \u09f3{record.totalAmount.toLocaleString()}
+        </strong>
+      ),
     },
     {
       title: "Date",
       dataIndex: "paymentDate",
       key: "paymentDate",
       width: 100,
-      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "—"),
+      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "\u2014"),
     },
     {
       title: "Method",
@@ -297,12 +333,16 @@ export default function MecPaymentHistory() {
       title: "Invoice",
       key: "invoice",
       width: 80,
-      render: (_: unknown, record: MecPayment) => (
+      render: (_: unknown, record: GroupedMecPayment) => (
         <Button
           type="link"
           size="small"
           icon={<FilePdfOutlined />}
-          onClick={() => navigate(`/mec/payments/${record.id}/invoice`)}
+          onClick={() =>
+            navigate(
+              `/mec/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`,
+            )
+          }
         >
           View
         </Button>
@@ -400,7 +440,7 @@ export default function MecPaymentHistory() {
             <Statistic
               title="Paid"
               value={paidCount}
-              valueStyle={{ color: "#52c41a" }}
+              styles={{ content: { color: "#52c41a" } }}
             />
           </Card>
         </Col>
@@ -409,7 +449,7 @@ export default function MecPaymentHistory() {
             <Statistic
               title="Unpaid"
               value={unpaidCount}
-              valueStyle={{ color: "#ff4d4f" }}
+              styles={{ content: { color: "#ff4d4f" } }}
             />
           </Card>
         </Col>
@@ -423,12 +463,7 @@ export default function MecPaymentHistory() {
                   : 0
               }
               suffix="%"
-              valueStyle={{
-                color:
-                  paidCount / (tuitionStatusRows.length || 1) > 0.7
-                    ? "#52c41a"
-                    : "#fa8c16",
-              }}
+              styles={{ content: { color: paidCount / (tuitionStatusRows.length || 1) > 0.7 ? "#52c41a" : "#fa8c16" } }}
             />
           </Card>
         </Col>
@@ -440,7 +475,7 @@ export default function MecPaymentHistory() {
             <Statistic
               title="Total Collected (this month)"
               value={`৳${totalCollection.toLocaleString()}`}
-              valueStyle={{ color: "#2e7d32", fontSize: 18 }}
+              styles={{ content: { color: "#2e7d32", fontSize: 18 } }}
             />
           </Card>
         </Col>
@@ -472,21 +507,21 @@ export default function MecPaymentHistory() {
           },
           {
             key: "all-payments",
-            label: `All Payments (${allPayments.length})`,
+            label: `All Payments (${groupedMecPayments.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
-                dataSource={allPayments}
-                rowKey="id"
+                dataSource={groupedMecPayments}
+                rowKey="invoiceNumber"
                 loading={loadingPayments}
                 pagination={{
                   pageSize: 15,
                   showSizeChanger: true,
-                  showTotal: (total) => `${total} records`,
+                  showTotal: (total) => `${total} invoices`,
                 }}
                 summary={(pageData) => {
                   const total = pageData.reduce(
-                    (sum, row) => sum + row.amount,
+                    (sum, row) => sum + row.totalAmount,
                     0,
                   );
                   return (

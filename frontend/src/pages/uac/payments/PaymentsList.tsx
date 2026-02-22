@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Select, Space, message, Popconfirm, Tag } from "antd";
+import { Table, Button, Select, Space, App, Popconfirm, Tag } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { paymentsService } from "../../../services/paymentsService";
@@ -13,22 +13,73 @@ import dayjs from "dayjs";
 
 const { Option } = Select;
 
+interface GroupedPayment {
+  invoiceNumber: string;
+  student: Payment["student"];
+  paymentTypes: string[];
+  totalAmount: number;
+  paymentMethod: string;
+  paymentMonth: string;
+  paymentDate: string;
+  ids: string[];
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  tuition: "blue",
+  admission: "green",
+  readmission: "cyan",
+  exam: "orange",
+  sheet: "purple",
+  session_charge: "magenta",
+  study_materials: "geekblue",
+  study_tour: "lime",
+  other: "default",
+};
+
+const METHOD_COLORS: Record<string, string> = {
+  cash: "green",
+  bkash: "pink",
+  nagad: "orange",
+  bank_transfer: "blue",
+};
+
 export default function PaymentsList() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterPaymentDto>({});
 
-  // Fetch payments with filters
   const { data, isLoading } = useQuery({
     queryKey: ["payments", filters],
     queryFn: () => paymentsService.getAll(filters),
   });
 
-  const payments = (data as any)?.data || [];
+  const groupedPayments = useMemo((): GroupedPayment[] => {
+    const payments: Payment[] = (data as unknown as { data?: Payment[] })?.data || [];
+    const groups: Record<string, GroupedPayment> = {};
+    payments.forEach((p: Payment) => {
+      if (!groups[p.invoiceNumber]) {
+        groups[p.invoiceNumber] = {
+          invoiceNumber: p.invoiceNumber,
+          student: p.student,
+          paymentTypes: [],
+          totalAmount: 0,
+          paymentMethod: p.paymentMethod,
+          paymentMonth: p.paymentMonth,
+          paymentDate: p.paymentDate,
+          ids: [],
+        };
+      }
+      groups[p.invoiceNumber].paymentTypes.push(p.paymentType);
+      groups[p.invoiceNumber].totalAmount += p.amount;
+      groups[p.invoiceNumber].ids.push(p.id);
+    });
+    return Object.values(groups);
+  }, [data]);
 
-  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => paymentsService.delete(id),
+    mutationFn: (ids: string[]) =>
+      Promise.all(ids.map((id) => paymentsService.delete(id))),
     onSuccess: () => {
       message.success("Payment deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -38,95 +89,67 @@ export default function PaymentsList() {
     },
   });
 
-  const getPaymentTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      tuition: "blue",
-      admission: "green",
-      readmission: "cyan",
-      exam: "orange",
-      sheet: "purple",
-      session_charge: "magenta",
-      study_materials: "geekblue",
-      study_tour: "lime",
-      other: "default",
-    };
-    return colors[type] || "default";
-  };
-
-  const getPaymentMethodColor = (method: string) => {
-    const colors: Record<string, string> = {
-      cash: "green",
-      bkash: "pink",
-      nagad: "orange",
-      bank_transfer: "blue",
-    };
-    return colors[method] || "default";
-  };
-
-  const formatPaymentType = (type: string) => {
-    return type.replace(/_/g, " ").toUpperCase();
-  };
-
-  const columns: ColumnsType<Payment> = [
+  const columns: ColumnsType<GroupedPayment> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
-      width: 140,
+      width: 160,
       render: (text: string) => <strong>{text}</strong>,
     },
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: Payment) => (
+      render: (_: unknown, record: GroupedPayment) => (
         <div>
-          <div>
-            <strong>{record.student?.name}</strong>
-          </div>
-          <div style={{ fontSize: 12, color: "#888" }}>
-            Class {record.student?.class}
-          </div>
+          <div><strong>{record.student?.name}</strong></div>
+          <div style={{ fontSize: 12, color: "#888" }}>Class {record.student?.class}</div>
         </div>
       ),
     },
     {
-      title: "Payment Type",
-      dataIndex: "paymentType",
-      key: "paymentType",
-      width: 140,
-      render: (type: string) => (
-        <Tag color={getPaymentTypeColor(type)}>{formatPaymentType(type)}</Tag>
+      title: "Payment Types",
+      key: "paymentTypes",
+      render: (_: unknown, record: GroupedPayment) => (
+        <Space size={[4, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
+      title: "Total",
+      key: "totalAmount",
       width: 120,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      render: (_: unknown, record: GroupedPayment) => (
+        <strong style={{ color: "#2e7d32" }}>
+          ৳{record.totalAmount.toLocaleString()}
+        </strong>
       ),
     },
     {
-      title: "Payment Method",
+      title: "Method",
       dataIndex: "paymentMethod",
       key: "paymentMethod",
       width: 130,
       render: (method: string) => (
-        <Tag color={getPaymentMethodColor(method)}>
+        <Tag color={METHOD_COLORS[method] || "default"}>
           {method.replace(/_/g, " ").toUpperCase()}
         </Tag>
       ),
     },
     {
-      title: "Payment Month",
+      title: "Month",
       dataIndex: "paymentMonth",
       key: "paymentMonth",
-      width: 130,
-      render: (date: string) => (date ? dayjs(date).format("MMMM YYYY") : "-"),
+      width: 120,
+      render: (date: string) => (date ? dayjs(date).format("MMM YYYY") : "-"),
     },
     {
-      title: "Payment Date",
+      title: "Date",
       dataIndex: "paymentDate",
       key: "paymentDate",
       width: 110,
@@ -136,16 +159,20 @@ export default function PaymentsList() {
       title: "Actions",
       key: "actions",
       width: 100,
-      render: (_: unknown, record: Payment) => (
+      render: (_: unknown, record: GroupedPayment) => (
         <Space>
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/uac/payments/${record.id}/invoice`)}
+            onClick={() =>
+              navigate(
+                `/uac/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`,
+              )
+            }
           />
           <Popconfirm
-            title="Are you sure to delete this payment?"
-            onConfirm={() => deleteMutation.mutate(record.id)}
+            title="Delete all payments in this invoice?"
+            onConfirm={() => deleteMutation.mutate(record.ids)}
             okText="Yes"
             cancelText="No"
           >
@@ -215,15 +242,16 @@ export default function PaymentsList() {
 
       <Table
         columns={columns}
-        dataSource={payments}
-        rowKey="id"
+        dataSource={groupedPayments}
+        rowKey="invoiceNumber"
         loading={isLoading}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,
-          showTotal: (total) => `Total ${total} payments`,
+          showTotal: (total) => `Total ${total} invoices`,
         }}
       />
     </div>
   );
 }
+
