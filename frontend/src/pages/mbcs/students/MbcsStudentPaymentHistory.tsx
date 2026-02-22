@@ -55,6 +55,11 @@ export default function MbcsStudentPaymentHistory() {
       .map((p) => dayjs(p.paymentMonth).format("YYYY-MM")),
   );
 
+  // Admission month key — months before this are "N/A" (student not yet enrolled)
+  const admissionMonthKey = student?.admissionDate
+    ? dayjs(student.admissionDate).format("YYYY-MM")
+    : null;
+
   const columns: ColumnsType<MbcsPayment> = [
     {
       title: "Invoice",
@@ -183,7 +188,25 @@ export default function MbcsStudentPaymentHistory() {
         <Row gutter={[8, 8]}>
           {MONTHS.map((month, idx) => {
             const monthKey = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
-            const isPaid = paidMonths.has(monthKey);
+            const isBeforeAdmission =
+              admissionMonthKey !== null && monthKey < admissionMonthKey;
+            const isPaid = !isBeforeAdmission && paidMonths.has(monthKey);
+            const bg = isBeforeAdmission
+              ? "#f5f5f5"
+              : isPaid
+                ? "#f6ffed"
+                : "#fff2f0";
+            const borderColor = isBeforeAdmission
+              ? "#d9d9d9"
+              : isPaid
+                ? "#b7eb8f"
+                : "#ffccc7";
+            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : "Unpaid";
+            const tagColor = isBeforeAdmission
+              ? "default"
+              : isPaid
+                ? "success"
+                : "error";
             return (
               <Col span={4} key={monthKey}>
                 <div
@@ -191,19 +214,16 @@ export default function MbcsStudentPaymentHistory() {
                     padding: "8px 12px",
                     textAlign: "center",
                     borderRadius: 6,
-                    background: isPaid ? "#f6ffed" : "#fff2f0",
-                    border: `1px solid ${isPaid ? "#b7eb8f" : "#ffccc7"}`,
+                    background: bg,
+                    border: `1px solid ${borderColor}`,
                     fontSize: 12,
                   }}
                 >
                   <div style={{ fontWeight: 600, marginBottom: 2 }}>
                     {month.slice(0, 3)}
                   </div>
-                  <Tag
-                    color={isPaid ? "success" : "error"}
-                    style={{ margin: 0 }}
-                  >
-                    {isPaid ? "Paid" : "Unpaid"}
+                  <Tag color={tagColor} style={{ margin: 0 }}>
+                    {tagText}
                   </Tag>
                 </div>
               </Col>

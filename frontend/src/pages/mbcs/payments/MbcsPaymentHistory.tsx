@@ -57,6 +57,7 @@ interface StudentStatus {
   student: MbcsStudent;
   payment?: MbcsPayment;
   isPaid: boolean;
+  isAvailable: boolean;
 }
 
 export default function MbcsPaymentHistory() {
@@ -101,19 +102,29 @@ export default function MbcsPaymentHistory() {
     if (filters.shiftFilter)
       students = students.filter((s) => s.shift === filters.shiftFilter);
 
-    const rows: StudentStatus[] = students.map((student) => ({
-      student,
-      payment: tuitionPayments.find((p) => p.studentId === student.id),
-      isPaid: paidStudentIds.has(student.id),
-    }));
+    const rows: StudentStatus[] = students.map((student) => {
+      const admMonth = student.admissionDate
+        ? dayjs(student.admissionDate).format("YYYY-MM")
+        : null;
+      const isAvailable = admMonth === null || admMonth <= monthStr;
+      return {
+        student,
+        payment: tuitionPayments.find((p) => p.studentId === student.id),
+        isPaid: isAvailable && paidStudentIds.has(student.id),
+        isAvailable,
+      };
+    });
 
     if (filters.statusFilter === "paid") return rows.filter((r) => r.isPaid);
-    if (filters.statusFilter === "unpaid") return rows.filter((r) => !r.isPaid);
+    if (filters.statusFilter === "unpaid")
+      return rows.filter((r) => r.isAvailable && !r.isPaid);
     return rows;
   }, [allStudents, allPayments, filters]);
 
   const paidCount = tuitionStatusRows.filter((r) => r.isPaid).length;
-  const unpaidCount = tuitionStatusRows.filter((r) => !r.isPaid).length;
+  const unpaidCount = tuitionStatusRows.filter(
+    (r) => r.isAvailable && !r.isPaid,
+  ).length;
 
   const statusColumns: ColumnsType<StudentStatus> = [
     {
@@ -146,7 +157,9 @@ export default function MbcsPaymentHistory() {
       key: "status",
       width: 100,
       render: (_: unknown, record: StudentStatus) =>
-        record.isPaid ? (
+        !record.isAvailable ? (
+          <Tag color="default">N/A</Tag>
+        ) : record.isPaid ? (
           <Tag icon={<CheckCircleOutlined />} color="success">
             Paid
           </Tag>
@@ -201,7 +214,7 @@ export default function MbcsPaymentHistory() {
       key: "action",
       width: 130,
       render: (_: unknown, record: StudentStatus) =>
-        !record.isPaid ? (
+        !record.isAvailable ? null : !record.isPaid ? (
           <Button
             type="primary"
             size="small"
