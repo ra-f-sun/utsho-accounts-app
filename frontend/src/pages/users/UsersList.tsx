@@ -18,7 +18,7 @@ function UsersList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading, error } = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: usersService.getAll,
   });
@@ -153,6 +153,13 @@ function UsersList() {
 
   return (
     <div>
+      {error && (
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ color: "red" }}>
+            Error loading users: {(error as Error).message}
+          </div>
+        </Card>
+      )}
       <Card
         title="User Management"
         extra={

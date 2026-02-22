@@ -29,22 +29,22 @@ export interface UpdateUserDto {
 export const usersService = {
   getAll: async (): Promise<User[]> => {
     const response = await api.get("/users");
-    return response.data.data;
+    return response.data || [];
   },
 
   getById: async (id: string): Promise<User> => {
     const response = await api.get(`/users/${id}`);
-    return response.data.data;
+    return response.data;
   },
 
   create: async (data: CreateUserDto): Promise<User> => {
     const response = await api.post("/users", data);
-    return response.data.data;
+    return response.data;
   },
 
   update: async (id: string, data: UpdateUserDto): Promise<User> => {
     const response = await api.patch(`/users/${id}`, data);
-    return response.data.data;
+    return response.data;
   },
 
   delete: async (id: string): Promise<void> => {
