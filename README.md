@@ -150,7 +150,7 @@ The frontend will run on `http://localhost:5173`.
 
 ## 🔑 Default Credentials
 
-The database seeding creates the following test accounts (Password for all: `Admin@123`):
+The database seeding creates the following test accounts (Password for all: `admin123`):
 
 | Role                | Email                | Access Scope                         |
 | ------------------- | -------------------- | ------------------------------------ |
@@ -405,10 +405,12 @@ utsho-account/
 ## 🌐 API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/login` - User login
 - `GET /api/auth/me` - Get current user profile
 
 ### User Management (Super Admin Only)
+
 - `GET /api/users` - List all users
 - `POST /api/users` - Create new user
 - `GET /api/users/:id` - Get user by ID
@@ -416,12 +418,14 @@ utsho-account/
 - `DELETE /api/users/:id` - Delete user
 
 ### Analytics (Super Admin, Director, Accountants)
+
 - `GET /api/analytics/revenue-stats` - Revenue statistics
 - `GET /api/analytics/monthly-trend` - Monthly revenue trend
 - `GET /api/analytics/outstanding-payments` - Outstanding payments list
 - `GET /api/analytics/expense-breakdown` - Expense analysis
 
 ### UAC Module
+
 - Students: `/api/uac/students/*`
 - Teachers: `/api/uac/teachers/*`
 - Staff: `/api/uac/staff/*`
@@ -430,6 +434,7 @@ utsho-account/
 - Attendance: `/api/uac/teacher-attendance/*`
 
 ### MBCS Module
+
 - Students: `/api/mbcs/students/*`
 - Teachers: `/api/mbcs/teachers/*`
 - Staff: `/api/mbcs/staff/*`
@@ -438,16 +443,19 @@ utsho-account/
 - Attendance: `/api/mbcs/teacher-attendance/*`
 
 ### MEC Module
+
 - Students: `/api/mec/students/*`
 - Payments: `/api/mec/payments/*`
 
 ### Expenses
+
 - `GET /api/expenses` - List expenses
 - `POST /api/expenses` - Create expense
 - `PATCH /api/expenses/:id` - Update expense
 - `DELETE /api/expenses/:id` - Delete expense
 
 ### Health Check
+
 - `GET /api/health` - Server health status
 
 > **Note:** All endpoints (except `/auth/login` and `/health`) require JWT authentication via `Authorization: Bearer <token>` header.
@@ -459,17 +467,20 @@ utsho-account/
 ### Backend Tests
 
 Run unit tests:
+
 ```bash
 cd backend
 npm run test
 ```
 
 Run E2E tests:
+
 ```bash
 npm run test:e2e
 ```
 
 Run test coverage:
+
 ```bash
 npm run test:cov
 ```
@@ -477,6 +488,7 @@ npm run test:cov
 ### Frontend Tests
 
 Run unit tests:
+
 ```bash
 cd frontend
 npm run test
@@ -485,6 +497,7 @@ npm run test
 ### Linting
 
 Check code quality:
+
 ```bash
 # Backend
 cd backend
@@ -511,12 +524,14 @@ npm run lint
 ### Deployment Steps
 
 1. **Clone Repository on VPS**
+
    ```bash
    git clone <repository-url>
    cd utsho-account
    ```
 
 2. **Backend Deployment**
+
    ```bash
    cd backend
    npm install --production
@@ -527,6 +542,7 @@ npm run lint
    ```
 
 3. **Frontend Deployment**
+
    ```bash
    cd frontend
    npm install
@@ -535,6 +551,7 @@ npm run lint
    ```
 
 4. **Nginx Configuration**
+
    ```nginx
    server {
        listen 80;
@@ -557,6 +574,7 @@ npm run lint
    ```
 
 5. **SSL Certificate**
+
    ```bash
    sudo certbot --nginx -d your-domain.com
    ```
@@ -573,15 +591,15 @@ npm run lint
 
 ## 📊 Project Status
 
-| Phase | Status | Completion |
-|-------|--------|------------|
-| Phase 1: Foundation | ✅ Complete | 100% |
-| Phase 2: UAC Module | ✅ Complete | 100% |
-| Phase 3: MBCS Module | ✅ Complete | 100% |
-| Phase 4: MEC Module | ✅ Complete | 100% |
-| Phase 5: Analytics & Reporting | ✅ Complete | 100% |
-| Phase 6: Polish & Security | ✅ Complete | 100% |
-| **Overall Project** | ✅ **Production-Ready** | **100%** |
+| Phase                          | Status                  | Completion |
+| ------------------------------ | ----------------------- | ---------- |
+| Phase 1: Foundation            | ✅ Complete             | 100%       |
+| Phase 2: UAC Module            | ✅ Complete             | 100%       |
+| Phase 3: MBCS Module           | ✅ Complete             | 100%       |
+| Phase 4: MEC Module            | ✅ Complete             | 100%       |
+| Phase 5: Analytics & Reporting | ✅ Complete             | 100%       |
+| Phase 6: Polish & Security     | ✅ Complete             | 100%       |
+| **Overall Project**            | ✅ **Production-Ready** | **100%**   |
 
 ### What's Included
 
@@ -625,21 +643,25 @@ This is a private project for Utsho organizations. For internal contributions:
 ## 🐛 Troubleshooting
 
 ### Backend won't start
+
 - Check PostgreSQL is running: `pg_isready`
 - Verify DATABASE_URL in `.env`
 - Ensure Prisma client is generated: `npx prisma generate`
 
 ### Frontend build fails
+
 - Clear node_modules: `rm -rf node_modules && npm install`
 - Check VITE_API_URL in `.env`
 - Verify all dependencies installed
 
 ### Database connection issues
+
 - Check PostgreSQL credentials
 - Ensure database `utsho_db` exists
 - Verify firewall allows port 5432
 
 ### Authentication errors
+
 - Verify JWT_SECRET is set correctly
 - Check token expiration settings
 - Clear browser local storage and re-login
