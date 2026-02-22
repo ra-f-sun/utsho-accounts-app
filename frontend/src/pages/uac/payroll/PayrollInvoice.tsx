@@ -10,8 +10,9 @@ import {
 import { payrollService } from "../../../services/payrollService";
 import { teachersService } from "../../../services/teachersService";
 import { staffService } from "../../../services/staffService";
-import InvoiceTemplate from "../../../components/InvoiceTemplate";
-import type { InvoiceData } from "../../../components/InvoiceTemplate";
+import UacTeacherPayrollInvoice from "../../../components/invoices/UacTeacherPayrollInvoice";
+import UacStaffPayrollInvoice from "../../../components/invoices/UacStaffPayrollInvoice";
+import type { PayrollInvoiceData } from "../../../components/invoices/types";
 
 export default function PayrollInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -84,7 +85,7 @@ export default function PayrollInvoice() {
     return <div>Payroll record not found</div>;
   }
 
-  const invoiceData: InvoiceData = {
+  const invoiceData: PayrollInvoiceData = {
     invoiceNumber: payroll.invoiceNumber,
     amount: payroll.amount,
     paymentDate: payroll.paymentDate,
@@ -123,12 +124,11 @@ export default function PayrollInvoice() {
         </Space>
       </div>
 
-      <InvoiceTemplate
-        ref={invoiceRef}
-        data={invoiceData}
-        organization="uac"
-        type="payroll"
-      />
+      {payroll.payableType === "teacher" ? (
+        <UacTeacherPayrollInvoice ref={invoiceRef} data={invoiceData} />
+      ) : (
+        <UacStaffPayrollInvoice ref={invoiceRef} data={invoiceData} />
+      )}
     </div>
   );
 }

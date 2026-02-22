@@ -8,8 +8,8 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
-import InvoiceTemplate from "../../../components/InvoiceTemplate";
-import type { InvoiceData } from "../../../components/InvoiceTemplate";
+import MbcsStudentInvoice from "../../../components/invoices/MbcsStudentInvoice";
+import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
 export default function MbcsPaymentInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -64,7 +64,7 @@ export default function MbcsPaymentInvoice() {
     return <div>Payment not found</div>;
   }
 
-  const invoiceData: InvoiceData = {
+  const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: payment.invoiceNumber,
     amount: payment.amount,
     paymentDate: payment.paymentDate,
@@ -105,12 +105,7 @@ export default function MbcsPaymentInvoice() {
         </Space>
       </div>
 
-      <InvoiceTemplate
-        ref={invoiceRef}
-        data={invoiceData}
-        organization="mbcs"
-        type="payment"
-      />
+      <MbcsStudentInvoice ref={invoiceRef} data={invoiceData} />
     </div>
   );
 }

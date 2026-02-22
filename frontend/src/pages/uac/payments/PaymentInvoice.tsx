@@ -8,8 +8,8 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
-import InvoiceTemplate from "../../../components/InvoiceTemplate";
-import type { InvoiceData } from "../../../components/InvoiceTemplate";
+import UacStudentInvoice from "../../../components/invoices/UacStudentInvoice";
+import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
 export default function PaymentInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -64,7 +64,7 @@ export default function PaymentInvoice() {
     return <div>Payment not found</div>;
   }
 
-  const invoiceData: InvoiceData = {
+  const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: payment.invoiceNumber,
     amount: payment.amount,
     paymentDate: payment.paymentDate,
@@ -105,12 +105,7 @@ export default function PaymentInvoice() {
         </Space>
       </div>
 
-      <InvoiceTemplate
-        ref={invoiceRef}
-        data={invoiceData}
-        organization="uac"
-        type="payment"
-      />
+      <UacStudentInvoice ref={invoiceRef} data={invoiceData} />
     </div>
   );
 }

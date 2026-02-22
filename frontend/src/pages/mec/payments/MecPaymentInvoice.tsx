@@ -8,8 +8,8 @@ import {
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import InvoiceTemplate from "../../../components/InvoiceTemplate";
-import type { InvoiceData } from "../../../components/InvoiceTemplate";
+import MecStudentInvoice from "../../../components/invoices/MecStudentInvoice";
+import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
 export default function MecPaymentInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -64,7 +64,7 @@ export default function MecPaymentInvoice() {
     return <div>Payment not found</div>;
   }
 
-  const invoiceData: InvoiceData = {
+  const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: payment.invoiceNumber,
     amount: payment.amount,
     paymentDate: payment.paymentDate,
@@ -105,12 +105,7 @@ export default function MecPaymentInvoice() {
         </Space>
       </div>
 
-      <InvoiceTemplate
-        ref={invoiceRef}
-        data={invoiceData}
-        organization="mec"
-        type="payment"
-      />
+      <MecStudentInvoice ref={invoiceRef} data={invoiceData} />
     </div>
   );
 }

@@ -10,8 +10,9 @@ import {
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
-import InvoiceTemplate from "../../../components/InvoiceTemplate";
-import type { InvoiceData } from "../../../components/InvoiceTemplate";
+import MbcsTeacherPayrollInvoice from "../../../components/invoices/MbcsTeacherPayrollInvoice";
+import MbcsStaffPayrollInvoice from "../../../components/invoices/MbcsStaffPayrollInvoice";
+import type { PayrollInvoiceData } from "../../../components/invoices/types";
 
 export default function MbcsPayrollInvoice() {
   const { id } = useParams<{ id: string }>();
@@ -83,7 +84,7 @@ export default function MbcsPayrollInvoice() {
     return <div>Payroll record not found</div>;
   }
 
-  const invoiceData: InvoiceData = {
+  const invoiceData: PayrollInvoiceData = {
     invoiceNumber: payroll.invoiceNumber,
     amount: payroll.amount,
     paymentDate: payroll.paymentDate,
@@ -122,12 +123,11 @@ export default function MbcsPayrollInvoice() {
         </Space>
       </div>
 
-      <InvoiceTemplate
-        ref={invoiceRef}
-        data={invoiceData}
-        organization="mbcs"
-        type="payroll"
-      />
+      {payroll.payableType === "teacher" ? (
+        <MbcsTeacherPayrollInvoice ref={invoiceRef} data={invoiceData} />
+      ) : (
+        <MbcsStaffPayrollInvoice ref={invoiceRef} data={invoiceData} />
+      )}
     </div>
   );
 }
