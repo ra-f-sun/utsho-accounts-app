@@ -32,6 +32,7 @@ export default function DashboardLayout() {
     "/uac/payment-history",
     "/uac/teacher-attendance",
     "/uac/payroll",
+    "/uac/expenses",
     "/mbcs/students",
     "/mbcs/teachers",
     "/mbcs/staff",
@@ -39,10 +40,11 @@ export default function DashboardLayout() {
     "/mbcs/payment-history",
     "/mbcs/teacher-attendance",
     "/mbcs/payroll",
+    "/mbcs/expenses",
     "/mec/students",
     "/mec/payments/record",
     "/mec/payment-history",
-    "/expenses",
+    "/mec/expenses",
   ];
   const selectedKey =
     allKeys
@@ -120,6 +122,12 @@ export default function DashboardLayout() {
           label: "Payroll",
           onClick: () => navigate("/uac/payroll"),
         },
+        {
+          key: "/uac/expenses",
+          icon: <DollarOutlined />,
+          label: "Expenses",
+          onClick: () => navigate("/uac/expenses"),
+        },
       ],
       disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_UAC"].includes(
         user?.role || "",
@@ -168,6 +176,12 @@ export default function DashboardLayout() {
           label: "Payroll",
           onClick: () => navigate("/mbcs/payroll"),
         },
+        {
+          key: "/mbcs/expenses",
+          icon: <DollarOutlined />,
+          label: "Expenses",
+          onClick: () => navigate("/mbcs/expenses"),
+        },
       ],
       disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_MBCS"].includes(
         user?.role || "",
@@ -195,23 +209,16 @@ export default function DashboardLayout() {
           label: "Payment History",
           onClick: () => navigate("/mec/payment-history"),
         },
+        {
+          key: "/mec/expenses",
+          icon: <DollarOutlined />,
+          label: "Expenses",
+          onClick: () => navigate("/mec/expenses"),
+        },
       ],
       disabled: !["SUPER_ADMIN", "DIRECTOR", "ACCOUNTANT_MEC"].includes(
         user?.role || "",
       ),
-    },
-    {
-      key: "/expenses",
-      icon: <TeamOutlined />,
-      label: "Expenses",
-      onClick: () => navigate("/expenses"),
-      disabled: ![
-        "SUPER_ADMIN",
-        "DIRECTOR",
-        "ACCOUNTANT_UAC",
-        "ACCOUNTANT_MBCS",
-        "ACCOUNTANT_MEC",
-      ].includes(user?.role || ""),
     },
   ];
 

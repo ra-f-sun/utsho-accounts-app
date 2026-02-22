@@ -17,8 +17,12 @@ import PaymentsList from "./pages/uac/payments/PaymentsList";
 import RecordPayment from "./pages/uac/payments/RecordPayment";
 import PaymentInvoice from "./pages/uac/payments/PaymentInvoice";
 import UacPaymentHistory from "./pages/uac/payments/UacPaymentHistory";
-import ExpensesList from "./pages/expenses/ExpensesList";
-import AddExpense from "./pages/expenses/AddExpense";
+import UacExpensesList from "./pages/uac/expenses/UacExpensesList";
+import AddUacExpense from "./pages/uac/expenses/AddUacExpense";
+import MbcsExpensesList from "./pages/mbcs/expenses/MbcsExpensesList";
+import AddMbcsExpense from "./pages/mbcs/expenses/AddMbcsExpense";
+import MecExpensesList from "./pages/mec/expenses/MecExpensesList";
+import AddMecExpense from "./pages/mec/expenses/AddMecExpense";
 import PayrollList from "./pages/uac/payroll/PayrollList";
 import CreatePayroll from "./pages/uac/payroll/CreatePayroll";
 import PayrollInvoice from "./pages/uac/payroll/PayrollInvoice";
@@ -120,10 +124,18 @@ function App() {
                   path="uac/payment-history"
                   element={<UacPaymentHistory />}
                 />
-                {/* Shared Expenses Routes */}
-                <Route path="expenses" element={<ExpensesList />} />
-                <Route path="expenses/add" element={<AddExpense />} />
-                <Route path="expenses/edit/:id" element={<AddExpense />} />
+                {/* UAC Expenses Routes */}
+                <Route path="uac/expenses" element={<UacExpensesList />} />
+                <Route path="uac/expenses/add" element={<AddUacExpense />} />
+                <Route path="uac/expenses/edit/:id" element={<AddUacExpense />} />
+                {/* MBCS Expenses Routes */}
+                <Route path="mbcs/expenses" element={<MbcsExpensesList />} />
+                <Route path="mbcs/expenses/add" element={<AddMbcsExpense />} />
+                <Route path="mbcs/expenses/edit/:id" element={<AddMbcsExpense />} />
+                {/* MEC Expenses Routes */}
+                <Route path="mec/expenses" element={<MecExpensesList />} />
+                <Route path="mec/expenses/add" element={<AddMecExpense />} />
+                <Route path="mec/expenses/edit/:id" element={<AddMecExpense />} />
                 {/* UAC Teacher Attendance Routes */}
                 <Route
                   path="uac/teacher-attendance"

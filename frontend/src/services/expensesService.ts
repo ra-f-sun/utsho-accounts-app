@@ -1,63 +1,66 @@
 import { api } from "../lib/axios";
 
+export type Organization = "uac" | "mbcs" | "mec";
+export type ExpenseType =
+  | "rent"
+  | "electricity"
+  | "water"
+  | "internet"
+  | "salary"
+  | "other";
+export type PaymentMethod = "cash" | "bank" | "mobile";
+
 export interface Expense {
   id: string;
-  organizationId: string;
-  expenseType: string;
+  organization: Organization;
+  expenseType: ExpenseType;
   amount: number;
-  paymentMethod: "cash" | "bkash" | "nagad" | "bank_transfer";
-  description?: string;
-  date: string;
+  expenseMonth: string;
+  paymentDate: string;
+  paymentMethod: PaymentMethod;
+  notes?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateExpenseDto {
-  expenseType: string;
+  expenseType: ExpenseType;
   amount: number;
-  paymentMethod: "cash" | "bkash" | "nagad" | "bank_transfer";
-  description?: string;
-  date: string;
+  expenseMonth: string; // YYYY-MM-01
+  paymentDate: string; // YYYY-MM-DD
+  paymentMethod: PaymentMethod;
+  notes?: string;
 }
 
+/** Build the base URL for a given org's expenses endpoint */
+const orgBase = (org: Organization) => `/${org}/expenses`;
+
 export const expensesService = {
-  getAll: (search?: string) => {
+  getAll: (
+    org: Organization,
+    expenseType?: string,
+    expenseMonth?: string,
+  ) => {
     const params = new URLSearchParams();
-    if (search) params.append("search", search);
-
-    return api.get<{ success: boolean; data: Expense[] }>(
-      `/expenses?${params.toString()}`,
-    );
+    if (expenseType) params.append("expenseType", expenseType);
+    if (expenseMonth) params.append("expenseMonth", expenseMonth);
+    return api.get<Expense[]>(`${orgBase(org)}?${params.toString()}`);
   },
 
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: Expense }>(`/expenses/${id}`);
+  getOne: (org: Organization, id: string) => {
+    return api.get<Expense>(`${orgBase(org)}/${id}`);
   },
 
-  getSummary: (month: string, year: number) => {
-    return api.get<{
-      success: boolean;
-      data: {
-        total: number;
-        count: number;
-        byType: Record<string, number>;
-      };
-    }>(`/expenses/summary?month=${month}&year=${year}`);
+  create: (org: Organization, data: CreateExpenseDto) => {
+    return api.post<Expense>(orgBase(org), data);
   },
 
-  create: (data: CreateExpenseDto) => {
-    return api.post<{ success: boolean; data: Expense }>("/expenses", data);
+  update: (org: Organization, id: string, data: Partial<CreateExpenseDto>) => {
+    return api.patch<Expense>(`${orgBase(org)}/${id}`, data);
   },
 
-  update: (id: string, data: Partial<CreateExpenseDto>) => {
-    return api.patch<{ success: boolean; data: Expense }>(
-      `/expenses/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: Expense }>(`/expenses/${id}`);
+  delete: (org: Organization, id: string) => {
+    return api.delete<Expense>(`${orgBase(org)}/${id}`);
   },
 };
