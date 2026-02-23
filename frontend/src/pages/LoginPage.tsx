@@ -75,9 +75,11 @@ export default function LoginPage() {
           </Form.Item>
         </Form>
 
-        <div style={{ textAlign: "center", color: "#666", fontSize: "12px" }}>
-          <p>Test Account: admin@utsho.com / admin123</p>
-        </div>
+        {import.meta.env.DEV && (
+          <div style={{ textAlign: "center", color: "#999", fontSize: "12px" }}>
+            <p>Test Account: admin@utsho.com / admin123</p>
+          </div>
+        )}
       </Card>
     </div>
   );
