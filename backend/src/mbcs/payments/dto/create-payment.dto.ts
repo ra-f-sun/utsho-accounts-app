@@ -1,17 +1,15 @@
 import {
-  IsString,
+  IsUUID,
   IsEnum,
   IsNumber,
   IsDateString,
   IsOptional,
   Min,
-  MinLength,
 } from 'class-validator';
 
 // MBCS payment types include 'stationary' (not present in UAC)
 export class CreatePaymentDto {
-  @IsString()
-  @MinLength(1)
+  @IsUUID()
   studentId: string;
 
   @IsEnum([

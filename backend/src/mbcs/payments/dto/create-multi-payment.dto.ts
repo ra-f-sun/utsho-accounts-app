@@ -1,5 +1,5 @@
 import {
-  IsString,
+  IsUUID,
   IsEnum,
   IsNumber,
   IsDateString,
@@ -38,7 +38,7 @@ export class MbcsPaymentLineItemDto {
 }
 
 export class CreateMbcsMultiPaymentDto {
-  @IsString()
+  @IsUUID()
   studentId: string;
 
   @IsDateString()
