@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsQueryDto, Organization } from './dto/analytics-query.dto';
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-const dayjs = require('dayjs');
+import dayjs from 'dayjs';
 
 export interface RevenueStats {
   organization: string;
@@ -54,11 +54,7 @@ export class AnalyticsService {
 
     if (filters.organization) {
       // Single organization stats
-      return this.getOrgRevenueStats(
-        filters.organization,
-        startDate,
-        endDate,
-      );
+      return this.getOrgRevenueStats(filters.organization, startDate, endDate);
     } else {
       // All organizations stats
       const [uacStats, mbcsStats, mecStats] = await Promise.all([
@@ -144,16 +140,13 @@ export class AnalyticsService {
       ? new Date(filters.endDate)
       : dayjs().endOf('year').toDate();
 
-    const where: any = {
+    const where: Prisma.ExpenseWhereInput = {
       paymentDate: {
         gte: startDate,
         lte: endDate,
       },
+      ...(filters.organization ? { organization: filters.organization } : {}),
     };
-
-    if (filters.organization) {
-      where.organization = filters.organization;
-    }
 
     const expenses = await this.prisma.expense.groupBy({
       by: ['expenseType', 'organization'],
@@ -191,8 +184,7 @@ export class AnalyticsService {
       teacherPayroll,
       staffPayroll,
       expenses,
-      netRevenue:
-        studentPayments - (teacherPayroll + staffPayroll + expenses),
+      netRevenue: studentPayments - (teacherPayroll + staffPayroll + expenses),
     };
   }
 
@@ -200,7 +192,7 @@ export class AnalyticsService {
     org: Organization | undefined,
     monthStart: Date,
     monthEnd: Date,
-  ) {
+  ): Promise<Omit<MonthlyRevenue, 'month'>> {
     if (org) {
       const [studentPayments, teacherPayroll, staffPayroll, expenses] =
         await Promise.all([
@@ -231,8 +223,7 @@ export class AnalyticsService {
           uac.studentPayments + mbcs.studentPayments + mec.studentPayments,
         teacherPayroll:
           uac.teacherPayroll + mbcs.teacherPayroll + mec.teacherPayroll,
-        staffPayroll:
-          uac.staffPayroll + mbcs.staffPayroll + mec.staffPayroll,
+        staffPayroll: uac.staffPayroll + mbcs.staffPayroll + mec.staffPayroll,
         expenses: uac.expenses + mbcs.expenses + mec.expenses,
         netRevenue: uac.netRevenue + mbcs.netRevenue + mec.netRevenue,
       };
@@ -286,7 +277,7 @@ export class AnalyticsService {
         gte: startDate,
         lte: endDate,
       },
-      payableType: 'teacher' as any,
+      payableType: 'teacher',
     };
 
     let total = 0;
@@ -318,7 +309,7 @@ export class AnalyticsService {
         gte: startDate,
         lte: endDate,
       },
-      payableType: 'staff' as any,
+      payableType: 'staff',
     };
 
     let total = 0;
@@ -362,7 +353,6 @@ export class AnalyticsService {
   private async getOrgOutstandingPayments(
     org: Organization,
   ): Promise<OutstandingPayment[]> {
-    const currentMonth = dayjs().startOf('month').toDate();
     const outstanding: OutstandingPayment[] = [];
 
     if (org === Organization.UAC) {
@@ -370,7 +360,8 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
-            orderBy: { paymentDate: 'desc' },
+            where: { paymentType: 'tuition' },
+            orderBy: { paymentMonth: 'desc' },
             take: 1,
           },
         },
@@ -384,7 +375,9 @@ export class AnalyticsService {
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
-          : dayjs().diff(dayjs(student.admissionDate), 'month') + 1;
+          : student.admissionDate
+            ? dayjs().diff(dayjs(student.admissionDate), 'month') + 1
+            : dayjs().diff(dayjs(student.createdAt), 'month') + 1;
 
         if (unpaidMonths > 0) {
           outstanding.push({
@@ -408,7 +401,8 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
-            orderBy: { paymentDate: 'desc' },
+            where: { paymentType: 'tuition' },
+            orderBy: { paymentMonth: 'desc' },
             take: 1,
           },
         },
@@ -422,7 +416,9 @@ export class AnalyticsService {
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
-          : dayjs().diff(dayjs(student.admissionDate), 'month') + 1;
+          : student.admissionDate
+            ? dayjs().diff(dayjs(student.admissionDate), 'month') + 1
+            : dayjs().diff(dayjs(student.createdAt), 'month') + 1;
 
         if (unpaidMonths > 0) {
           outstanding.push({
@@ -446,7 +442,7 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
-            orderBy: { paymentDate: 'desc' },
+            orderBy: { paymentMonth: 'desc' },
             take: 1,
           },
         },
@@ -460,7 +456,9 @@ export class AnalyticsService {
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
-          : dayjs().diff(dayjs(student.admissionDate), 'month') + 1;
+          : student.admissionDate
+            ? dayjs().diff(dayjs(student.admissionDate), 'month') + 1
+            : dayjs().diff(dayjs(student.createdAt), 'month') + 1;
 
         if (unpaidMonths > 0) {
           outstanding.push({
