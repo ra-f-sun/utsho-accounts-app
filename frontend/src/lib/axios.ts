@@ -33,6 +33,13 @@ api.interceptors.response.use(
       useAuthStore.getState().logout();
       window.location.href = "/login";
     }
+    // Normalize validation error arrays into a single string
+    if (
+      error.response?.data?.message &&
+      Array.isArray(error.response.data.message)
+    ) {
+      error.response.data.message = error.response.data.message.join("; ");
+    }
     return Promise.reject(error);
   },
 );
