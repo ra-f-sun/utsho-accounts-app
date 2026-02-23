@@ -141,6 +141,7 @@ export class AnalyticsService {
       : dayjs().endOf('year').toDate();
 
     const where: Prisma.ExpenseWhereInput = {
+      isActive: true,
       paymentDate: {
         gte: startDate,
         lte: endDate,
@@ -236,6 +237,7 @@ export class AnalyticsService {
     endDate: Date,
   ): Promise<number> {
     const where = {
+      isActive: true,
       paymentDate: {
         gte: startDate,
         lte: endDate,
@@ -273,6 +275,7 @@ export class AnalyticsService {
     endDate: Date,
   ): Promise<number> {
     const where = {
+      isActive: true,
       paymentDate: {
         gte: startDate,
         lte: endDate,
@@ -305,6 +308,7 @@ export class AnalyticsService {
     endDate: Date,
   ): Promise<number> {
     const where = {
+      isActive: true,
       paymentDate: {
         gte: startDate,
         lte: endDate,
@@ -339,6 +343,7 @@ export class AnalyticsService {
     const result = await this.prisma.expense.aggregate({
       where: {
         organization: org,
+        isActive: true,
         paymentDate: {
           gte: startDate,
           lte: endDate,
@@ -360,7 +365,7 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
-            where: { paymentType: 'tuition' },
+            where: { paymentType: 'tuition', isActive: true },
             orderBy: { paymentMonth: 'desc' },
             take: 1,
           },
@@ -401,7 +406,7 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
-            where: { paymentType: 'tuition' },
+            where: { paymentType: 'tuition', isActive: true },
             orderBy: { paymentMonth: 'desc' },
             take: 1,
           },
@@ -442,6 +447,7 @@ export class AnalyticsService {
         where: { isActive: true },
         include: {
           payments: {
+            where: { isActive: true },
             orderBy: { paymentMonth: 'desc' },
             take: 1,
           },

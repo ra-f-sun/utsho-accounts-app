@@ -75,7 +75,7 @@ export class PayrollService {
     payableId?: string,
     paymentMonth?: string,
   ) {
-    const where: Prisma.UacPayrollWhereInput = {};
+    const where: Prisma.UacPayrollWhereInput = { isActive: true };
 
     if (payableType) {
       where.payableType = payableType;
@@ -96,8 +96,8 @@ export class PayrollService {
   }
 
   async findOne(id: string) {
-    const payroll = await this.prisma.uacPayroll.findUnique({
-      where: { id },
+    const payroll = await this.prisma.uacPayroll.findFirst({
+      where: { id, isActive: true },
     });
 
     if (!payroll) {
@@ -129,9 +129,9 @@ export class PayrollService {
     // Check if payroll exists
     await this.findOne(id);
 
-    // Hard delete (no isActive field)
-    return this.prisma.uacPayroll.delete({
+    return this.prisma.uacPayroll.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 
@@ -189,6 +189,7 @@ export class PayrollService {
         payableType,
         payableId,
         paymentMonth: new Date(paymentMonth),
+        isActive: true,
       },
     });
 

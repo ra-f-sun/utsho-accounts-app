@@ -70,7 +70,7 @@ export class PayrollService {
     payableId?: string,
     paymentMonth?: string,
   ) {
-    const where: Prisma.MbcsPayrollWhereInput = {};
+    const where: Prisma.MbcsPayrollWhereInput = { isActive: true };
 
     if (payableType) where.payableType = payableType;
     if (payableId) where.payableId = payableId;
@@ -83,7 +83,9 @@ export class PayrollService {
   }
 
   async findOne(id: string) {
-    const payroll = await this.prisma.mbcsPayroll.findUnique({ where: { id } });
+    const payroll = await this.prisma.mbcsPayroll.findFirst({
+      where: { id, isActive: true },
+    });
 
     if (!payroll) {
       throw new NotFoundException(`Payroll record with ID ${id} not found`);
@@ -108,7 +110,10 @@ export class PayrollService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.mbcsPayroll.delete({ where: { id } });
+    return this.prisma.mbcsPayroll.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 
   async calculateTeacherPayroll(teacherId: string, month: string) {
@@ -158,6 +163,7 @@ export class PayrollService {
         payableType,
         payableId,
         paymentMonth: new Date(paymentMonth),
+        isActive: true,
       },
     });
 

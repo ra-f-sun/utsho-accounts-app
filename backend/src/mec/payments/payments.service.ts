@@ -55,7 +55,7 @@ export class MecPaymentsService {
   }
 
   async findAll(filters?: FilterMecPaymentDto) {
-    const where: Prisma.MecPaymentWhereInput = {};
+    const where: Prisma.MecPaymentWhereInput = { isActive: true };
 
     if (filters?.studentId) {
       where.studentId = filters.studentId;
@@ -86,8 +86,8 @@ export class MecPaymentsService {
   }
 
   async findOne(id: string) {
-    const payment = await this.prisma.mecPayment.findUnique({
-      where: { id },
+    const payment = await this.prisma.mecPayment.findFirst({
+      where: { id, isActive: true },
       include: { student: true },
     });
 
@@ -120,7 +120,10 @@ export class MecPaymentsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.mecPayment.delete({ where: { id } });
+    return this.prisma.mecPayment.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 
   async createMulti(dto: CreateMecMultiPaymentDto, createdBy: string) {
@@ -162,7 +165,7 @@ export class MecPaymentsService {
 
   async findByInvoice(invoiceNumber: string) {
     const payments = await this.prisma.mecPayment.findMany({
-      where: { invoiceNumber },
+      where: { invoiceNumber, isActive: true },
       include: {
         student: {
           select: {
@@ -185,7 +188,7 @@ export class MecPaymentsService {
 
   async getStudentPaymentSummary(studentId: string) {
     const payments = await this.prisma.mecPayment.findMany({
-      where: { studentId },
+      where: { studentId, isActive: true },
       orderBy: { paymentDate: 'desc' },
     });
 

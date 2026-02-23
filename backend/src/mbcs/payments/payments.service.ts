@@ -54,7 +54,7 @@ export class PaymentsService {
   }
 
   async findAll(filters?: FilterPaymentDto) {
-    const where: Prisma.MbcsPaymentWhereInput = {};
+    const where: Prisma.MbcsPaymentWhereInput = { isActive: true };
 
     if (filters?.studentId) {
       where.studentId = filters.studentId;
@@ -90,8 +90,8 @@ export class PaymentsService {
   }
 
   async findOne(id: string) {
-    const payment = await this.prisma.mbcsPayment.findUnique({
-      where: { id },
+    const payment = await this.prisma.mbcsPayment.findFirst({
+      where: { id, isActive: true },
       include: { student: true },
     });
 
@@ -118,7 +118,10 @@ export class PaymentsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.mbcsPayment.delete({ where: { id } });
+    return this.prisma.mbcsPayment.update({
+      where: { id },
+      data: { isActive: false },
+    });
   }
 
   async createMulti(dto: CreateMbcsMultiPaymentDto, createdBy: string) {
@@ -161,7 +164,7 @@ export class PaymentsService {
 
   async findByInvoice(invoiceNumber: string) {
     const payments = await this.prisma.mbcsPayment.findMany({
-      where: { invoiceNumber },
+      where: { invoiceNumber, isActive: true },
       include: {
         student: {
           select: {
@@ -185,7 +188,7 @@ export class PaymentsService {
 
   async getStudentPaymentSummary(studentId: string) {
     const payments = await this.prisma.mbcsPayment.findMany({
-      where: { studentId },
+      where: { studentId, isActive: true },
       orderBy: { paymentDate: 'desc' },
     });
 

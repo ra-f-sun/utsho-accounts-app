@@ -127,6 +127,8 @@ model UacPayment {
   notes         String? // Description when paymentType is 'other'
   createdBy     String // FK → users.id (audit trail)
   createdAt     DateTime   @default(now())
+  isActive      Boolean    @default(true)
+  updatedAt     DateTime   @updatedAt
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
@@ -161,6 +163,8 @@ model UacPayroll {
   notes         String?
   createdBy     String // FK → users.id (audit trail)
   createdAt     DateTime @default(now())
+  isActive      Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 
   @@index([payableType, payableId, paymentMonth])
   @@map("uac_payroll")
@@ -259,6 +263,8 @@ model MbcsPayment {
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime    @default(now())
+  isActive      Boolean     @default(true)
+  updatedAt     DateTime    @updatedAt
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
@@ -293,6 +299,8 @@ model MbcsPayroll {
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime @default(now())
+  isActive      Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 
   @@index([payableType, payableId, paymentMonth])
   @@map("mbcs_payroll")
@@ -359,6 +367,8 @@ model MecPayment {
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime   @default(now())
+  isActive      Boolean    @default(true)
+  updatedAt     DateTime   @updatedAt
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
@@ -381,6 +391,8 @@ model Expense {
   notes         String?
   createdBy     String // FK → users.id
   createdAt     DateTime @default(now())
+  isActive      Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 
   @@index([organization, expenseMonth])
   @@map("expenses")

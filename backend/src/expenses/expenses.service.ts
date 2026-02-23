@@ -24,7 +24,7 @@ export class ExpensesService {
     expenseType?: string,
     expenseMonth?: string,
   ) {
-    const where: Prisma.ExpenseWhereInput = {};
+    const where: Prisma.ExpenseWhereInput = { isActive: true };
 
     if (organization) {
       where.organization = organization;
@@ -45,8 +45,8 @@ export class ExpensesService {
   }
 
   async findOne(id: string) {
-    const expense = await this.prisma.expense.findUnique({
-      where: { id },
+    const expense = await this.prisma.expense.findFirst({
+      where: { id, isActive: true },
     });
 
     if (!expense) {
@@ -57,7 +57,9 @@ export class ExpensesService {
   }
 
   async findOneForOrg(id: string, organization: string) {
-    const expense = await this.prisma.expense.findUnique({ where: { id } });
+    const expense = await this.prisma.expense.findFirst({
+      where: { id, isActive: true },
+    });
     if (!expense) {
       throw new NotFoundException(`Expense with ID ${id} not found`);
     }
@@ -91,9 +93,9 @@ export class ExpensesService {
     // Check if expense exists
     await this.findOne(id);
 
-    // Hard delete (no isActive field)
-    return this.prisma.expense.delete({
+    return this.prisma.expense.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 
@@ -108,6 +110,7 @@ export class ExpensesService {
     const expenses = await this.prisma.expense.findMany({
       where: {
         organization,
+        isActive: true,
         expenseMonth: {
           gte: startDate,
           lte: endDate,

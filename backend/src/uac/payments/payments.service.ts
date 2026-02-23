@@ -55,7 +55,7 @@ export class PaymentsService {
   }
 
   async findAll(filters?: FilterPaymentDto) {
-    const where: Prisma.UacPaymentWhereInput = {};
+    const where: Prisma.UacPaymentWhereInput = { isActive: true };
 
     if (filters?.studentId) {
       where.studentId = filters.studentId;
@@ -91,8 +91,8 @@ export class PaymentsService {
   }
 
   async findOne(id: string) {
-    const payment = await this.prisma.uacPayment.findUnique({
-      where: { id },
+    const payment = await this.prisma.uacPayment.findFirst({
+      where: { id, isActive: true },
       include: {
         student: true,
       },
@@ -129,10 +129,9 @@ export class PaymentsService {
     // Check if payment exists
     await this.findOne(id);
 
-    // Hard delete for payments (as per schema - no isActive field)
-    // In production, consider adding isActive field for soft delete
-    return this.prisma.uacPayment.delete({
+    return this.prisma.uacPayment.update({
       where: { id },
+      data: { isActive: false },
     });
   }
 
@@ -176,7 +175,7 @@ export class PaymentsService {
 
   async findByInvoice(invoiceNumber: string) {
     const payments = await this.prisma.uacPayment.findMany({
-      where: { invoiceNumber },
+      where: { invoiceNumber, isActive: true },
       include: {
         student: {
           select: {
@@ -203,7 +202,7 @@ export class PaymentsService {
    */
   async getStudentPaymentSummary(studentId: string) {
     const payments = await this.prisma.uacPayment.findMany({
-      where: { studentId },
+      where: { studentId, isActive: true },
       orderBy: { paymentDate: 'desc' },
     });
 

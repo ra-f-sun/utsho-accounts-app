@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsDateString,
   IsOptional,
+  IsString,
   IsArray,
   ValidateNested,
   ArrayMinSize,
