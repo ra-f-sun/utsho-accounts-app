@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UacPayment, MbcsPayment, MecPayment } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsQueryDto, Organization } from './dto/analytics-query.dto';
 import dayjs from 'dayjs';
@@ -373,10 +373,9 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
+        const payments = student.payments as UacPayment[];
         const lastPaymentMonth =
-          student.payments.length > 0
-            ? dayjs(student.payments[0].paymentMonth)
-            : null;
+          payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
@@ -395,9 +394,7 @@ export class AnalyticsService {
             monthlyFee: student.monthlyTuitionFee,
             unpaidMonths,
             lastPaymentDate:
-              student.payments.length > 0
-                ? student.payments[0].paymentDate
-                : undefined,
+              payments.length > 0 ? payments[0].paymentDate : undefined,
           });
         }
       }
@@ -414,10 +411,9 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
+        const payments = student.payments as MbcsPayment[];
         const lastPaymentMonth =
-          student.payments.length > 0
-            ? dayjs(student.payments[0].paymentMonth)
-            : null;
+          payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
@@ -436,9 +432,7 @@ export class AnalyticsService {
             monthlyFee: student.monthlyTuitionFee,
             unpaidMonths,
             lastPaymentDate:
-              student.payments.length > 0
-                ? student.payments[0].paymentDate
-                : undefined,
+              payments.length > 0 ? payments[0].paymentDate : undefined,
           });
         }
       }
@@ -455,10 +449,9 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
+        const payments = student.payments as MecPayment[];
         const lastPaymentMonth =
-          student.payments.length > 0
-            ? dayjs(student.payments[0].paymentMonth)
-            : null;
+          payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 
         const unpaidMonths = lastPaymentMonth
           ? dayjs().diff(lastPaymentMonth, 'month')
@@ -477,9 +470,7 @@ export class AnalyticsService {
             monthlyFee: student.monthlyTuitionFee,
             unpaidMonths,
             lastPaymentDate:
-              student.payments.length > 0
-                ? student.payments[0].paymentDate
-                : undefined,
+              payments.length > 0 ? payments[0].paymentDate : undefined,
           });
         }
       }
