@@ -57,15 +57,17 @@ export class MecExpensesController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExpenseDto: UpdateExpenseDto,
   ) {
+    await this.expensesService.findOneForOrg(id, 'mec');
     return this.expensesService.update(id, updateExpenseDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.expensesService.findOneForOrg(id, 'mec');
     return this.expensesService.remove(id);
   }
 }

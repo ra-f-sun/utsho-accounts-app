@@ -57,15 +57,17 @@ export class MbcsExpensesController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateExpenseDto: UpdateExpenseDto,
   ) {
+    await this.expensesService.findOneForOrg(id, 'mbcs');
     return this.expensesService.update(id, updateExpenseDto);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.expensesService.findOneForOrg(id, 'mbcs');
     return this.expensesService.remove(id);
   }
 }

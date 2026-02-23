@@ -22,13 +22,7 @@ import { Role } from '@prisma/client';
 
 @Controller('expenses')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles(
-  Role.SUPER_ADMIN,
-  Role.DIRECTOR,
-  Role.ACCOUNTANT_UAC,
-  Role.ACCOUNTANT_MBCS,
-  Role.ACCOUNTANT_MEC,
-)
+@Roles(Role.SUPER_ADMIN, Role.DIRECTOR)
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 

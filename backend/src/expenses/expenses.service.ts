@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
@@ -53,6 +53,19 @@ export class ExpensesService {
       throw new NotFoundException(`Expense with ID ${id} not found`);
     }
 
+    return expense;
+  }
+
+  async findOneForOrg(id: string, organization: string) {
+    const expense = await this.prisma.expense.findUnique({ where: { id } });
+    if (!expense) {
+      throw new NotFoundException(`Expense with ID ${id} not found`);
+    }
+    if (expense.organization !== organization) {
+      throw new ForbiddenException(
+        `This expense does not belong to ${organization.toUpperCase()}`,
+      );
+    }
     return expense;
   }
 
