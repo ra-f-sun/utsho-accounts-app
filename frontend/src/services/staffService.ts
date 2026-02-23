@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface Staff {
   id: string;
@@ -19,31 +19,16 @@ export interface CreateStaffDto {
 }
 
 export const staffService = {
-  getAll: (search?: string) => {
+  getAll: (search?: string, page = 1, limit = 20): Promise<PaginatedResponse<Staff>> => {
     const params = new URLSearchParams();
     if (search) params.append("search", search);
-
-    return api.get<{ success: boolean; data: Staff[] }>(
-      `/uac/staff?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/uac/staff?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: Staff }>(`/uac/staff/${id}`);
-  },
-
-  create: (data: CreateStaffDto) => {
-    return api.post<{ success: boolean; data: Staff }>("/uac/staff", data);
-  },
-
-  update: (id: string, data: Partial<CreateStaffDto>) => {
-    return api.patch<{ success: boolean; data: Staff }>(
-      `/uac/staff/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: Staff }>(`/uac/staff/${id}`);
-  },
+  getOne: (id: string) => apiGet<Staff>(`/uac/staff/${id}`),
+  create: (data: CreateStaffDto) => apiPost<Staff>("/uac/staff", data),
+  update: (id: string, data: Partial<CreateStaffDto>) =>
+    apiPatch<Staff>(`/uac/staff/${id}`, data),
+  delete: (id: string) => apiDelete<Staff>(`/uac/staff/${id}`),
 };

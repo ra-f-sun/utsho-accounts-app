@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface MbcsPayment {
   id: string;
@@ -66,7 +66,7 @@ export const MBCS_PAYMENT_TYPES = [
 ];
 
 export const mbcsPaymentsService = {
-  getAll: (filters?: FilterMbcsPaymentDto) => {
+  getAll: (filters?: FilterMbcsPaymentDto, page = 1, limit = 20): Promise<PaginatedResponse<MbcsPayment>> => {
     const params = new URLSearchParams();
     if (filters?.studentId) params.append("studentId", filters.studentId);
     if (filters?.paymentType) params.append("paymentType", filters.paymentType);
@@ -74,60 +74,22 @@ export const mbcsPaymentsService = {
       params.append("paymentMonth", filters.paymentMonth);
     if (filters?.paymentMethod)
       params.append("paymentMethod", filters.paymentMethod);
-
-    return api.get<{ success: boolean; data: MbcsPayment[] }>(
-      `/mbcs/payments?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/mbcs/payments?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: MbcsPayment }>(
-      `/mbcs/payments/${id}`,
-    );
-  },
-
-  getStudentSummary: (studentId: string) => {
-    return api.get<{
-      success: boolean;
-      data: {
-        studentId: string;
-        totalPaid: number;
-        paymentCount: number;
-        payments: MbcsPayment[];
-      };
-    }>(`/mbcs/payments/student/${studentId}/summary`);
-  },
-
-  create: (data: CreateMbcsPaymentDto) => {
-    return api.post<{ success: boolean; data: MbcsPayment }>(
-      "/mbcs/payments",
-      data,
-    );
-  },
-
-  createMulti: (data: CreateMbcsMultiPaymentDto) => {
-    return api.post<{ success: boolean; data: { invoiceNumber: string; payments: MbcsPayment[] } }>(
-      "/mbcs/payments/multi",
-      data,
-    );
-  },
-
-  getByInvoice: (invoiceNumber: string) => {
-    return api.get<{ success: boolean; data: MbcsPayment[] }>(
-      `/mbcs/payments/invoice/${invoiceNumber}`,
-    );
-  },
-
-  update: (id: string, data: Partial<CreateMbcsPaymentDto>) => {
-    return api.patch<{ success: boolean; data: MbcsPayment }>(
-      `/mbcs/payments/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: MbcsPayment }>(
-      `/mbcs/payments/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<MbcsPayment>(`/mbcs/payments/${id}`),
+  getStudentSummary: (studentId: string) =>
+    apiGet<{ studentId: string; totalPaid: number; paymentCount: number; payments: MbcsPayment[] }>(
+      `/mbcs/payments/student/${studentId}/summary`,
+    ),
+  create: (data: CreateMbcsPaymentDto) =>
+    apiPost<MbcsPayment>("/mbcs/payments", data),
+  createMulti: (data: CreateMbcsMultiPaymentDto) =>
+    apiPost<{ invoiceNumber: string; payments: MbcsPayment[] }>("/mbcs/payments/multi", data),
+  getByInvoice: (invoiceNumber: string) =>
+    apiGet<MbcsPayment[]>(`/mbcs/payments/invoice/${invoiceNumber}`),
+  update: (id: string, data: Partial<CreateMbcsPaymentDto>) =>
+    apiPatch<MbcsPayment>(`/mbcs/payments/${id}`, data),
+  delete: (id: string) => apiDelete<MbcsPayment>(`/mbcs/payments/${id}`),
 };

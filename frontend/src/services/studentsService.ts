@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface Student {
   id: string;
@@ -72,36 +72,19 @@ export interface FilterStudentDto {
 }
 
 export const studentsService = {
-  getAll: (filters?: FilterStudentDto) => {
+  getAll: (filters?: FilterStudentDto, page = 1, limit = 20): Promise<PaginatedResponse<Student>> => {
     const params = new URLSearchParams();
     if (filters?.class) params.append("class", filters.class.toString());
     if (filters?.group) params.append("group", filters.group);
     if (filters?.school) params.append("school", filters.school);
     if (filters?.search) params.append("search", filters.search);
-
-    return api.get<{ success: boolean; data: Student[] }>(
-      `/uac/students?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/uac/students?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: Student }>(`/uac/students/${id}`);
-  },
-
-  create: (data: CreateStudentDto) => {
-    return api.post<{ success: boolean; data: Student }>("/uac/students", data);
-  },
-
-  update: (id: string, data: Partial<CreateStudentDto>) => {
-    return api.patch<{ success: boolean; data: Student }>(
-      `/uac/students/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: Student }>(
-      `/uac/students/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<Student>(`/uac/students/${id}`),
+  create: (data: CreateStudentDto) => apiPost<Student>("/uac/students", data),
+  update: (id: string, data: Partial<CreateStudentDto>) =>
+    apiPatch<Student>(`/uac/students/${id}`, data),
+  delete: (id: string) => apiDelete<Student>(`/uac/students/${id}`),
 };

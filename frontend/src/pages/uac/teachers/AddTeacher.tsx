@@ -37,7 +37,7 @@ export default function AddTeacher() {
 
   useEffect(() => {
     if (existingData) {
-      const teacher = (existingData as any)?.data;
+      const teacher = existingData?.data;
       if (teacher) {
         form.setFieldsValue(teacher);
         setPaymentType(teacher.paymentType || "fixed");

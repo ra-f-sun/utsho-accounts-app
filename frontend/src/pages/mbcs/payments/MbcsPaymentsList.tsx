@@ -13,6 +13,7 @@ import type {
 } from "../../../services/mbcsPaymentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -52,13 +53,13 @@ export default function MbcsPaymentsList() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterMbcsPaymentDto>({});
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["mbcs-payments", filters],
-    queryFn: () => mbcsPaymentsService.getAll(filters),
+    queryFn: () => mbcsPaymentsService.getAll(filters, 1, 1000),
   });
 
   const groupedPayments = useMemo((): GroupedMbcsPayment[] => {
-    const payments: MbcsPayment[] = (data as unknown as { data?: MbcsPayment[] })?.data || [];
+    const payments: MbcsPayment[] = data?.data?.data || [];
     const groups: Record<string, GroupedMbcsPayment> = {};
     payments.forEach((p: MbcsPayment) => {
       if (!groups[p.invoiceNumber]) {
@@ -180,12 +181,14 @@ export default function MbcsPaymentsList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
     },
   ];
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   return (
     <div>

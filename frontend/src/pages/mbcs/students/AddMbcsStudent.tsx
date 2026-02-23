@@ -36,7 +36,7 @@ export default function AddMbcsStudent() {
 
   useEffect(() => {
     if (existingData) {
-      const student = (existingData as any).data;
+      const student = existingData?.data;
       form.setFieldsValue({
         ...student,
         dateOfBirth: student.dateOfBirth

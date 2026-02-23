@@ -24,7 +24,7 @@ export class CreateExpenseDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bank', 'mobile'])
+  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
   paymentMethod: string;
 
   @IsOptional()

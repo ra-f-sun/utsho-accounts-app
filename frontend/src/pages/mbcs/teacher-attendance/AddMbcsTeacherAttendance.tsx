@@ -26,10 +26,10 @@ export default function AddMbcsTeacherAttendance() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs-teachers"],
-    queryFn: () => mbcsTeachersService.getAll(),
+    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = (teachersData as any)?.data || [];
+  const teachers = teachersData?.data?.data || [];
   const lectureBased = teachers.filter(
     (t: any) => t.paymentType === "lecture_based",
   );

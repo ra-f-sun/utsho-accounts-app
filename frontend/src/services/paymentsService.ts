@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface Payment {
   id: string;
@@ -66,7 +66,7 @@ export const UAC_PAYMENT_TYPES = [
 ];
 
 export const paymentsService = {
-  getAll: (filters?: FilterPaymentDto) => {
+  getAll: (filters?: FilterPaymentDto, page = 1, limit = 20): Promise<PaginatedResponse<Payment>> => {
     const params = new URLSearchParams();
     if (filters?.studentId) params.append("studentId", filters.studentId);
     if (filters?.paymentType) params.append("paymentType", filters.paymentType);
@@ -74,55 +74,21 @@ export const paymentsService = {
       params.append("paymentMonth", filters.paymentMonth);
     if (filters?.paymentMethod)
       params.append("paymentMethod", filters.paymentMethod);
-
-    return api.get<{ success: boolean; data: Payment[] }>(
-      `/uac/payments?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/uac/payments?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: Payment }>(`/uac/payments/${id}`);
-  },
-
-  getStudentSummary: (studentId: string) => {
-    return api.get<{
-      success: boolean;
-      data: {
-        studentId: string;
-        totalPaid: number;
-        paymentCount: number;
-        payments: Payment[];
-      };
-    }>(`/uac/payments/student/${studentId}/summary`);
-  },
-
-  create: (data: CreatePaymentDto) => {
-    return api.post<{ success: boolean; data: Payment }>("/uac/payments", data);
-  },
-
-  createMulti: (data: CreateMultiPaymentDto) => {
-    return api.post<{ success: boolean; data: { invoiceNumber: string; payments: Payment[] } }>(
-      "/uac/payments/multi",
-      data,
-    );
-  },
-
-  getByInvoice: (invoiceNumber: string) => {
-    return api.get<{ success: boolean; data: Payment[] }>(
-      `/uac/payments/invoice/${invoiceNumber}`,
-    );
-  },
-
-  update: (id: string, data: Partial<CreatePaymentDto>) => {
-    return api.patch<{ success: boolean; data: Payment }>(
-      `/uac/payments/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: Payment }>(
-      `/uac/payments/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<Payment>(`/uac/payments/${id}`),
+  getStudentSummary: (studentId: string) =>
+    apiGet<{ studentId: string; totalPaid: number; paymentCount: number; payments: Payment[] }>(
+      `/uac/payments/student/${studentId}/summary`,
+    ),
+  create: (data: CreatePaymentDto) => apiPost<Payment>("/uac/payments", data),
+  createMulti: (data: CreateMultiPaymentDto) =>
+    apiPost<{ invoiceNumber: string; payments: Payment[] }>("/uac/payments/multi", data),
+  getByInvoice: (invoiceNumber: string) =>
+    apiGet<Payment[]>(`/uac/payments/invoice/${invoiceNumber}`),
+  update: (id: string, data: Partial<CreatePaymentDto>) =>
+    apiPatch<Payment>(`/uac/payments/${id}`, data),
+  delete: (id: string) => apiDelete<Payment>(`/uac/payments/${id}`),
 };

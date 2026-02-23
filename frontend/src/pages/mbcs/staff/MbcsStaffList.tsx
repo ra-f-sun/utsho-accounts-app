@@ -1,21 +1,29 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Space, message, Popconfirm } from "antd";
+import { Table, Button, Space, App, Popconfirm } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { MbcsStaff } from "../../../services/mbcsStaffService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 
 export default function MbcsStaffList() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-staff"],
-    queryFn: () => mbcsStaffService.getAll(),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["mbcs-staff", page],
+    queryFn: () => mbcsStaffService.getAll(page),
   });
 
-  const staff: MbcsStaff[] = (data as any)?.data || [];
+  const staff: MbcsStaff[] = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsStaffService.delete(id),
@@ -67,7 +75,7 @@ export default function MbcsStaffList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -97,9 +105,12 @@ export default function MbcsStaffList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} staff members`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} staff members`,
         }}
       />
     </div>

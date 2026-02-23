@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface MbcsStudent {
   id: string;
@@ -74,41 +74,20 @@ export interface FilterMbcsStudentDto {
 }
 
 export const mbcsStudentsService = {
-  getAll: (filters?: FilterMbcsStudentDto) => {
+  getAll: (filters?: FilterMbcsStudentDto, page = 1, limit = 20): Promise<PaginatedResponse<MbcsStudent>> => {
     const params = new URLSearchParams();
     if (filters?.class) params.append("class", filters.class.toString());
     if (filters?.shift) params.append("shift", filters.shift);
     if (filters?.branch) params.append("branch", filters.branch);
     if (filters?.search) params.append("search", filters.search);
-
-    return api.get<{ success: boolean; data: MbcsStudent[] }>(
-      `/mbcs/students?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/mbcs/students?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: MbcsStudent }>(
-      `/mbcs/students/${id}`,
-    );
-  },
-
-  create: (data: CreateMbcsStudentDto) => {
-    return api.post<{ success: boolean; data: MbcsStudent }>(
-      "/mbcs/students",
-      data,
-    );
-  },
-
-  update: (id: string, data: Partial<CreateMbcsStudentDto>) => {
-    return api.patch<{ success: boolean; data: MbcsStudent }>(
-      `/mbcs/students/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: MbcsStudent }>(
-      `/mbcs/students/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<MbcsStudent>(`/mbcs/students/${id}`),
+  create: (data: CreateMbcsStudentDto) =>
+    apiPost<MbcsStudent>("/mbcs/students", data),
+  update: (id: string, data: Partial<CreateMbcsStudentDto>) =>
+    apiPatch<MbcsStudent>(`/mbcs/students/${id}`, data),
+  delete: (id: string) => apiDelete<MbcsStudent>(`/mbcs/students/${id}`),
 };

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Avatar, Dropdown, Typography } from "antd";
 import {
@@ -5,7 +6,6 @@ import {
   UserOutlined,
   TeamOutlined,
   LogoutOutlined,
-  SettingOutlined,
   DollarOutlined,
   HistoryOutlined,
   WalletOutlined,
@@ -59,6 +59,13 @@ export default function DashboardLayout() {
       : pathname.startsWith("/mec")
         ? ["mec"]
         : [];
+
+  // Controlled open keys — updates when route changes
+  const [currentOpenKeys, setCurrentOpenKeys] = useState<string[]>(openKeys);
+
+  useEffect(() => {
+    setCurrentOpenKeys(openKeys);
+  }, [pathname]);
 
   const handleLogout = () => {
     logout();
@@ -224,19 +231,6 @@ export default function DashboardLayout() {
 
   const userMenuItems = [
     {
-      key: "profile",
-      icon: <UserOutlined />,
-      label: "Profile",
-    },
-    {
-      key: "settings",
-      icon: <SettingOutlined />,
-      label: "Settings",
-    },
-    {
-      type: "divider" as const,
-    },
-    {
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Logout",
@@ -270,7 +264,8 @@ export default function DashboardLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          defaultOpenKeys={openKeys}
+          openKeys={currentOpenKeys}
+          onOpenChange={(keys) => setCurrentOpenKeys(keys)}
           items={menuItems}
         />
       </Sider>

@@ -6,7 +6,7 @@ import {
   Input,
   Select,
   Space,
-  message,
+  App,
   Popconfirm,
   Tag,
 } from "antd";
@@ -24,21 +24,30 @@ import type {
   FilterTeacherDto,
 } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
+import { useDebouncedValue } from "../../../utils/useDebouncedValue";
 
 const { Option } = Select;
 
 export default function TeachersList() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterTeacherDto>({});
+  const [searchText, setSearchText] = useState("");
+  const debouncedSearch = useDebouncedValue(searchText, 300);
+  const [page, setPage] = useState(1);
 
   // Fetch teachers with filters
-  const { data, isLoading } = useQuery({
-    queryKey: ["teachers", filters],
-    queryFn: () => teachersService.getAll(filters),
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["teachers", { ...filters, search: debouncedSearch || undefined }, page],
+    queryFn: () => teachersService.getAll({ ...filters, search: debouncedSearch || undefined }, page),
   });
 
-  const teachers = (data as any)?.data || [];
+  const teachers = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -116,7 +125,7 @@ export default function TeachersList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -137,12 +146,8 @@ export default function TeachersList() {
             placeholder="Search by name or contact"
             prefix={<SearchOutlined />}
             style={{ width: 250 }}
-            onChange={(e) =>
-              setFilters((prev) => ({
-                ...prev,
-                search: e.target.value || undefined,
-              }))
-            }
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
             allowClear
           />
           <Select
@@ -175,9 +180,12 @@ export default function TeachersList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} teachers`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} teachers`,
         }}
       />
     </div>

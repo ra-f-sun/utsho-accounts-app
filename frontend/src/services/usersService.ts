@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface User {
   id: string;
@@ -27,27 +27,11 @@ export interface UpdateUserDto {
 }
 
 export const usersService = {
-  getAll: async (): Promise<User[]> => {
-    const response = await api.get("/users");
-    return response.data || [];
-  },
-
-  getById: async (id: string): Promise<User> => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
-  },
-
-  create: async (data: CreateUserDto): Promise<User> => {
-    const response = await api.post("/users", data);
-    return response.data;
-  },
-
-  update: async (id: string, data: UpdateUserDto): Promise<User> => {
-    const response = await api.patch(`/users/${id}`, data);
-    return response.data;
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/users/${id}`);
-  },
+  getAll: (page = 1, limit = 20): Promise<PaginatedResponse<User>> =>
+    apiGet(`/users?page=${page}&limit=${limit}`),
+  getById: (id: string) => apiGet<User>(`/users/${id}`),
+  create: (data: CreateUserDto) => apiPost<User>("/users", data),
+  update: (id: string, data: UpdateUserDto) =>
+    apiPatch<User>(`/users/${id}`, data),
+  delete: (id: string) => apiDelete<void>(`/users/${id}`),
 };

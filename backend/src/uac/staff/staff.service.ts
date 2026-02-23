@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class StaffService {
@@ -14,7 +15,7 @@ export class StaffService {
     });
   }
 
-  async findAll(search?: string) {
+  async findAll(search?: string, pagination?: PaginationDto) {
     const where: Prisma.UacStaffWhereInput = {
       isActive: true,
     };
@@ -28,10 +29,21 @@ export class StaffService {
       ];
     }
 
-    return this.prisma.uacStaff.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.uacStaff.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.uacStaff.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

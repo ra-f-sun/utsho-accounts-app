@@ -12,6 +12,7 @@ import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecPayment } from "../../../services/mecPaymentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
 
 const MONTHS = [
@@ -41,13 +42,13 @@ export default function MecStudentPaymentHistory() {
 
   const student = (studentData as { data: MecStudent })?.data;
 
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mec-payments", { studentId: id }],
-    queryFn: () => mecPaymentsService.getAll({ studentId: id }),
+    queryFn: () => mecPaymentsService.getAll({ studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
-  const payments: MecPayment[] = (paymentsData as { data: MecPayment[] })?.data || [];
+  const payments: MecPayment[] = paymentsData?.data?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
   // Build paid months set for current year
@@ -117,6 +118,8 @@ export default function MecStudentPaymentHistory() {
       ),
     },
   ];
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   if (loadingStudent) {
     return (

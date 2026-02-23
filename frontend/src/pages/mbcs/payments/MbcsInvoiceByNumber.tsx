@@ -23,7 +23,7 @@ export default function MbcsInvoiceByNumber() {
     enabled: !!invoiceNumber,
   });
 
-  const payments: MbcsPayment[] = (data as any)?.data || [];
+  const payments: MbcsPayment[] = data?.data || [];
 
   const handlePrint = () => {
     const content = invoiceRef.current;

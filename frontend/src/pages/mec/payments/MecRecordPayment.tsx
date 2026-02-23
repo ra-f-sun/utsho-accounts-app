@@ -42,10 +42,10 @@ export default function MecRecordPayment() {
   // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["mec-students"],
-    queryFn: () => mecStudentsService.getAll(),
+    queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
   });
 
-  const allStudents: MecStudent[] = (studentsData as any)?.data || [];
+  const allStudents: MecStudent[] = studentsData?.data?.data || [];
 
   // Auto-populate from URL ?studentId=
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function MecRecordPayment() {
     mutationFn: (data: CreateMecMultiPaymentDto) =>
       mecPaymentsService.createMulti(data),
     onSuccess: (response) => {
-      const invoice = (response as any)?.data?.invoiceNumber;
+      const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["mec-payment-history"] });
@@ -75,7 +75,13 @@ export default function MecRecordPayment() {
       setSelectedStudentId(undefined);
       form.resetFields();
     },
-    onError: () => message.error("Failed to record payment"),
+    onError: (err: any) => {
+      if (err?.response?.status === 409) {
+        message.error(err.response.data?.message || "Duplicate payment detected");
+      } else {
+        message.error("Failed to record payment");
+      }
+    },
   });
 
   const onFinish = (values: any) => {

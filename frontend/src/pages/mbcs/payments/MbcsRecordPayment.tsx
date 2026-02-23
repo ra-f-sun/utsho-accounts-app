@@ -49,10 +49,10 @@ export default function MbcsRecordPayment() {
   // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["mbcs-students"],
-    queryFn: () => mbcsStudentsService.getAll(),
+    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
   });
 
-  const allStudents: MbcsStudent[] = (studentsData as any)?.data || [];
+  const allStudents: MbcsStudent[] = studentsData?.data?.data || [];
 
   // Derive unique classes and shifts
   const availableClasses = useMemo(
@@ -110,7 +110,7 @@ export default function MbcsRecordPayment() {
     mutationFn: (data: CreateMbcsMultiPaymentDto) =>
       mbcsPaymentsService.createMulti(data),
     onSuccess: (response) => {
-      const invoice = (response as any)?.data?.invoiceNumber;
+      const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["mbcs-payments"] });
@@ -118,7 +118,13 @@ export default function MbcsRecordPayment() {
       form.resetFields();
       setSelectedStudentId(undefined);
     },
-    onError: () => message.error("Failed to record payment"),
+    onError: (err: any) => {
+      if (err?.response?.status === 409) {
+        message.error(err.response.data?.message || "Duplicate payment detected");
+      } else {
+        message.error("Failed to record payment");
+      }
+    },
   });
 
   const onFinish = (values: any) => {
@@ -278,8 +284,9 @@ export default function MbcsRecordPayment() {
               >
                 <Select placeholder="Select payment method">
                   <Option value="cash">Cash</Option>
-                  <Option value="bank">Bank</Option>
-                  <Option value="mobile">Mobile Banking</Option>
+                  <Option value="bkash">bKash</Option>
+                  <Option value="nagad">Nagad</Option>
+                  <Option value="bank_transfer">Bank Transfer</Option>
                 </Select>
               </Form.Item>
             </Col>

@@ -13,6 +13,7 @@ import {
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -39,11 +40,13 @@ export class ExpensesController {
     @Query('organization') organization?: string,
     @Query('expenseType') expenseType?: string,
     @Query('expenseMonth') expenseMonth?: string,
+    @Query() pagination?: PaginationDto,
   ) {
     return this.expensesService.findAll(
       organization,
       expenseType,
       expenseMonth,
+      pagination,
     );
   }
 

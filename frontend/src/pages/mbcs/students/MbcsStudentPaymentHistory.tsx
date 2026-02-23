@@ -10,6 +10,7 @@ import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsPayment } from "../../../services/mbcsPaymentsService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
 
 const MONTHS = [
@@ -37,15 +38,15 @@ export default function MbcsStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const student = (studentData as any)?.data;
+  const student = studentData?.data;
 
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mbcs-payments", { studentId: id }],
-    queryFn: () => mbcsPaymentsService.getAll({ studentId: id }),
+    queryFn: () => mbcsPaymentsService.getAll({ studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
-  const payments: MbcsPayment[] = (paymentsData as any)?.data || [];
+  const payments: MbcsPayment[] = paymentsData?.data?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
   const currentYear = new Date().getFullYear();
@@ -122,6 +123,8 @@ export default function MbcsStudentPaymentHistory() {
       ),
     },
   ];
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   if (loadingStudent) {
     return (

@@ -16,6 +16,7 @@ import { payrollService } from "../../../services/payrollService";
 import type { Payroll } from "../../../services/payrollService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -26,14 +27,18 @@ export default function PayrollList() {
     payableType?: string;
     paymentMonth?: string;
   }>({});
+  const [page, setPage] = useState(1);
 
   // Fetch payroll with filters
-  const { data, isLoading } = useQuery({
-    queryKey: ["payroll", filters],
-    queryFn: () => payrollService.getAll(filters),
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["payroll", filters, page],
+    queryFn: () => payrollService.getAll(filters, page),
   });
 
-  const payrolls: Payroll[] = (data as any)?.data || [];
+  const payrolls: Payroll[] = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -129,7 +134,7 @@ export default function PayrollList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -189,9 +194,12 @@ export default function PayrollList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} payroll records`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} payroll records`,
         }}
       />
     </div>

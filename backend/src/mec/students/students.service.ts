@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMecStudentDto } from './dto/create-student.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
 import { FilterMecStudentDto } from './dto/filter-student.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class MecStudentsService {
@@ -21,7 +22,7 @@ export class MecStudentsService {
     return this.prisma.mecStudent.create({ data });
   }
 
-  async findAll(filters?: FilterMecStudentDto) {
+  async findAll(filters?: FilterMecStudentDto, pagination?: PaginationDto) {
     const where: Prisma.MecStudentWhereInput = {
       isActive: true,
     };
@@ -38,10 +39,21 @@ export class MecStudentsService {
       ];
     }
 
-    return this.prisma.mecStudent.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.mecStudent.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mecStudent.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

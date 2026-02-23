@@ -33,17 +33,17 @@ export default function TeacherAttendanceList() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["teachers"],
-    queryFn: () => teachersService.getAll(),
+    queryFn: () => teachersService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = (teachersData as any)?.data || [];
+  const teachers = teachersData?.data?.data || [];
 
   const { data, isLoading } = useQuery({
     queryKey: ["teacher-attendance", filters],
     queryFn: () => teacherAttendanceService.getAll(filters),
   });
 
-  const attendances: TeacherAttendance[] = (data as any)?.data || [];
+  const attendances: TeacherAttendance[] = data?.data || [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => teacherAttendanceService.delete(id),
@@ -111,7 +111,7 @@ export default function TeacherAttendanceList() {
           okText="Yes"
           cancelText="No"
         >
-          <Button type="link" danger icon={<DeleteOutlined />} />
+          <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
         </Popconfirm>
       ),
     },

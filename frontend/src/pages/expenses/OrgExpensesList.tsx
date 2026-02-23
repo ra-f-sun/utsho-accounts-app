@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Space, message, Popconfirm, Tag, Select } from "antd";
+import { Table, Button, Space, App, Popconfirm, Tag, Select } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -11,6 +11,7 @@ import type { Expense, Organization } from "../../services/expensesService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { useState } from "react";
+import QueryError from "../../components/QueryError";
 
 const { Option } = Select;
 
@@ -36,18 +37,24 @@ interface Props {
 }
 
 export default function OrgExpensesList({ org, basePath, title }: Props) {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [expenseTypeFilter, setExpenseTypeFilter] = useState<
     string | undefined
   >(undefined);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["expenses", org, expenseTypeFilter],
-    queryFn: () => expensesService.getAll(org, expenseTypeFilter),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["expenses", org, expenseTypeFilter, page],
+    queryFn: () => expensesService.getAll(org, expenseTypeFilter, undefined, page),
   });
 
-  const expenses: Expense[] = data?.data ?? [];
+  const expenses: Expense[] = data?.data?.data ?? [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => expensesService.delete(org, id),
@@ -127,7 +134,7 @@ export default function OrgExpensesList({ org, basePath, title }: Props) {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -175,9 +182,12 @@ export default function OrgExpensesList({ org, basePath, title }: Props) {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} expenses`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} expenses`,
         }}
       />
     </div>

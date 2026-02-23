@@ -13,6 +13,7 @@ import {
 import { PayrollService } from './payroll.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
 import { UpdatePayrollDto } from './dto/update-payroll.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -40,8 +41,9 @@ export class PayrollController {
     @Query('payableType') payableType?: string,
     @Query('payableId') payableId?: string,
     @Query('paymentMonth') paymentMonth?: string,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.payrollService.findAll(payableType, payableId, paymentMonth);
+    return this.payrollService.findAll(payableType, payableId, paymentMonth, pagination);
   }
 
   @Get('calculate/teacher/:teacherId/:month')

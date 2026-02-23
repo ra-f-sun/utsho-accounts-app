@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { CreateMecPaymentDto } from './dto/create-payment.dto';
 import { UpdateMecPaymentDto } from './dto/update-payment.dto';
 import { FilterMecPaymentDto } from './dto/filter-payment.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { CreateMecMultiPaymentDto } from './dto/create-multi-payment.dto';
 
 @Injectable()
@@ -54,7 +55,7 @@ export class MecPaymentsService {
     });
   }
 
-  async findAll(filters?: FilterMecPaymentDto) {
+  async findAll(filters?: FilterMecPaymentDto, pagination?: PaginationDto) {
     const where: Prisma.MecPaymentWhereInput = { isActive: true };
 
     if (filters?.studentId) {
@@ -69,20 +70,31 @@ export class MecPaymentsService {
       where.paymentMethod = filters.paymentMethod;
     }
 
-    return this.prisma.mecPayment.findMany({
-      where,
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            class: true,
-            contactNumber: true,
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.mecPayment.findMany({
+        where,
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              class: true,
+              contactNumber: true,
+            },
           },
         },
-      },
-      orderBy: { paymentDate: 'desc' },
-    });
+        orderBy: { paymentDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mecPayment.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {
@@ -132,6 +144,24 @@ export class MecPaymentsService {
     });
     if (!student) {
       throw new NotFoundException(`Student with ID ${dto.studentId} not found`);
+    }
+
+    // MEC payments are all tuition — check for duplicate per month
+    for (const item of dto.lineItems) {
+      if (item.paymentMonth) {
+        const existing = await this.prisma.mecPayment.findFirst({
+          where: {
+            studentId: dto.studentId,
+            paymentMonth: new Date(item.paymentMonth),
+            isActive: true,
+          },
+        });
+        if (existing) {
+          throw new ConflictException(
+            `A payment for ${item.paymentMonth} already exists for this student`,
+          );
+        }
+      }
     }
 
     const invoiceNumber =

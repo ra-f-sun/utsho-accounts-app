@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface Teacher {
   id: string;
@@ -28,34 +28,17 @@ export interface FilterTeacherDto {
 }
 
 export const teachersService = {
-  getAll: (filters?: FilterTeacherDto) => {
+  getAll: (filters?: FilterTeacherDto, page = 1, limit = 20): Promise<PaginatedResponse<Teacher>> => {
     const params = new URLSearchParams();
     if (filters?.paymentType) params.append("paymentType", filters.paymentType);
     if (filters?.search) params.append("search", filters.search);
-
-    return api.get<{ success: boolean; data: Teacher[] }>(
-      `/uac/teachers?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/uac/teachers?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: Teacher }>(`/uac/teachers/${id}`);
-  },
-
-  create: (data: CreateTeacherDto) => {
-    return api.post<{ success: boolean; data: Teacher }>("/uac/teachers", data);
-  },
-
-  update: (id: string, data: Partial<CreateTeacherDto>) => {
-    return api.patch<{ success: boolean; data: Teacher }>(
-      `/uac/teachers/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: Teacher }>(
-      `/uac/teachers/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<Teacher>(`/uac/teachers/${id}`),
+  create: (data: CreateTeacherDto) => apiPost<Teacher>("/uac/teachers", data),
+  update: (id: string, data: Partial<CreateTeacherDto>) =>
+    apiPatch<Teacher>(`/uac/teachers/${id}`, data),
+  delete: (id: string) => apiDelete<Teacher>(`/uac/teachers/${id}`),
 };

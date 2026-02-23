@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet } from "../lib/axios";
 
 export interface RevenueStats {
   organization: string;
@@ -37,21 +37,21 @@ export interface ExpenseBreakdown {
 }
 
 export interface AnalyticsFilters {
-  organization?: "uac" | "mbcs" | "mec";
-  startDate?: string; //YYYY-MM-DD
+  organization?: string; // 'uac' | 'mbcs' | 'mec'
+  startDate?: string; // YYYY-MM-DD
   endDate?: string; // YYYY-MM-DD
 }
 
 export const analyticsService = {
   getRevenueStats: (filters?: AnalyticsFilters) =>
-    api.get("/analytics/revenue", { params: filters }),
+    apiGet<RevenueStats | RevenueStats[]>("/analytics/revenue", { params: filters }),
 
   getMonthlyRevenueTrend: (filters?: AnalyticsFilters) =>
-    api.get("/analytics/revenue/trend", { params: filters }),
+    apiGet<MonthlyRevenue[]>("/analytics/revenue/trend", { params: filters }),
 
   getOutstandingPayments: (filters?: AnalyticsFilters) =>
-    api.get("/analytics/outstanding", { params: filters }),
+    apiGet<OutstandingPayment[]>("/analytics/outstanding", { params: filters }),
 
   getExpenseBreakdown: (filters?: AnalyticsFilters) =>
-    api.get("/analytics/expenses/breakdown", { params: filters }),
+    apiGet<ExpenseBreakdown[]>("/analytics/expenses/breakdown", { params: filters }),
 };

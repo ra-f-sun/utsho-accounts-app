@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Input, Space, message, Popconfirm } from "antd";
+import { Table, Button, Input, Space, App, Popconfirm } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -11,19 +11,27 @@ import { useNavigate } from "react-router-dom";
 import { staffService } from "../../../services/staffService";
 import type { Staff } from "../../../services/staffService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
+import { useDebouncedValue } from "../../../utils/useDebouncedValue";
 
 export default function StaffList() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState<string>("");
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [page, setPage] = useState(1);
 
   // Fetch staff with search
-  const { data, isLoading } = useQuery({
-    queryKey: ["staff", search],
-    queryFn: () => staffService.getAll(search || undefined),
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["staff", debouncedSearch, page],
+    queryFn: () => staffService.getAll(debouncedSearch || undefined, page),
   });
 
-  const staff = (data as any)?.data || [];
+  const staff = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -77,7 +85,7 @@ export default function StaffList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -115,9 +123,12 @@ export default function StaffList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} staff members`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} staff members`,
         }}
       />
     </div>

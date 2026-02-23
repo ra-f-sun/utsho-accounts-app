@@ -20,6 +20,7 @@ import {
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import QueryError from "../../../components/QueryError";
 import {
   mbcsPaymentsService,
   MBCS_PAYMENT_TYPES,
@@ -69,19 +70,19 @@ export default function MbcsPaymentHistory() {
 
   const { data: studentsData } = useQuery({
     queryKey: ["mbcs-students"],
-    queryFn: () => mbcsStudentsService.getAll(),
+    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: MbcsStudent[] = (studentsData as any)?.data || [];
+  const allStudents: MbcsStudent[] = studentsData?.data?.data || [];
 
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mbcs-payment-history", filters],
     queryFn: () =>
       mbcsPaymentsService.getAll({
         paymentType: filters.paymentType,
         paymentMethod: filters.paymentMethod,
-      }),
+      }, 1, 1000),
   });
-  const allPayments: MbcsPayment[] = (paymentsData as any)?.data || [];
+  const allPayments: MbcsPayment[] = paymentsData?.data?.data || [];
 
   // Cross-reference students × tuition payments for selected month
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -250,7 +251,7 @@ export default function MbcsPaymentHistory() {
       title: "Student",
       key: "student",
       render: (_: unknown, record: MbcsPayment) => {
-        const student = (record as any).student;
+        const student = record.student;
         return (
           <div>
             <strong>{student?.name}</strong>
@@ -413,6 +414,8 @@ export default function MbcsPaymentHistory() {
       </Button>
     </Space>
   );
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   return (
     <div>

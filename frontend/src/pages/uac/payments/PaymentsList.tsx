@@ -10,6 +10,7 @@ import type {
 } from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -49,13 +50,13 @@ export default function PaymentsList() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterPaymentDto>({});
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["payments", filters],
-    queryFn: () => paymentsService.getAll(filters),
+    queryFn: () => paymentsService.getAll(filters, 1, 1000),
   });
 
   const groupedPayments = useMemo((): GroupedPayment[] => {
-    const payments: Payment[] = (data as unknown as { data?: Payment[] })?.data || [];
+    const payments: Payment[] = data?.data?.data || [];
     const groups: Record<string, GroupedPayment> = {};
     payments.forEach((p: Payment) => {
       if (!groups[p.invoiceNumber]) {
@@ -176,12 +177,14 @@ export default function PaymentsList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
     },
   ];
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   return (
     <div>

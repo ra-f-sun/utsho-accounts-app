@@ -23,7 +23,7 @@ export default function MecInvoiceByNumber() {
     enabled: !!invoiceNumber,
   });
 
-  const payments: MecPayment[] = (data as any)?.data || [];
+  const payments: MecPayment[] = data?.data || [];
 
   const handlePrint = () => {
     const content = invoiceRef.current;

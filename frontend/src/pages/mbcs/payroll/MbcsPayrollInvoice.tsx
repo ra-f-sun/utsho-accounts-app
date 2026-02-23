@@ -25,7 +25,7 @@ export default function MbcsPayrollInvoice() {
     enabled: !!id,
   });
 
-  const payroll = (data as any)?.data;
+  const payroll = data?.data;
 
   const { data: teacherData } = useQuery({
     queryKey: ["mbcs-teacher", payroll?.payableId],
@@ -40,8 +40,8 @@ export default function MbcsPayrollInvoice() {
   });
 
   const payableName =
-    (teacherData as any)?.data?.name ||
-    (staffData as any)?.data?.name ||
+    teacherData?.data?.name ||
+    staffData?.data?.name ||
     payroll?.payableType;
 
   const handlePrint = () => {

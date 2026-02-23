@@ -18,10 +18,11 @@ function UsersList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: users = [], isLoading, error } = useQuery<User[]>({
+  const { data: usersResponse, isLoading, error } = useQuery({
     queryKey: ["users"],
     queryFn: usersService.getAll,
   });
+  const users: User[] = usersResponse?.data?.data || [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => usersService.delete(id),
@@ -142,7 +143,7 @@ function UsersList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending}>
               Delete
             </Button>
           </Popconfirm>
@@ -187,8 +188,8 @@ function UsersList() {
             ),
           }}
           pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
+            pageSize: 20,
+            showSizeChanger: false,
             showTotal: (total) => `Total ${total} users`,
           }}
         />

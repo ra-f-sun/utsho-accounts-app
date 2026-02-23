@@ -6,10 +6,13 @@ export class InvoiceService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Generate unique invoice number with format: {ORG_PREFIX}/{YEAR}/{SEQUENCE}
-   * Examples: UAC/2024/0001, MBCS/2024/0123, MEC/2024/0045
+   * Generate unique invoice number with format: {ORG_PREFIX}-{YEAR}-{SEQUENCE}
+   * Examples: UAC-2024-0001, MBCS-2024-0123, MEC-2024-0045
    *
-   * Uses atomic transaction to prevent duplicate invoice numbers
+   * Counter is scoped per organization per year, so each org has its
+   * own independent sequence (UAC-2024-0001 and MBCS-2024-0001 can both exist).
+   *
+   * Uses atomic transaction to prevent duplicate invoice numbers.
    */
   async generateInvoiceNumber(
     organization: 'uac' | 'mbcs' | 'mec',
@@ -19,28 +22,12 @@ export class InvoiceService {
 
     // Use transaction to atomically increment counter
     const result = await this.prisma.$transaction(async (tx) => {
-      // Get or create counter for current year
-      let counter = await tx.invoiceCounter.findUnique({
-        where: { year },
+      // Upsert counter for current year + organization
+      const counter = await tx.invoiceCounter.upsert({
+        where: { year_organization: { year, organization } },
+        create: { year, organization, sequence: 1 },
+        update: { sequence: { increment: 1 } },
       });
-
-      if (!counter) {
-        counter = await tx.invoiceCounter.create({
-          data: {
-            year,
-            sequence: 1,
-          },
-        });
-      } else {
-        counter = await tx.invoiceCounter.update({
-          where: { year },
-          data: {
-            sequence: {
-              increment: 1,
-            },
-          },
-        });
-      }
 
       return counter;
     });

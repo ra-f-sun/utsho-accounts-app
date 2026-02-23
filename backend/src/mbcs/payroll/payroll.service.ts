@@ -10,6 +10,7 @@ import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
 import { UpdatePayrollDto } from './dto/update-payroll.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class PayrollService {
@@ -69,6 +70,7 @@ export class PayrollService {
     payableType?: string,
     payableId?: string,
     paymentMonth?: string,
+    pagination?: PaginationDto,
   ) {
     const where: Prisma.MbcsPayrollWhereInput = { isActive: true };
 
@@ -76,10 +78,21 @@ export class PayrollService {
     if (payableId) where.payableId = payableId;
     if (paymentMonth) where.paymentMonth = new Date(paymentMonth);
 
-    return this.prisma.mbcsPayroll.findMany({
-      where,
-      orderBy: { paymentDate: 'desc' },
-    });
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.mbcsPayroll.findMany({
+        where,
+        orderBy: { paymentDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.mbcsPayroll.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

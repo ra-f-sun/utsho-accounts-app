@@ -20,6 +20,7 @@ import {
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import QueryError from "../../../components/QueryError";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
 import type { MecPayment } from "../../../services/mecPaymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
@@ -63,12 +64,12 @@ export default function MecPaymentHistory() {
   // Fetch all active students
   const { data: studentsData } = useQuery({
     queryKey: ["mec-students"],
-    queryFn: () => mecStudentsService.getAll(),
+    queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: MecStudent[] = (studentsData as any)?.data || [];
+  const allStudents: MecStudent[] = studentsData?.data?.data || [];
 
   // Fetch all payments with active filters
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mec-payment-history", filters],
     queryFn: () =>
       mecPaymentsService.getAll({
@@ -76,7 +77,7 @@ export default function MecPaymentHistory() {
         paymentMonth: filters.paymentMonth,
       }),
   });
-  const allPayments: MecPayment[] = (paymentsData as any)?.data || [];
+  const allPayments: MecPayment[] = paymentsData?.data?.data || [];
 
   const groupedMecPayments = useMemo((): GroupedMecPayment[] => {
     const groups: Record<string, GroupedMecPayment> = {};
@@ -422,6 +423,8 @@ export default function MecPaymentHistory() {
       </Button>
     </Space>
   );
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   return (
     <div>

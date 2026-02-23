@@ -45,7 +45,8 @@ import type {
   ExpenseBreakdown,
 } from "../services/analyticsService";
 import dayjs from "dayjs";
-import { Button, message, Dropdown } from "antd";
+import { Button, App, Dropdown } from "antd";
+import QueryError from "../components/QueryError";
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -59,6 +60,7 @@ const COLORS = {
 };
 
 export default function DashboardPage() {
+  const { message } = App.useApp();
   const user = useAuthStore((state) => state.user);
   
   // Determine if user can see all orgs
@@ -80,11 +82,11 @@ export default function DashboardPage() {
   ]);
 
   // Fetch revenue stats
-  const { data: revenueData, isLoading: loadingRevenue } = useQuery({
+  const { data: revenueData, isLoading: loadingRevenue, isError: revenueIsError, error: revenueError, refetch: refetchRevenue } = useQuery({
     queryKey: ["analytics-revenue", orgFilter, dateRange],
     queryFn: () =>
       analyticsService.getRevenueStats({
-        organization: orgFilter as any,
+        organization: orgFilter,
         startDate: dateRange[0],
         endDate: dateRange[1],
       }),
@@ -95,7 +97,7 @@ export default function DashboardPage() {
     queryKey: ["analytics-trend", orgFilter, dateRange],
     queryFn: () =>
       analyticsService.getMonthlyRevenueTrend({
-        organization: orgFilter as any,
+        organization: orgFilter,
         startDate: dateRange[0],
         endDate: dateRange[1],
       }),
@@ -106,7 +108,7 @@ export default function DashboardPage() {
     queryKey: ["analytics-outstanding", orgFilter],
     queryFn: () =>
       analyticsService.getOutstandingPayments({
-        organization: orgFilter as any,
+        organization: orgFilter,
       }),
   });
 
@@ -115,16 +117,16 @@ export default function DashboardPage() {
     queryKey: ["analytics-expenses", orgFilter, dateRange],
     queryFn: () =>
       analyticsService.getExpenseBreakdown({
-        organization: orgFilter as any,
+        organization: orgFilter,
         startDate: dateRange[0],
         endDate: dateRange[1],
       }),
   });
 
-  const revenueStats: RevenueStats | RevenueStats[] = (revenueData as any)?.data || [];
-  const monthlyTrend: MonthlyRevenue[] = (trendData as any)?.data || [];
-  const outstanding: OutstandingPayment[] = (outstandingData as any)?.data || [];
-  const expenses: ExpenseBreakdown[] = (expenseData as any)?.data || [];
+  const revenueStats: RevenueStats | RevenueStats[] = revenueData?.data || [];
+  const monthlyTrend: MonthlyRevenue[] = trendData?.data || [];
+  const outstanding: OutstandingPayment[] = outstandingData?.data || [];
+  const expenses: ExpenseBreakdown[] = expenseData?.data || [];
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -159,6 +161,8 @@ export default function DashboardPage() {
     : [{ name: orgFilter?.toUpperCase() || "Total", value: totals.studentPayments }];
 
   const loading = loadingRevenue || loadingTrend || loadingOutstanding || loadingExpense;
+
+  if (revenueIsError) return <QueryError error={revenueError as Error} onRetry={refetchRevenue} />;
 
   const outstandingColumns = [
     {

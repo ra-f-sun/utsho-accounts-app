@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { FilterTeacherDto } from './dto/filter-teacher.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class TeachersService {
@@ -38,7 +39,7 @@ export class TeachersService {
     });
   }
 
-  async findAll(filters?: FilterTeacherDto) {
+  async findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) {
     const where: Prisma.UacTeacherWhereInput = {
       isActive: true,
     };
@@ -56,10 +57,21 @@ export class TeachersService {
       ];
     }
 
-    return this.prisma.uacTeacher.findMany({
-      where,
-      orderBy: { name: 'asc' },
-    });
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.uacTeacher.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.uacTeacher.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

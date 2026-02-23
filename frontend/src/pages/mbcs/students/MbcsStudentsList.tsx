@@ -24,6 +24,7 @@ import type {
   FilterMbcsStudentDto,
 } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -31,13 +32,17 @@ export default function MbcsStudentsList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<FilterMbcsStudentDto>({});
+  const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-students", filters],
-    queryFn: () => mbcsStudentsService.getAll(filters),
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["mbcs-students", filters, page],
+    queryFn: () => mbcsStudentsService.getAll(filters, page),
   });
 
-  const students: MbcsStudent[] = (data as any)?.data || [];
+  const students: MbcsStudent[] = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsStudentsService.delete(id),
@@ -122,7 +127,7 @@ export default function MbcsStudentsList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -192,9 +197,12 @@ export default function MbcsStudentsList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} students`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} students`,
         }}
       />
     </div>

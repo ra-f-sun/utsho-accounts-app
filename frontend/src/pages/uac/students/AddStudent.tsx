@@ -36,7 +36,7 @@ export default function AddStudent() {
 
   useEffect(() => {
     if (existingData) {
-      const student = (existingData as any)?.data;
+      const student = existingData?.data;
       if (student) {
         form.setFieldsValue({
           ...student,

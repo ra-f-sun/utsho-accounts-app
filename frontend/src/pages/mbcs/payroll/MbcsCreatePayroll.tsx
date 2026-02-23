@@ -39,16 +39,16 @@ export default function MbcsCreatePayroll() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs-teachers"],
-    queryFn: () => mbcsTeachersService.getAll(),
+    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
   const { data: staffData } = useQuery({
     queryKey: ["mbcs-staff"],
-    queryFn: () => mbcsStaffService.getAll(),
+    queryFn: () => mbcsStaffService.getAll(1, 1000),
   });
 
-  const teachers = (teachersData as any)?.data || [];
-  const staff = (staffData as any)?.data || [];
+  const teachers = teachersData?.data?.data || [];
+  const staff = staffData?.data?.data || [];
 
   // Auto-populate from URL params (e.g. navigating from teacher payroll history)
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function MbcsCreatePayroll() {
     mutationFn: ({ teacherId, month }: { teacherId: string; month: string }) =>
       mbcsPayrollService.calculateTeacherPayroll(teacherId, month),
     onSuccess: (response) => {
-      const calc = (response as any)?.data;
+      const calc = response?.data;
       setCalculatedData(calc);
       form.setFieldsValue({
         amount: calc?.amount,
@@ -89,7 +89,7 @@ export default function MbcsCreatePayroll() {
   const createMutation = useMutation({
     mutationFn: (data: CreateMbcsPayrollDto) => mbcsPayrollService.create(data),
     onSuccess: (response) => {
-      const created = (response as any)?.data;
+      const created = response?.data;
       const invoice = created?.invoiceNumber;
       setCreatedPayrollId(created?.id || "");
       setInvoiceNumber(invoice);

@@ -23,7 +23,7 @@ export default function InvoiceByNumber() {
     enabled: !!invoiceNumber,
   });
 
-  const payments: Payment[] = (data as any)?.data || [];
+  const payments: Payment[] = data?.data || [];
 
   const handlePrint = () => {
     const content = invoiceRef.current;

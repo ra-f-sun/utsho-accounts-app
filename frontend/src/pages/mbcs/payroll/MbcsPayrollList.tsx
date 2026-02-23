@@ -16,6 +16,7 @@ import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import type { MbcsPayroll } from "../../../services/mbcsPayrollService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -26,13 +27,17 @@ export default function MbcsPayrollList() {
     payableType?: string;
     paymentMonth?: string;
   }>({});
+  const [page, setPage] = useState(1);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-payroll", filters],
-    queryFn: () => mbcsPayrollService.getAll(filters),
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["mbcs-payroll", filters, page],
+    queryFn: () => mbcsPayrollService.getAll(filters, page),
   });
 
-  const payrolls: MbcsPayroll[] = (data as any)?.data || [];
+  const payrolls: MbcsPayroll[] = data?.data?.data || [];
+  const total = data?.data?.total ?? 0;
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsPayrollService.delete(id),
@@ -111,7 +116,7 @@ export default function MbcsPayrollList() {
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />} />
+            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
           </Popconfirm>
         </Space>
       ),
@@ -170,9 +175,12 @@ export default function MbcsPayrollList() {
         rowKey="id"
         loading={isLoading}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} payroll records`,
+          total,
+          pageSize: 20,
+          current: page,
+          onChange: setPage,
+          showSizeChanger: false,
+          showTotal: (t) => `Total ${t} payroll records`,
         }}
       />
     </div>

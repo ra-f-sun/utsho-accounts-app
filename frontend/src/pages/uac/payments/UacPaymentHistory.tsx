@@ -26,6 +26,7 @@ import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import QueryError from "../../../components/QueryError";
 
 const { Option } = Select;
 
@@ -67,12 +68,12 @@ export default function UacPaymentHistory() {
   // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["students"],
-    queryFn: () => studentsService.getAll(),
+    queryFn: () => studentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: Student[] = (studentsData as any)?.data || [];
+  const allStudents: Student[] = studentsData?.data?.data || [];
 
   // Fetch all payments (with any active filters for the records tab)
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["uac-payment-history", filters],
     queryFn: () =>
       paymentsService.getAll({
@@ -81,7 +82,7 @@ export default function UacPaymentHistory() {
         paymentMonth: filters.paymentMonth,
       }),
   });
-  const allPayments: Payment[] = (paymentsData as any)?.data || [];
+  const allPayments: Payment[] = paymentsData?.data?.data || [];
 
   // --- Tuition Status tab: cross-reference students × payments for selected month ---
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -253,7 +254,7 @@ export default function UacPaymentHistory() {
       title: "Student",
       key: "student",
       render: (_: unknown, record: Payment) => {
-        const student = (record as any).student;
+        const student = record.student;
         return (
           <div>
             <strong>{student?.name}</strong>
@@ -421,6 +422,8 @@ export default function UacPaymentHistory() {
       </Button>
     </Space>
   );
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   return (
     <div>

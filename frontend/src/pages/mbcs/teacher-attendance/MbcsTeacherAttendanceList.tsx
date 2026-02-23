@@ -32,17 +32,17 @@ export default function MbcsTeacherAttendanceList() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs-teachers"],
-    queryFn: () => mbcsTeachersService.getAll(),
+    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = (teachersData as any)?.data || [];
+  const teachers = teachersData?.data?.data || [];
 
   const { data, isLoading } = useQuery({
     queryKey: ["mbcs-teacher-attendance", filters],
     queryFn: () => mbcsTeacherAttendanceService.getAll(filters),
   });
 
-  const attendances: MbcsTeacherAttendance[] = (data as any)?.data || [];
+  const attendances: MbcsTeacherAttendance[] = data?.data || [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsTeacherAttendanceService.delete(id),
@@ -112,7 +112,7 @@ export default function MbcsTeacherAttendanceList() {
           okText="Yes"
           cancelText="No"
         >
-          <Button type="link" danger icon={<DeleteOutlined />} />
+          <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
         </Popconfirm>
       ),
     },

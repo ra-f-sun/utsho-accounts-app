@@ -399,8 +399,10 @@ model Expense {
 }
 
 model InvoiceCounter {
-  year     Int @id
-  sequence Int @default(0)
+  year         Int
+  organization String
+  sequence     Int    @default(0)
 
+  @@id([year, organization])
   @@map("invoice_counters")
 }

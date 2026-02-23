@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Form, Input, Button, Card, message } from "antd";
+import { Form, Input, Button, Card, App } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { AxiosError } from "axios";
 import { type LoginData, authApi } from "../services/authService";
@@ -12,6 +12,7 @@ interface ApiErrorResponse {
 }
 
 export default function LoginPage() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [loading, setLoading] = useState(false);

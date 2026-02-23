@@ -10,6 +10,7 @@ import { paymentsService } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
 import type { Payment } from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
 
 const MONTHS = [
@@ -37,15 +38,15 @@ export default function StudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const student = (studentData as any)?.data;
+  const student = studentData?.data;
 
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery({
+  const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["payments", { studentId: id }],
-    queryFn: () => paymentsService.getAll({ studentId: id }),
+    queryFn: () => paymentsService.getAll({ studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
-  const payments: Payment[] = (paymentsData as any)?.data || [];
+  const payments: Payment[] = paymentsData?.data?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
   // Build paid months set for current year
@@ -131,6 +132,8 @@ export default function StudentPaymentHistory() {
       </div>
     );
   }
+
+  if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   return (
     <div>

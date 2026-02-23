@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
 import { CreateMecPaymentDto } from './create-payment.dto';
 
-export class UpdateMecPaymentDto extends PartialType(CreateMecPaymentDto) {}
+export class UpdateMecPaymentDto extends PartialType(
+  OmitType(CreateMecPaymentDto, ['studentId'] as const),
+) {}

@@ -40,17 +40,17 @@ export default function CreatePayroll() {
   // Fetch teachers
   const { data: teachersData } = useQuery({
     queryKey: ["teachers"],
-    queryFn: () => teachersService.getAll(),
+    queryFn: () => teachersService.getAll(undefined, 1, 1000),
   });
 
   // Fetch staff
   const { data: staffData } = useQuery({
     queryKey: ["staff"],
-    queryFn: () => staffService.getAll(),
+    queryFn: () => staffService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = (teachersData as any)?.data || [];
-  const staff = (staffData as any)?.data || [];
+  const teachers = teachersData?.data?.data || [];
+  const staff = staffData?.data?.data || [];
 
   // Auto-populate from URL params (e.g. navigating from teacher payroll history)
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function CreatePayroll() {
     mutationFn: ({ teacherId, month }: { teacherId: string; month: string }) =>
       payrollService.calculateTeacherPayroll(teacherId, month),
     onSuccess: (response) => {
-      const calc = (response as any)?.data;
+      const calc = response?.data;
       setCalculatedData(calc);
       form.setFieldsValue({
         amount: calc?.amount,
@@ -92,7 +92,7 @@ export default function CreatePayroll() {
   const createMutation = useMutation({
     mutationFn: (data: CreatePayrollDto) => payrollService.create(data),
     onSuccess: (response) => {
-      const created = (response as any)?.data;
+      const created = response?.data;
       const invoice = created?.invoiceNumber;
       setCreatedPayrollId(created?.id || "");
       setInvoiceNumber(invoice);

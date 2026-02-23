@@ -68,6 +68,7 @@ export class AnalyticsService {
 
   /**
    * Get monthly revenue trend (last 6 months or custom range)
+   * Optimized: uses groupBy instead of per-month aggregate loops
    */
   async getMonthlyRevenueTrend(
     filters: AnalyticsQueryDto,
@@ -79,29 +80,146 @@ export class AnalyticsService {
       ? new Date(filters.endDate)
       : dayjs().endOf('month').toDate();
 
-    const months: MonthlyRevenue[] = [];
+    const orgs = filters.organization
+      ? [filters.organization]
+      : [Organization.UAC, Organization.MBCS, Organization.MEC];
+
+    // Fetch all grouped data in parallel — one query per table
+    const [
+      uacPayments,
+      mbcsPayments,
+      mecPayments,
+      uacPayroll,
+      mbcsPayroll,
+      expenses,
+    ] = await Promise.all([
+      orgs.includes(Organization.UAC)
+        ? this.prisma.uacPayment.groupBy({
+            by: ['paymentMonth'],
+            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
+      orgs.includes(Organization.MBCS)
+        ? this.prisma.mbcsPayment.groupBy({
+            by: ['paymentMonth'],
+            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
+      orgs.includes(Organization.MEC)
+        ? this.prisma.mecPayment.groupBy({
+            by: ['paymentMonth'],
+            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
+      orgs.includes(Organization.UAC)
+        ? this.prisma.uacPayroll.groupBy({
+            by: ['paymentMonth', 'payableType'],
+            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
+      orgs.includes(Organization.MBCS)
+        ? this.prisma.mbcsPayroll.groupBy({
+            by: ['paymentMonth', 'payableType'],
+            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            _sum: { amount: true },
+          })
+        : Promise.resolve([]),
+      this.prisma.expense.groupBy({
+        by: ['expenseMonth', 'organization'],
+        where: {
+          isActive: true,
+          paymentDate: { gte: startDate, lte: endDate },
+          ...(filters.organization ? { organization: filters.organization } : {}),
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // Index grouped results by month string for O(1) lookup
+    const toMonthKey = (d: Date) => dayjs(d).format('YYYY-MM');
+
+    const uacPayMap = new Map<string, number>();
+    for (const row of uacPayments) {
+      uacPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+    }
+
+    const mbcsPayMap = new Map<string, number>();
+    for (const row of mbcsPayments) {
+      mbcsPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+    }
+
+    const mecPayMap = new Map<string, number>();
+    for (const row of mecPayments) {
+      mecPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+    }
+
+    // Payroll maps: key = "YYYY-MM:teacher" or "YYYY-MM:staff"
+    const uacPayrollMap = new Map<string, number>();
+    for (const row of uacPayroll) {
+      const k = `${toMonthKey(row.paymentMonth)}:${row.payableType}`;
+      uacPayrollMap.set(k, (row._sum.amount ?? 0));
+    }
+
+    const mbcsPayrollMap = new Map<string, number>();
+    for (const row of mbcsPayroll) {
+      const k = `${toMonthKey(row.paymentMonth)}:${row.payableType}`;
+      mbcsPayrollMap.set(k, (row._sum.amount ?? 0));
+    }
+
+    const expenseMap = new Map<string, number>();
+    for (const row of expenses) {
+      const k = `${toMonthKey(row.expenseMonth)}:${row.organization}`;
+      expenseMap.set(k, (expenseMap.get(k) ?? 0) + (row._sum.amount ?? 0));
+    }
+
+    // Build month-by-month result
+    const result: MonthlyRevenue[] = [];
     let currentMonth = dayjs(startDate);
     const end = dayjs(endDate);
 
     while (currentMonth.isBefore(end) || currentMonth.isSame(end, 'month')) {
-      const monthStart = currentMonth.startOf('month').toDate();
-      const monthEnd = currentMonth.endOf('month').toDate();
+      const m = currentMonth.format('YYYY-MM');
 
-      const monthStats = await this.getMonthRevenue(
-        filters.organization,
-        monthStart,
-        monthEnd,
-      );
+      let studentPayments = 0;
+      let teacherPayroll = 0;
+      let staffPayroll = 0;
+      let expensesTotal = 0;
 
-      months.push({
-        month: currentMonth.format('YYYY-MM'),
-        ...monthStats,
+      for (const org of orgs) {
+        if (org === Organization.UAC) {
+          studentPayments += uacPayMap.get(m) ?? 0;
+          teacherPayroll += uacPayrollMap.get(`${m}:teacher`) ?? 0;
+          staffPayroll += uacPayrollMap.get(`${m}:staff`) ?? 0;
+          expensesTotal += expenseMap.get(`${m}:${Organization.UAC}`) ?? 0;
+        } else if (org === Organization.MBCS) {
+          studentPayments += mbcsPayMap.get(m) ?? 0;
+          teacherPayroll += mbcsPayrollMap.get(`${m}:teacher`) ?? 0;
+          staffPayroll += mbcsPayrollMap.get(`${m}:staff`) ?? 0;
+          expensesTotal += expenseMap.get(`${m}:${Organization.MBCS}`) ?? 0;
+        } else if (org === Organization.MEC) {
+          studentPayments += mecPayMap.get(m) ?? 0;
+          // MEC has no payroll
+          expensesTotal += expenseMap.get(`${m}:${Organization.MEC}`) ?? 0;
+        }
+      }
+
+      result.push({
+        month: m,
+        studentPayments,
+        teacherPayroll,
+        staffPayroll,
+        expenses: expensesTotal,
+        netRevenue: studentPayments - (teacherPayroll + staffPayroll + expensesTotal),
       });
 
       currentMonth = currentMonth.add(1, 'month');
     }
 
-    return months;
+    return result;
   }
 
   /**
@@ -187,48 +305,6 @@ export class AnalyticsService {
       expenses,
       netRevenue: studentPayments - (teacherPayroll + staffPayroll + expenses),
     };
-  }
-
-  private async getMonthRevenue(
-    org: Organization | undefined,
-    monthStart: Date,
-    monthEnd: Date,
-  ): Promise<Omit<MonthlyRevenue, 'month'>> {
-    if (org) {
-      const [studentPayments, teacherPayroll, staffPayroll, expenses] =
-        await Promise.all([
-          this.getStudentPaymentsTotal(org, monthStart, monthEnd),
-          this.getTeacherPayrollTotal(org, monthStart, monthEnd),
-          this.getStaffPayrollTotal(org, monthStart, monthEnd),
-          this.getExpensesTotal(org, monthStart, monthEnd),
-        ]);
-
-      return {
-        studentPayments,
-        teacherPayroll,
-        staffPayroll,
-        expenses,
-        netRevenue:
-          studentPayments - (teacherPayroll + staffPayroll + expenses),
-      };
-    } else {
-      // All orgs combined
-      const [uac, mbcs, mec] = await Promise.all([
-        this.getMonthRevenue(Organization.UAC, monthStart, monthEnd),
-        this.getMonthRevenue(Organization.MBCS, monthStart, monthEnd),
-        this.getMonthRevenue(Organization.MEC, monthStart, monthEnd),
-      ]);
-
-      return {
-        studentPayments:
-          uac.studentPayments + mbcs.studentPayments + mec.studentPayments,
-        teacherPayroll:
-          uac.teacherPayroll + mbcs.teacherPayroll + mec.teacherPayroll,
-        staffPayroll: uac.staffPayroll + mbcs.staffPayroll + mec.staffPayroll,
-        expenses: uac.expenses + mbcs.expenses + mec.expenses,
-        netRevenue: uac.netRevenue + mbcs.netRevenue + mec.netRevenue,
-      };
-    }
   }
 
   private async getStudentPaymentsTotal(

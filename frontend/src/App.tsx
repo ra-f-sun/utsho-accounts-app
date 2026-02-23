@@ -58,6 +58,7 @@ import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
 import UsersList from "./pages/users/UsersList";
 import AddUser from "./pages/users/AddUser";
 import ErrorBoundary from "./components/ErrorBoundary";
+import NotFoundPage from "./pages/NotFoundPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -172,7 +173,7 @@ function App() {
                   <Route path="mec/expenses/edit/:id" element={<AddMecExpense />} />
                 </Route>
               </Route>
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </BrowserRouter>
         </ErrorBoundary>

@@ -49,10 +49,10 @@ export default function RecordPayment() {
   // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["students"],
-    queryFn: () => studentsService.getAll(),
+    queryFn: () => studentsService.getAll(undefined, 1, 1000),
   });
 
-  const allStudents: Student[] = (studentsData as any)?.data || [];
+  const allStudents: Student[] = studentsData?.data?.data || [];
 
   // Derive unique classes and groups from students
   const availableClasses = useMemo(
@@ -110,7 +110,7 @@ export default function RecordPayment() {
     mutationFn: (data: CreateMultiPaymentDto) =>
       paymentsService.createMulti(data),
     onSuccess: (response) => {
-      const invoice = (response as any)?.data?.invoiceNumber;
+      const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -118,8 +118,12 @@ export default function RecordPayment() {
       form.resetFields();
       setSelectedStudentId(undefined);
     },
-    onError: () => {
-      message.error("Failed to record payment");
+    onError: (err: any) => {
+      if (err?.response?.status === 409) {
+        message.error(err.response.data?.message || "Duplicate payment detected");
+      } else {
+        message.error("Failed to record payment");
+      }
     },
   });
 

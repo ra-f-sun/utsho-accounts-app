@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface MecStudent {
   id: string;
@@ -64,15 +64,21 @@ export interface CreateMecStudentDto {
 }
 
 export const mecStudentsService = {
-  getAll: (params?: { class?: number; search?: string }) =>
-    api.get("/mec/students", { params }),
+  getAll: (params?: { class?: number; search?: string }, page = 1, limit = 20): Promise<PaginatedResponse<MecStudent>> => {
+    const p = new URLSearchParams();
+    if (params?.class) p.append("class", params.class.toString());
+    if (params?.search) p.append("search", params.search);
+    p.append("page", page.toString());
+    p.append("limit", limit.toString());
+    return apiGet(`/mec/students?${p.toString()}`);
+  },
 
-  getOne: (id: string) => api.get(`/mec/students/${id}`),
+  getOne: (id: string) => apiGet<MecStudent>(`/mec/students/${id}`),
 
-  create: (data: CreateMecStudentDto) => api.post("/mec/students", data),
+  create: (data: CreateMecStudentDto) => apiPost<MecStudent>("/mec/students", data),
 
   update: (id: string, data: Partial<CreateMecStudentDto>) =>
-    api.patch(`/mec/students/${id}`, data),
+    apiPatch<MecStudent>(`/mec/students/${id}`, data),
 
-  remove: (id: string) => api.delete(`/mec/students/${id}`),
+  remove: (id: string) => apiDelete<MecStudent>(`/mec/students/${id}`),
 };

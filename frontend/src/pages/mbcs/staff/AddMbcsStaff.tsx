@@ -30,7 +30,7 @@ export default function AddMbcsStaff() {
 
   useEffect(() => {
     if (existingData) {
-      const staff = (existingData as any)?.data;
+      const staff = existingData?.data;
       if (staff) {
         form.setFieldsValue(staff);
       }

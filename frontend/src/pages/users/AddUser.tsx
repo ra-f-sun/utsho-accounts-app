@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { Form, Input, Button, Card, Select, Switch, message } from "antd";
+import { Form, Input, Button, Card, Select, Switch, App } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,6 +10,7 @@ import {
 import { useEffect } from "react";
 
 function AddUser() {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;

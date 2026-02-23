@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface MbcsTeacher {
   id: string;
@@ -23,37 +23,17 @@ export interface CreateMbcsTeacherDto {
 }
 
 export const mbcsTeachersService = {
-  getAll: (paymentType?: string) => {
+  getAll: (paymentType?: string, page = 1, limit = 20): Promise<PaginatedResponse<MbcsTeacher>> => {
     const params = new URLSearchParams();
     if (paymentType) params.append("paymentType", paymentType);
-    return api.get<{ success: boolean; data: MbcsTeacher[] }>(
-      `/mbcs/teachers?${params.toString()}`,
-    );
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/mbcs/teachers?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: MbcsTeacher }>(
-      `/mbcs/teachers/${id}`,
-    );
-  },
-
-  create: (data: CreateMbcsTeacherDto) => {
-    return api.post<{ success: boolean; data: MbcsTeacher }>(
-      "/mbcs/teachers",
-      data,
-    );
-  },
-
-  update: (id: string, data: Partial<CreateMbcsTeacherDto>) => {
-    return api.patch<{ success: boolean; data: MbcsTeacher }>(
-      `/mbcs/teachers/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete<{ success: boolean; data: MbcsTeacher }>(
-      `/mbcs/teachers/${id}`,
-    );
-  },
+  getOne: (id: string) => apiGet<MbcsTeacher>(`/mbcs/teachers/${id}`),
+  create: (data: CreateMbcsTeacherDto) =>
+    apiPost<MbcsTeacher>("/mbcs/teachers", data),
+  update: (id: string, data: Partial<CreateMbcsTeacherDto>) =>
+    apiPatch<MbcsTeacher>(`/mbcs/teachers/${id}`, data),
+  delete: (id: string) => apiDelete<MbcsTeacher>(`/mbcs/teachers/${id}`),
 };

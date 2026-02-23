@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/axios";
 
 export interface MbcsTeacherAttendance {
   id: string;
@@ -29,48 +29,18 @@ export const mbcsTeacherAttendanceService = {
     const params = new URLSearchParams();
     if (filters?.teacherId) params.append("teacherId", filters.teacherId);
     if (filters?.month) params.append("month", filters.month);
-
-    return api.get<{ success: boolean; data: MbcsTeacherAttendance[] }>(
-      `/mbcs/teacher-attendance?${params.toString()}`,
-    );
+    return apiGet<MbcsTeacherAttendance[]>(`/mbcs/teacher-attendance?${params.toString()}`);
   },
-
-  getOne: (id: string) => {
-    return api.get<{ success: boolean; data: MbcsTeacherAttendance }>(
-      `/mbcs/teacher-attendance/${id}`,
-    );
-  },
-
-  getMonthlySummary: (teacherId: string, month: string) => {
-    return api.get(`/mbcs/teacher-attendance/summary/${teacherId}/${month}`);
-  },
-
-  create: (data: CreateMbcsAttendanceDto) => {
-    return api.post<{ success: boolean; data: MbcsTeacherAttendance }>(
-      "/mbcs/teacher-attendance",
-      data,
-    );
-  },
-
-  createMonthlySummary: (data: {
-    teacherId: string;
-    month: string;
-    totalLectures: number;
-  }) => {
-    return api.post<{ success: boolean; data: MbcsTeacherAttendance }>(
-      "/mbcs/teacher-attendance/monthly-summary",
-      data,
-    );
-  },
-
-  update: (id: string, data: Partial<CreateMbcsAttendanceDto>) => {
-    return api.patch<{ success: boolean; data: MbcsTeacherAttendance }>(
-      `/mbcs/teacher-attendance/${id}`,
-      data,
-    );
-  },
-
-  delete: (id: string) => {
-    return api.delete(`/mbcs/teacher-attendance/${id}`);
-  },
+  getOne: (id: string) =>
+    apiGet<MbcsTeacherAttendance>(`/mbcs/teacher-attendance/${id}`),
+  getMonthlySummary: (teacherId: string, month: string) =>
+    apiGet<{ totalLectures: number }>(`/mbcs/teacher-attendance/summary/${teacherId}/${month}`),
+  create: (data: CreateMbcsAttendanceDto) =>
+    apiPost<MbcsTeacherAttendance>("/mbcs/teacher-attendance", data),
+  createMonthlySummary: (data: { teacherId: string; month: string; totalLectures: number }) =>
+    apiPost<MbcsTeacherAttendance>("/mbcs/teacher-attendance/monthly-summary", data),
+  update: (id: string, data: Partial<CreateMbcsAttendanceDto>) =>
+    apiPatch<MbcsTeacherAttendance>(`/mbcs/teacher-attendance/${id}`, data),
+  delete: (id: string) =>
+    apiDelete<MbcsTeacherAttendance>(`/mbcs/teacher-attendance/${id}`),
 };

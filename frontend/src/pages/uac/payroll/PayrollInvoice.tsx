@@ -25,7 +25,7 @@ export default function PayrollInvoice() {
     enabled: !!id,
   });
 
-  const payroll = (data as any)?.data;
+  const payroll = data?.data;
 
   // Fetch the teacher or staff details to show name on invoice
   const { data: teacherData } = useQuery({
@@ -41,8 +41,8 @@ export default function PayrollInvoice() {
   });
 
   const payableName =
-    (teacherData as any)?.data?.name ||
-    (staffData as any)?.data?.name ||
+    teacherData?.data?.name ||
+    staffData?.data?.name ||
     payroll?.payableType;
 
   const handlePrint = () => {

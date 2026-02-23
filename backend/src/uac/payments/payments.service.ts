@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
@@ -6,6 +6,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { FilterPaymentDto } from './dto/filter-payment.dto';
 import { CreateMultiPaymentDto } from './dto/create-multi-payment.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -54,7 +55,7 @@ export class PaymentsService {
     });
   }
 
-  async findAll(filters?: FilterPaymentDto) {
+  async findAll(filters?: FilterPaymentDto, pagination?: PaginationDto) {
     const where: Prisma.UacPaymentWhereInput = { isActive: true };
 
     if (filters?.studentId) {
@@ -73,21 +74,32 @@ export class PaymentsService {
       where.paymentMethod = filters.paymentMethod;
     }
 
-    return this.prisma.uacPayment.findMany({
-      where,
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            class: true,
-            group: true,
-            contactNumber: true,
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.uacPayment.findMany({
+        where,
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              class: true,
+              group: true,
+              contactNumber: true,
+            },
           },
         },
-      },
-      orderBy: { paymentDate: 'desc' },
-    });
+        orderBy: { paymentDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.uacPayment.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {
@@ -141,6 +153,25 @@ export class PaymentsService {
     });
     if (!student) {
       throw new NotFoundException(`Student with ID ${dto.studentId} not found`);
+    }
+
+    // Check for duplicate tuition payments
+    for (const item of dto.lineItems) {
+      if (item.paymentType === 'tuition' && item.paymentMonth) {
+        const existing = await this.prisma.uacPayment.findFirst({
+          where: {
+            studentId: dto.studentId,
+            paymentType: 'tuition',
+            paymentMonth: new Date(item.paymentMonth),
+            isActive: true,
+          },
+        });
+        if (existing) {
+          throw new ConflictException(
+            `Tuition payment for ${item.paymentMonth} already exists for this student`,
+          );
+        }
+      }
     }
 
     const invoiceNumber =

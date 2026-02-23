@@ -192,8 +192,9 @@ export default function OrgAddExpense({ org, basePath, title }: Props) {
               >
                 <Select placeholder="Select payment method">
                   <Option value="cash">Cash</Option>
-                  <Option value="bank">Bank Transfer</Option>
-                  <Option value="mobile">Mobile Banking</Option>
+                  <Option value="bkash">bKash</Option>
+                  <Option value="nagad">Nagad</Option>
+                  <Option value="bank_transfer">Bank Transfer</Option>
                 </Select>
               </Form.Item>
             </Col>

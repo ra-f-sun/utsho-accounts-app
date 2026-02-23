@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class ExpensesService {
@@ -23,6 +24,7 @@ export class ExpensesService {
     organization?: string,
     expenseType?: string,
     expenseMonth?: string,
+    pagination?: PaginationDto,
   ) {
     const where: Prisma.ExpenseWhereInput = { isActive: true };
 
@@ -38,10 +40,21 @@ export class ExpensesService {
       where.expenseMonth = new Date(expenseMonth);
     }
 
-    return this.prisma.expense.findMany({
-      where,
-      orderBy: { paymentDate: 'desc' },
-    });
+    const page = pagination?.page ?? 1;
+    const limit = pagination?.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.expense.findMany({
+        where,
+        orderBy: { paymentDate: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.expense.count({ where }),
+    ]);
+
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOne(id: string) {

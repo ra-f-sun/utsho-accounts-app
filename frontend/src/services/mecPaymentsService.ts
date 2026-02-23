@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export interface MecPayment {
   id: string;
@@ -42,32 +42,40 @@ export interface CreateMecMultiPaymentDto {
 }
 
 export const mecPaymentsService = {
-  getAll: (params?: {
-    studentId?: string;
-    paymentMonth?: string;
-    paymentMethod?: string;
-  }) => api.get("/mec/payments", { params }),
+  getAll: (
+    params?: { studentId?: string; paymentMonth?: string; paymentMethod?: string },
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<MecPayment>> => {
+    const p = new URLSearchParams();
+    if (params?.studentId) p.append("studentId", params.studentId);
+    if (params?.paymentMonth) p.append("paymentMonth", params.paymentMonth);
+    if (params?.paymentMethod) p.append("paymentMethod", params.paymentMethod);
+    p.append("page", page.toString());
+    p.append("limit", limit.toString());
+    return apiGet(`/mec/payments?${p.toString()}`);
+  },
 
-  getOne: (id: string) => api.get(`/mec/payments/${id}`),
+  getOne: (id: string) => apiGet<MecPayment>(`/mec/payments/${id}`),
 
   getStudentSummary: (studentId: string) =>
-    api.get(`/mec/payments/student/${studentId}/summary`),
+    apiGet<{ studentId: string; totalPaid: number; paymentCount: number; payments: MecPayment[] }>(
+      `/mec/payments/student/${studentId}/summary`,
+    ),
 
-  create: (data: CreateMecPaymentDto) => api.post("/mec/payments", data),
+  create: (data: CreateMecPaymentDto) => apiPost<MecPayment>("/mec/payments", data),
 
   createMulti: (data: CreateMecMultiPaymentDto) =>
-    api.post<{ success: boolean; data: { invoiceNumber: string; payments: MecPayment[] } }>(
+    apiPost<{ invoiceNumber: string; payments: MecPayment[] }>(
       "/mec/payments/multi",
       data,
     ),
 
   getByInvoice: (invoiceNumber: string) =>
-    api.get<{ success: boolean; data: MecPayment[] }>(
-      `/mec/payments/invoice/${invoiceNumber}`,
-    ),
+    apiGet<MecPayment[]>(`/mec/payments/invoice/${invoiceNumber}`),
 
   update: (id: string, data: Partial<CreateMecPaymentDto>) =>
-    api.patch(`/mec/payments/${id}`, data),
+    apiPatch<MecPayment>(`/mec/payments/${id}`, data),
 
-  remove: (id: string) => api.delete(`/mec/payments/${id}`),
+  remove: (id: string) => apiDelete<MecPayment>(`/mec/payments/${id}`),
 };

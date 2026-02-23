@@ -1,4 +1,4 @@
-import { api } from "../lib/axios";
+import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
 export type Organization = "uac" | "mbcs" | "mec";
 export type ExpenseType =
@@ -37,30 +37,20 @@ export interface CreateExpenseDto {
 const orgBase = (org: Organization) => `/${org}/expenses`;
 
 export const expensesService = {
-  getAll: (
-    org: Organization,
-    expenseType?: string,
-    expenseMonth?: string,
-  ) => {
+  getAll: (org: Organization, expenseType?: string, expenseMonth?: string, page = 1, limit = 20): Promise<PaginatedResponse<Expense>> => {
     const params = new URLSearchParams();
     if (expenseType) params.append("expenseType", expenseType);
     if (expenseMonth) params.append("expenseMonth", expenseMonth);
-    return api.get<Expense[]>(`${orgBase(org)}?${params.toString()}`);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`${orgBase(org)}?${params.toString()}`);
   },
-
-  getOne: (org: Organization, id: string) => {
-    return api.get<Expense>(`${orgBase(org)}/${id}`);
-  },
-
-  create: (org: Organization, data: CreateExpenseDto) => {
-    return api.post<Expense>(orgBase(org), data);
-  },
-
-  update: (org: Organization, id: string, data: Partial<CreateExpenseDto>) => {
-    return api.patch<Expense>(`${orgBase(org)}/${id}`, data);
-  },
-
-  delete: (org: Organization, id: string) => {
-    return api.delete<Expense>(`${orgBase(org)}/${id}`);
-  },
+  getOne: (org: Organization, id: string) =>
+    apiGet<Expense>(`${orgBase(org)}/${id}`),
+  create: (org: Organization, data: CreateExpenseDto) =>
+    apiPost<Expense>(orgBase(org), data),
+  update: (org: Organization, id: string, data: Partial<CreateExpenseDto>) =>
+    apiPatch<Expense>(`${orgBase(org)}/${id}`, data),
+  delete: (org: Organization, id: string) =>
+    apiDelete<Expense>(`${orgBase(org)}/${id}`),
 };

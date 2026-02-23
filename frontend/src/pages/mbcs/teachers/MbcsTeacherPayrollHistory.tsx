@@ -10,6 +10,7 @@ import { Space } from "antd";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import type { ColumnsType } from "antd/es/table";
+import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
 
 interface PayrollRecord {
@@ -35,19 +36,19 @@ export default function MbcsTeacherPayrollHistory() {
     enabled: !!id,
   });
 
-  const teacher = (teacherData as any)?.data;
+  const teacher = teacherData?.data;
 
-  const { data: payrollData, isLoading: loadingPayroll } = useQuery({
+  const { data: payrollData, isLoading: loadingPayroll, isError: payrollIsError, error: payrollError, refetch: refetchPayroll } = useQuery({
     queryKey: ["mbcs-payroll", { payableId: id, payableType: "teacher" }],
     queryFn: () =>
       mbcsPayrollService.getAll({
         payableId: id,
         payableType: "teacher",
-      }),
+      }, 1, 1000),
     enabled: !!id,
   });
 
-  const payrolls: PayrollRecord[] = (payrollData as any)?.data || [];
+  const payrolls: PayrollRecord[] = payrollData?.data?.data || [];
   const totalPaid = payrolls.reduce((sum, p) => sum + p.amount, 0);
 
   const columns: ColumnsType<PayrollRecord> = [
@@ -114,6 +115,8 @@ export default function MbcsTeacherPayrollHistory() {
       ),
     },
   ];
+
+  if (payrollIsError) return <QueryError error={payrollError as Error} onRetry={refetchPayroll} />;
 
   if (loadingTeacher) {
     return (

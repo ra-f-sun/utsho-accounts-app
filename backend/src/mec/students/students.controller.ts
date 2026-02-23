@@ -14,6 +14,7 @@ import { MecStudentsService } from './students.service';
 import { CreateMecStudentDto } from './dto/create-student.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
 import { FilterMecStudentDto } from './dto/filter-student.dto';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -32,8 +33,8 @@ export class MecStudentsController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterMecStudentDto) {
-    return this.studentsService.findAll(filters);
+  findAll(@Query() filters: FilterMecStudentDto, @Query() pagination: PaginationDto) {
+    return this.studentsService.findAll(filters, pagination);
   }
 
   @Get(':id')

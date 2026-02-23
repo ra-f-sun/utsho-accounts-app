@@ -43,3 +43,53 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Typed API helpers — eliminate `as any` casts across the codebase
+// The response interceptor above strips the AxiosResponse wrapper at runtime,
+// but TypeScript still infers AxiosResponse<T>. These wrappers tell TS the
+// resolved type matches our server envelope so callers can use `data?.data`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: T;
+  timestamp: string;
+}
+
+export interface PaginatedData<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/** Paginated API response — `response.data.data` is the items array */
+export type PaginatedResponse<T> = ApiResponse<PaginatedData<T>>;
+
+export const apiGet = <T>(
+  url: string,
+  config?: Parameters<typeof api.get>[1],
+): Promise<ApiResponse<T>> =>
+  api.get(url, config) as unknown as Promise<ApiResponse<T>>;
+
+export const apiPost = <T>(
+  url: string,
+  body?: unknown,
+  config?: Parameters<typeof api.post>[2],
+): Promise<ApiResponse<T>> =>
+  api.post(url, body, config) as unknown as Promise<ApiResponse<T>>;
+
+export const apiPatch = <T>(
+  url: string,
+  body?: unknown,
+  config?: Parameters<typeof api.patch>[2],
+): Promise<ApiResponse<T>> =>
+  api.patch(url, body, config) as unknown as Promise<ApiResponse<T>>;
+
+export const apiDelete = <T>(
+  url: string,
+  config?: Parameters<typeof api.delete>[1],
+): Promise<ApiResponse<T>> =>
+  api.delete(url, config) as unknown as Promise<ApiResponse<T>>;
