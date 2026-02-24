@@ -38,8 +38,6 @@ export default function PayrollList() {
   const payrolls: Payroll[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => payrollService.delete(id),
@@ -51,6 +49,8 @@ export default function PayrollList() {
       message.error("Failed to delete payroll");
     },
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<Payroll> = [
     {

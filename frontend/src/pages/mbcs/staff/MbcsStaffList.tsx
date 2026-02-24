@@ -23,8 +23,6 @@ export default function MbcsStaffList() {
   const staff: MbcsStaff[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsStaffService.delete(id),
     onSuccess: () => {
@@ -33,6 +31,8 @@ export default function MbcsStaffList() {
     },
     onError: () => message.error("Failed to delete staff"),
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<MbcsStaff> = [
     {

@@ -13,6 +13,7 @@ import {
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { FilterOrgExpenseDto } from './dto/filter-org-expense.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../guards/roles.guard';
 import { OrganizationGuard } from '../guards/organization.guard';
@@ -39,11 +40,8 @@ export class UacExpensesController {
   }
 
   @Get()
-  findAll(
-    @Query('expenseType') expenseType?: string,
-    @Query('expenseMonth') expenseMonth?: string,
-  ) {
-    return this.expensesService.findAll('uac', expenseType, expenseMonth);
+  findAll(@Query() query: FilterOrgExpenseDto) {
+    return this.expensesService.findAll('uac', query.expenseType, query.expenseMonth, query);
   }
 
   @Get('summary/:month')

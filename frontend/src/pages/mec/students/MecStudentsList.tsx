@@ -31,8 +31,6 @@ export default function MecStudentsList() {
   const students: MecStudent[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mecStudentsService.remove(id),
     onSuccess: () => {
@@ -41,6 +39,8 @@ export default function MecStudentsList() {
     },
     onError: () => message.error("Failed to delete student"),
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<MecStudent> = [
     {

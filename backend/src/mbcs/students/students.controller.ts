@@ -14,7 +14,6 @@ import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FilterStudentDto } from './dto/filter-student.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -33,8 +32,8 @@ export class StudentsController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterStudentDto, @Query() pagination: PaginationDto) {
-    return this.studentsService.findAll(filters, pagination);
+  findAll(@Query() query: FilterStudentDto) {
+    return this.studentsService.findAll(query, query);
   }
 
   @Get(':id')

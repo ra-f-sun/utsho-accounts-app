@@ -54,8 +54,6 @@ export default function OrgExpensesList({ org, basePath, title }: Props) {
   const expenses: Expense[] = data?.data?.data ?? [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => expensesService.delete(org, id),
     onSuccess: () => {
@@ -66,6 +64,8 @@ export default function OrgExpensesList({ org, basePath, title }: Props) {
       message.error("Failed to delete expense");
     },
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<Expense> = [
     {

@@ -20,7 +20,7 @@ function UsersList() {
 
   const { data: usersResponse, isLoading, error } = useQuery({
     queryKey: ["users"],
-    queryFn: usersService.getAll,
+    queryFn: () => usersService.getAll(),
   });
   const users: User[] = usersResponse?.data?.data || [];
 

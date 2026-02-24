@@ -31,8 +31,6 @@ export default function StaffList() {
   const staff = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => staffService.delete(id),
@@ -44,6 +42,8 @@ export default function StaffList() {
       message.error("Failed to delete staff");
     },
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<Staff> = [
     {

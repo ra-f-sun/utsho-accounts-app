@@ -37,8 +37,6 @@ export default function MbcsPayrollList() {
   const payrolls: MbcsPayroll[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsPayrollService.delete(id),
     onSuccess: () => {
@@ -47,6 +45,8 @@ export default function MbcsPayrollList() {
     },
     onError: () => message.error("Failed to delete payroll"),
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<MbcsPayroll> = [
     {

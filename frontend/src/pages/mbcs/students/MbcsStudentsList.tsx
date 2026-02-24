@@ -42,8 +42,6 @@ export default function MbcsStudentsList() {
   const students: MbcsStudent[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsStudentsService.delete(id),
     onSuccess: () => {
@@ -54,6 +52,8 @@ export default function MbcsStudentsList() {
       message.error("Failed to delete student");
     },
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<MbcsStudent> = [
     {

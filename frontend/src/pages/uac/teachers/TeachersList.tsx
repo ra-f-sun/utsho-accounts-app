@@ -47,8 +47,6 @@ export default function TeachersList() {
   const teachers = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) => teachersService.delete(id),
@@ -60,6 +58,8 @@ export default function TeachersList() {
       message.error("Failed to delete teacher");
     },
   });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<Teacher> = [
     {

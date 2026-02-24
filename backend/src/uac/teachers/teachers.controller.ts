@@ -14,7 +14,6 @@ import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { FilterTeacherDto } from './dto/filter-teacher.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -33,8 +32,8 @@ export class TeachersController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterTeacherDto, @Query() pagination: PaginationDto) {
-    return this.teachersService.findAll(filters, pagination);
+  findAll(@Query() query: FilterTeacherDto) {
+    return this.teachersService.findAll(query, query);
   }
 
   @Get(':id')

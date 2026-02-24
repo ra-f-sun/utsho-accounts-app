@@ -13,7 +13,7 @@ import {
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { FilterStaffDto } from './dto/filter-staff.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -32,8 +32,8 @@ export class StaffController {
   }
 
   @Get()
-  findAll(@Query('search') search?: string, @Query() pagination?: PaginationDto) {
-    return this.staffService.findAll(search, pagination);
+  findAll(@Query() query: FilterStaffDto) {
+    return this.staffService.findAll(query.search, query);
   }
 
   @Get(':id')

@@ -15,7 +15,6 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateMultiPaymentDto } from './dto/create-multi-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { FilterPaymentDto } from './dto/filter-payment.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -52,8 +51,8 @@ export class PaymentsController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterPaymentDto, @Query() pagination: PaginationDto) {
-    return this.paymentsService.findAll(filters, pagination);
+  findAll(@Query() query: FilterPaymentDto) {
+    return this.paymentsService.findAll(query, query);
   }
 
   @Get('student/:studentId/summary')
