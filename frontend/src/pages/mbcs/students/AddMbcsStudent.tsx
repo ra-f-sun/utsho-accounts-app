@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   Input,
@@ -10,15 +10,34 @@ import {
   Row,
   Col,
   message,
+  Typography,
+  Tooltip,
 } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { CreateMbcsStudentDto } from "../../../services/mbcsStudentsService";
+import settingsService, { type OrgSetting } from "../../../services/settingsService";
+import { MBCS_CLASSES } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { Text } = Typography;
+
+/** Helper — resolve fee from settings rows (override-first, then default) */
+function resolveFee(
+  rows: OrgSetting[],
+  prefix: string,
+  cls: number,
+): number | null {
+  const override = rows.find((r) => r.settingKey === `${prefix}_override_${cls}`);
+  if (override) return (override.settingValue as { value: number }).value;
+  const def = rows.find((r) => r.settingKey === `${prefix}_default`);
+  if (def) return (def.settingValue as { value: number }).value;
+  return null;
+}
 
 export default function AddMbcsStudent() {
   const [form] = Form.useForm();
@@ -26,6 +45,42 @@ export default function AddMbcsStudent() {
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
+  // Settings rows fetched once (used to resolve fees + discount options)
+  const [settingsRows, setSettingsRows] = useState<OrgSetting[]>([]);
+  const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
+  const [admissionDiscounts, setAdmissionDiscounts] = useState<number[]>([]);
+  const [readmissionDiscounts, setReadmissionDiscounts] = useState<number[]>([]);
+
+  useEffect(() => {
+    void settingsService.getAllSettings("mbcs").then((rows) => {
+      setSettingsRows(rows);
+      setTuitionDiscounts(
+        (rows.find((r) => r.settingKey === "discount_tuition_options")
+          ?.settingValue as { values: number[] } | undefined)?.values ?? [],
+      );
+      setAdmissionDiscounts(
+        (rows.find((r) => r.settingKey === "discount_admission_options")
+          ?.settingValue as { values: number[] } | undefined)?.values ?? [],
+      );
+      setReadmissionDiscounts(
+        (rows.find((r) => r.settingKey === "discount_readmission_options")
+          ?.settingValue as { values: number[] } | undefined)?.values ?? [],
+      );
+    });
+  }, []);
+
+  /** Called when the class selector changes — auto-fills fees from settings */
+  function onClassChange(cls: number) {
+    const tuition = resolveFee(settingsRows, "tuition", cls);
+    const admission = resolveFee(settingsRows, "admission", cls);
+    const readmission = resolveFee(settingsRows, "readmission", cls);
+    form.setFieldsValue({
+      ...(tuition !== null ? { monthlyTuitionFee: tuition } : {}),
+      ...(admission !== null ? { admissionFee: admission } : {}),
+      ...(readmission !== null ? { readmissionFee: readmission } : {}),
+    });
+  }
 
   // Fetch existing student for edit
   const { data: existingData } = useQuery({
@@ -45,6 +100,9 @@ export default function AddMbcsStudent() {
         admissionDate: student.admissionDate
           ? dayjs(student.admissionDate)
           : undefined,
+        discountTuition: student.discountTuition ?? 0,
+        discountAdmission: student.discountAdmission ?? 0,
+        discountReadmission: student.discountReadmission ?? 0,
       });
     }
   }, [existingData, form]);
@@ -76,6 +134,9 @@ export default function AddMbcsStudent() {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
+      discountTuition: values.discountTuition ?? 0,
+      discountAdmission: values.discountAdmission ?? 0,
+      discountReadmission: values.discountReadmission ?? 0,
     };
     if (isEditMode) {
       updateMutation.mutate(data);
@@ -145,10 +206,13 @@ export default function AddMbcsStudent() {
                 name="class"
                 rules={[{ required: true, message: "Please select class" }]}
               >
-                <Select placeholder="Select class">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((cls) => (
-                    <Option key={cls} value={cls}>
-                      Class {cls}
+                <Select
+                  placeholder="Select class"
+                  onChange={(val: number) => onClassChange(val)}
+                >
+                  {MBCS_CLASSES.map(({ value, label }) => (
+                    <Option key={value} value={value}>
+                      {label}
                     </Option>
                   ))}
                 </Select>
@@ -310,7 +374,14 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={8}>
               <Form.Item
-                label="Monthly Tuition Fee (৳)"
+                label={
+                  <span>
+                    Monthly Tuition Fee (৳)
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. Change class to update.">
+                      <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
                 name="monthlyTuitionFee"
                 rules={[
                   { required: true, message: "Please enter monthly fee" },
@@ -319,19 +390,121 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Enter amount"
+                  placeholder="Select a class first"
+                  disabled
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="Admission Fee (৳)" name="admissionFee">
+              <Form.Item label="Discount on Tuition (৳)" name="discountTuition">
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {tuitionDiscounts.map((d) => (
+                    <Option key={d} value={d}>
+                      ৳{d}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label={
+                  <span>
+                    Admission Fee (৳)
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                      <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
+                name="admissionFee"
+              >
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Enter amount"
+                  placeholder="Select a class first"
+                  disabled
                 />
               </Form.Item>
             </Col>
+            <Col span={8}>
+              <Form.Item label="Discount on Admission (৳)" name="discountAdmission">
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {admissionDiscounts.map((d) => (
+                    <Option key={d} value={d}>
+                      ৳{d}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label={
+                  <span>
+                    Re-Admission Fee (৳)
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                      <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
+                name="readmissionFee"
+              >
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  placeholder="N/A"
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Discount on Re-Admission (৳)" name="discountReadmission">
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {readmissionDiscounts.map((d) => (
+                    <Option key={d} value={d}>
+                      ৳{d}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            {/* Effective fee summary */}
+            <Form.Item noStyle shouldUpdate>
+              {({ getFieldValue }) => {
+                const tuition = getFieldValue("monthlyTuitionFee");
+                const dTuition = getFieldValue("discountTuition") ?? 0;
+                const admission = getFieldValue("admissionFee");
+                const dAdmission = getFieldValue("discountAdmission") ?? 0;
+                if (!tuition && !admission) return null;
+                return (
+                  <Col span={24}>
+                    <Card size="small" style={{ background: "#f6ffed", borderColor: "#b7eb8f" }}>
+                      <Row gutter={16}>
+                        {tuition != null && (
+                          <Col>
+                            <Text>Effective Tuition: </Text>
+                            <Text strong style={{ color: "#389e0d" }}>
+                              ৳{(tuition - dTuition).toLocaleString()}
+                            </Text>
+                          </Col>
+                        )}
+                        {admission != null && (
+                          <Col>
+                            <Text>Effective Admission: </Text>
+                            <Text strong style={{ color: "#389e0d" }}>
+                              ৳{(admission - dAdmission).toLocaleString()}
+                            </Text>
+                          </Col>
+                        )}
+                      </Row>
+                    </Card>
+                  </Col>
+                );
+              }}
+            </Form.Item>
             <Col span={8}>
               <Form.Item label="Admission Date" name="admissionDate">
                 <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />

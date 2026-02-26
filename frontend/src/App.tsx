@@ -58,6 +58,8 @@ import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
 import UsersList from "./pages/users/UsersList";
 import AddUser from "./pages/users/AddUser";
 import SettingsPage from "./pages/settings/SettingsPage";
+import PromoteStudents from "./pages/uac/students/PromoteStudents";
+import MbcsPromoteStudents from "./pages/mbcs/students/MbcsPromoteStudents";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -112,6 +114,7 @@ function App() {
                 <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR', 'ACCOUNTANT_UAC']} />}>
                   <Route path="uac/students" element={<StudentsList />} />
                   <Route path="uac/students/add" element={<AddStudent />} />
+                  <Route path="uac/students/promote" element={<PromoteStudents />} />
                   <Route path="uac/students/edit/:id" element={<AddStudent />} />
                   <Route path="uac/students/:id/payments" element={<StudentPaymentHistory />} />
                   <Route path="uac/teachers" element={<TeachersList />} />
@@ -140,6 +143,7 @@ function App() {
                 <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR', 'ACCOUNTANT_MBCS']} />}>
                   <Route path="mbcs/students" element={<MbcsStudentsList />} />
                   <Route path="mbcs/students/add" element={<AddMbcsStudent />} />
+                  <Route path="mbcs/students/promote" element={<MbcsPromoteStudents />} />
                   <Route path="mbcs/students/edit/:id" element={<AddMbcsStudent />} />
                   <Route path="mbcs/students/:id/payments" element={<MbcsStudentPaymentHistory />} />
                   <Route path="mbcs/teachers" element={<MbcsTeachersList />} />

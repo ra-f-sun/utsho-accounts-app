@@ -53,4 +53,14 @@ export class StaffController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.staffService.remove(id);
   }
+
+  @Patch(':id/disassociate')
+  disassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.disassociate(id);
+  }
+
+  @Patch(':id/reassociate')
+  reassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.reassociate(id);
+  }
 }

@@ -1,4 +1,4 @@
-import { api, type ApiResponse } from "../lib/axios";
+import { api, apiGet, type ApiResponse } from "../lib/axios";
 
 export interface OrgSetting {
   id: string;
@@ -11,14 +11,14 @@ export interface OrgSetting {
 
 /** Get all settings for an organisation */
 export const getAllSettings = (org: string): Promise<OrgSetting[]> =>
-  api.get(`/settings/${org}`) as unknown as Promise<OrgSetting[]>;
+  apiGet<OrgSetting[]>(`/settings/${org}`).then((res) => res.data);
 
 /** Get a specific setting by key */
 export const getSetting = (
   org: string,
   key: string,
 ): Promise<OrgSetting | null> =>
-  api.get(`/settings/${org}/${key}`) as unknown as Promise<OrgSetting | null>;
+  apiGet<OrgSetting | null>(`/settings/${org}/${key}`).then((res) => res.data);
 
 /** Create or update a single setting */
 export const upsertSetting = (

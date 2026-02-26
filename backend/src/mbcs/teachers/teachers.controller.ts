@@ -14,7 +14,6 @@ import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { FilterTeacherDto } from './dto/filter-teacher.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -33,8 +32,9 @@ export class TeachersController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterTeacherDto, @Query() pagination: PaginationDto) {
-    return this.teachersService.findAll(filters, pagination);
+  findAll(@Query() filters: FilterTeacherDto) {
+    const { page, limit, ...filterParams } = filters;
+    return this.teachersService.findAll(filterParams, { page, limit });
   }
 
   @Get(':id')
@@ -53,5 +53,15 @@ export class TeachersController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.teachersService.remove(id);
+  }
+
+  @Patch(':id/disassociate')
+  disassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.teachersService.disassociate(id);
+  }
+
+  @Patch(':id/reassociate')
+  reassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.teachersService.reassociate(id);
   }
 }

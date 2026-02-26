@@ -13,7 +13,7 @@ import {
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { FilterStaffDto } from './dto/filter-staff.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -32,8 +32,9 @@ export class StaffController {
   }
 
   @Get()
-  findAll(@Query('search') search?: string, @Query() pagination?: PaginationDto) {
-    return this.staffService.findAll(search, pagination);
+  findAll(@Query() filters: FilterStaffDto) {
+    const { page, limit, ...rest } = filters;
+    return this.staffService.findAll(rest.search, { page, limit });
   }
 
   @Get(':id')
@@ -52,5 +53,15 @@ export class StaffController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.staffService.remove(id);
+  }
+
+  @Patch(':id/disassociate')
+  disassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.disassociate(id);
+  }
+
+  @Patch(':id/reassociate')
+  reassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.reassociate(id);
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   Input,
@@ -10,15 +10,22 @@ import {
   Row,
   Col,
   message,
+  Tooltip,
+  Typography,
 } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { CreateMecStudentDto } from "../../../services/mecStudentsService";
+import settingsService, {
+  type OrgSetting,
+} from "../../../services/settingsService";
 import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { Text } = Typography;
 
 export default function AddMecStudent() {
   const [form] = Form.useForm();
@@ -26,6 +33,25 @@ export default function AddMecStudent() {
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
+  // Settings state
+  const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
+
+  useEffect(() => {
+    void settingsService.getAllSettings("mec").then((rows: OrgSetting[]) => {
+      rows.forEach((r) => {
+        const vals =
+          (r.settingValue as { values: number[] } | null)?.values ?? [];
+        if (r.settingKey === "discount_tuition_options")
+          setTuitionDiscounts(vals);
+        // Auto-fill default fee for new students
+        if (r.settingKey === "tuition_default" && !isEditMode) {
+          const def = (r.settingValue as { value: number } | null)?.value;
+          if (def) form.setFieldValue("monthlyTuitionFee", def);
+        }
+      });
+    });
+  }, []);
 
   const { data: existingData } = useQuery({
     queryKey: ["mec-student", id],
@@ -44,6 +70,7 @@ export default function AddMecStudent() {
         admissionDate: student.admissionDate
           ? dayjs(student.admissionDate)
           : undefined,
+        discountTuition: student.discountTuition ?? 0,
       });
     }
   }, [existingData, form]);
@@ -74,6 +101,7 @@ export default function AddMecStudent() {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD") ?? undefined,
+      discountTuition: values.discountTuition ?? 0,
     };
     if (isEditMode) {
       updateMutation.mutate(data);
@@ -180,7 +208,14 @@ export default function AddMecStudent() {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item
-                label="Monthly Tuition Fee (৳)"
+                label={
+                  <span>
+                    Monthly Tuition Fee (৳)&nbsp;
+                    <Tooltip title="Auto-filled from Settings → Configure MEC. You can change it here if needed.">
+                      <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
                 name="monthlyTuitionFee"
                 rules={[{ required: true }]}
               >
@@ -198,6 +233,47 @@ export default function AddMecStudent() {
               </Form.Item>
             </Col>
           </Row>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                label="Discount on Tuition Fee"
+                name="discountTuition"
+              >
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {tuitionDiscounts.map((v) => (
+                    <Option key={v} value={v}>
+                      ৳{v} off
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const tuition = getFieldValue("monthlyTuitionFee") ?? 0;
+              const dTuition = getFieldValue("discountTuition") ?? 0;
+              if (!tuition || !dTuition) return null;
+              return (
+                <div
+                  style={{
+                    background: "#f6ffed",
+                    border: "1px solid #b7eb8f",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    marginTop: 4,
+                  }}
+                >
+                  <Text strong>Effective Tuition: </Text>
+                  <Text strong>৳{tuition - dTuition}</Text>
+                  <Text type="secondary">
+                    {" "}(৳{tuition} − ৳{dTuition})
+                  </Text>
+                </div>
+              );
+            }}
+          </Form.Item>
         </Card>
 
         {/* Optional Personal Details */}

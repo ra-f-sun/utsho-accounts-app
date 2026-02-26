@@ -29,7 +29,12 @@ export interface MecStudent {
   monthlyTuitionFee: number;
   admissionFee?: number;
   admissionDate?: string;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
 }
 
@@ -61,6 +66,10 @@ export interface CreateMecStudentDto {
   motherEmail?: string;
   admissionFee?: number;
   admissionDate?: string;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
 }
 
 export const mecStudentsService = {
@@ -81,4 +90,10 @@ export const mecStudentsService = {
     apiPatch<MecStudent>(`/mec/students/${id}`, data),
 
   remove: (id: string) => apiDelete<MecStudent>(`/mec/students/${id}`),
+  disassociate: (id: string) => apiPatch<MecStudent>(`/mec/students/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<MecStudent>(`/mec/students/${id}/reassociate`, {}),
+  promote: (id: string, data: { toClass: number; notes?: string }) =>
+    apiPost<MecStudent>(`/mec/students/${id}/promote`, data),
+  promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
+    apiPost<{ promoted: number }>('/mec/students/promote-bulk', data),
 };

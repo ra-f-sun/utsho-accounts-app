@@ -438,7 +438,7 @@ export class AnalyticsService {
 
     if (org === Organization.UAC) {
       const students = await this.prisma.uacStudent.findMany({
-        where: { isActive: true },
+        where: { isActive: true, associationEndDate: null },
         include: {
           payments: {
             where: { paymentType: 'tuition', isActive: true },
@@ -476,7 +476,7 @@ export class AnalyticsService {
       }
     } else if (org === Organization.MBCS) {
       const students = await this.prisma.mbcsStudent.findMany({
-        where: { isActive: true },
+        where: { isActive: true, associationEndDate: null },
         include: {
           payments: {
             where: { paymentType: 'tuition', isActive: true },
@@ -514,7 +514,7 @@ export class AnalyticsService {
       }
     } else if (org === Organization.MEC) {
       const students = await this.prisma.mecStudent.findMany({
-        where: { isActive: true },
+        where: { isActive: true, associationEndDate: null },
         include: {
           payments: {
             where: { isActive: true },

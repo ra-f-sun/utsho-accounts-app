@@ -15,7 +15,6 @@ import { CreateMecPaymentDto } from './dto/create-payment.dto';
 import { CreateMecMultiPaymentDto } from './dto/create-multi-payment.dto';
 import { UpdateMecPaymentDto } from './dto/update-payment.dto';
 import { FilterMecPaymentDto } from './dto/filter-payment.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';
@@ -52,8 +51,9 @@ export class MecPaymentsController {
   }
 
   @Get()
-  findAll(@Query() filters: FilterMecPaymentDto, @Query() pagination: PaginationDto) {
-    return this.paymentsService.findAll(filters, pagination);
+  findAll(@Query() filters: FilterMecPaymentDto) {
+    const { page, limit, ...filterParams } = filters;
+    return this.paymentsService.findAll(filterParams, { page, limit });
   }
 
   @Get('student/:studentId/summary')

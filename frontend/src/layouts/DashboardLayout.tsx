@@ -10,6 +10,7 @@ import {
   HistoryOutlined,
   WalletOutlined,
   SettingOutlined,
+  VerticalAlignTopOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -27,6 +28,7 @@ export default function DashboardLayout() {
     "/dashboard",
     "/users",
     "/uac/students",
+    "/uac/students/promote",
     "/uac/teachers",
     "/uac/staff",
     "/uac/payments",
@@ -35,6 +37,7 @@ export default function DashboardLayout() {
     "/uac/payroll",
     "/uac/expenses",
     "/mbcs/students",
+    "/mbcs/students/promote",
     "/mbcs/teachers",
     "/mbcs/staff",
     "/mbcs/payments",
@@ -98,6 +101,16 @@ export default function DashboardLayout() {
           label: "Students",
           onClick: () => navigate("/uac/students"),
         },
+        ...(["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || "")
+          ? [
+              {
+                key: "/uac/students/promote",
+                icon: <VerticalAlignTopOutlined />,
+                label: "Promote Students",
+                onClick: () => navigate("/uac/students/promote"),
+              },
+            ]
+          : []),
         {
           key: "/uac/teachers",
           label: "Teachers",
@@ -152,6 +165,16 @@ export default function DashboardLayout() {
           label: "Students",
           onClick: () => navigate("/mbcs/students"),
         },
+        ...(["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || "")
+          ? [
+              {
+                key: "/mbcs/students/promote",
+                icon: <VerticalAlignTopOutlined />,
+                label: "Promote Students",
+                onClick: () => navigate("/mbcs/students/promote"),
+              },
+            ]
+          : []),
         {
           key: "/mbcs/teachers",
           label: "Teachers",

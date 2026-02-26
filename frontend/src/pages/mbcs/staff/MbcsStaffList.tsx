@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, Button, Space, App, Popconfirm } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserDeleteOutlined, UserAddOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { MbcsStaff } from "../../../services/mbcsStaffService";
@@ -23,8 +23,6 @@ export default function MbcsStaffList() {
   const staff: MbcsStaff[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
-  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => mbcsStaffService.delete(id),
     onSuccess: () => {
@@ -33,6 +31,26 @@ export default function MbcsStaffList() {
     },
     onError: () => message.error("Failed to delete staff"),
   });
+
+  const disassociateMutation = useMutation({
+    mutationFn: (id: string) => mbcsStaffService.disassociate(id),
+    onSuccess: () => {
+      message.success("Staff member marked as no longer associated");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+    },
+    onError: () => message.error("Failed to disassociate staff member"),
+  });
+
+  const reassociateMutation = useMutation({
+    mutationFn: (id: string) => mbcsStaffService.reassociate(id),
+    onSuccess: () => {
+      message.success("Staff member re-associated successfully");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+    },
+    onError: () => message.error("Failed to re-associate staff member"),
+  });
+
+  if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<MbcsStaff> = [
     {
@@ -61,7 +79,7 @@ export default function MbcsStaffList() {
     {
       title: "Actions",
       key: "actions",
-      width: 120,
+      width: 160,
       render: (_: unknown, record: MbcsStaff) => (
         <Space>
           <Button
@@ -69,6 +87,26 @@ export default function MbcsStaffList() {
             icon={<EditOutlined />}
             onClick={() => navigate(`/mbcs/staff/edit/${record.id}`)}
           />
+          {record.associationEndDate ? (
+            <Popconfirm
+              title="Re-associate this staff member?"
+              onConfirm={() => reassociateMutation.mutate(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button type="link" icon={<UserAddOutlined />} loading={reassociateMutation.isPending} title="Re-associate" />
+            </Popconfirm>
+          ) : (
+            <Popconfirm
+              title="Mark as no longer associated?"
+              onConfirm={() => disassociateMutation.mutate(record.id)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button type="link" danger icon={<UserDeleteOutlined />} loading={disassociateMutation.isPending} title="No Longer Associated" />
+            </Popconfirm>
+          )}
           <Popconfirm
             title="Are you sure to delete this staff member?"
             onConfirm={() => deleteMutation.mutate(record.id)}

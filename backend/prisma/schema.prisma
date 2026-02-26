@@ -70,14 +70,19 @@ model UacStudent {
   guardianName       String // Primary contact person
   contactNumber      String // Primary contact number
   // Fees
-  monthlyTuitionFee  Float
-  admissionFee       Float?
-  admissionDate      DateTime?
+  monthlyTuitionFee   Float
+  admissionFee        Float?
+  readmissionFee      Float?
+  discountTuition     Float?       @default(0)
+  discountAdmission   Float?       @default(0)
+  discountReadmission Float?       @default(0)
+  admissionDate        DateTime?
   // System
-  isActive           Boolean      @default(true)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  payments           UacPayment[]
+  isActive             Boolean      @default(true)
+  associationEndDate   DateTime?    // NULL = active; set = no longer associated
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  payments             UacPayment[]
 
   @@index([class, group])
   @@index([school])
@@ -93,10 +98,11 @@ model UacTeacher {
   monthlySalary  Float? // For fixed payment
   perLectureRate Float? // For lecture-based
   subjects       Json? // Array of {class, subject}
-  isActive       Boolean                @default(true)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  attendance     UacTeacherAttendance[]
+  isActive             Boolean                @default(true)
+  associationEndDate   DateTime?              // NULL = active; set = no longer associated
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  attendance           UacTeacherAttendance[]
 
   @@map("uac_teachers")
 }
@@ -106,10 +112,11 @@ model UacStaff {
   name          String
   contactNumber String
   designation   String?
-  monthlySalary Float
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  monthlySalary      Float
+  isActive           Boolean  @default(true)
+  associationEndDate DateTime? // NULL = active; set = no longer associated
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("uac_staff")
 }
@@ -206,14 +213,19 @@ model MbcsStudent {
   guardianName       String
   contactNumber      String
   // Fees
-  monthlyTuitionFee  Float
-  admissionFee       Float?
-  admissionDate      DateTime?
+  monthlyTuitionFee   Float
+  admissionFee        Float?
+  readmissionFee      Float?
+  discountTuition     Float?        @default(0)
+  discountAdmission   Float?        @default(0)
+  discountReadmission Float?        @default(0)
+  admissionDate        DateTime?
   // System
-  isActive           Boolean       @default(true)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  payments           MbcsPayment[]
+  isActive             Boolean       @default(true)
+  associationEndDate   DateTime?     // NULL = active; set = no longer associated
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  payments             MbcsPayment[]
 
   @@index([class, shift])
   @@index([branch])
@@ -229,10 +241,11 @@ model MbcsTeacher {
   monthlySalary  Float?
   perLectureRate Float?
   subjects       Json?
-  isActive       Boolean                 @default(true)
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  attendance     MbcsTeacherAttendance[]
+  isActive             Boolean                 @default(true)
+  associationEndDate   DateTime?               // NULL = active; set = no longer associated
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  attendance           MbcsTeacherAttendance[]
 
   @@map("mbcs_teachers")
 }
@@ -242,10 +255,11 @@ model MbcsStaff {
   name          String
   contactNumber String
   designation   String?
-  monthlySalary Float
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  monthlySalary      Float
+  isActive           Boolean  @default(true)
+  associationEndDate DateTime? // NULL = active; set = no longer associated
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@map("mbcs_staff")
 }
@@ -341,14 +355,19 @@ model MecStudent {
   guardianName       String
   contactNumber      String
   // Fees
-  monthlyTuitionFee  Float
-  admissionFee       Float?
-  admissionDate      DateTime?
+  monthlyTuitionFee   Float
+  admissionFee        Float?
+  readmissionFee      Float?
+  discountTuition     Float?       @default(0)
+  discountAdmission   Float?       @default(0)
+  discountReadmission Float?       @default(0)
+  admissionDate        DateTime?
   // System
-  isActive           Boolean      @default(true)
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  payments           MecPayment[]
+  isActive             Boolean      @default(true)
+  associationEndDate   DateTime?    // NULL = active; set = no longer associated
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  payments             MecPayment[]
 
   @@index([isActive])
   @@map("mec_students")
@@ -374,6 +393,25 @@ model MecPayment {
   @@index([paymentDate])
   @@index([invoiceNumber])
   @@map("mec_payments")
+}
+
+// ============================================
+// Promotion Logs (shared across all orgs)
+// ============================================
+
+model PromotionLog {
+  id           String   @id @default(uuid())
+  organization String   // 'uac', 'mbcs', 'mec'
+  studentId    String
+  fromClass    Int
+  toClass      Int
+  promotedAt   DateTime @default(now())
+  promotedBy   String   // user ID who performed the promotion
+  notes        String?
+
+  @@index([organization, studentId])
+  @@index([promotedAt])
+  @@map("promotion_logs")
 }
 
 // ============================================

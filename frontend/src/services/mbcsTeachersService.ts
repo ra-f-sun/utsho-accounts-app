@@ -9,6 +9,7 @@ export interface MbcsTeacher {
   perLectureRate?: number;
   subjects?: { class: number; subject: string }[];
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,4 +37,6 @@ export const mbcsTeachersService = {
   update: (id: string, data: Partial<CreateMbcsTeacherDto>) =>
     apiPatch<MbcsTeacher>(`/mbcs/teachers/${id}`, data),
   delete: (id: string) => apiDelete<MbcsTeacher>(`/mbcs/teachers/${id}`),
+  disassociate: (id: string) => apiPatch<MbcsTeacher>(`/mbcs/teachers/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<MbcsTeacher>(`/mbcs/teachers/${id}/reassociate`, {}),
 };

@@ -1,6 +1,7 @@
 import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
-export class FilterMecPaymentDto {
+export class FilterMecPaymentDto extends PaginationDto {
   @IsOptional()
   @IsUUID()
   studentId?: string;

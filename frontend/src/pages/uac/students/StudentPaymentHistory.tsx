@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin } from "antd";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Select, Input } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
   EyeOutlined,
+  UserDeleteOutlined,
+  UserAddOutlined,
+  VerticalAlignTopOutlined,
 } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
@@ -31,6 +35,45 @@ const MONTHS = [
 export default function StudentPaymentHistory() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+
+  const disassociateMutation = useMutation({
+    mutationFn: () => studentsService.disassociate(id!),
+    onSuccess: () => {
+      message.success("Student marked as no longer associated");
+      queryClient.invalidateQueries({ queryKey: ["student", id] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: () => message.error("Failed to disassociate student"),
+  });
+
+  const reassociateMutation = useMutation({
+    mutationFn: () => studentsService.reassociate(id!),
+    onSuccess: () => {
+      message.success("Student re-associated successfully");
+      queryClient.invalidateQueries({ queryKey: ["student", id] });
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: () => message.error("Failed to re-associate student"),
+  });
+
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [promoteToClass, setPromoteToClass] = useState<number | undefined>(undefined);
+  const [promoteNotes, setPromoteNotes] = useState('');
+
+  const promoteMutation = useMutation({
+    mutationFn: () => studentsService.promote(id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
+    onSuccess: () => {
+      message.success('Student promoted successfully');
+      setPromoteOpen(false);
+      setPromoteToClass(undefined);
+      setPromoteNotes('');
+      queryClient.invalidateQueries({ queryKey: ['student', id] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+    onError: () => message.error('Failed to promote student'),
+  });
 
   const { data: studentData, isLoading: loadingStudent } = useQuery({
     queryKey: ["student", id],
@@ -136,6 +179,7 @@ export default function StudentPaymentHistory() {
   if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
   return (
+    <>
     <div>
       <div
         style={{
@@ -150,13 +194,55 @@ export default function StudentPaymentHistory() {
         >
           Back to Students
         </Button>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate(`/uac/payments/record?studentId=${id}`)}
-        >
-          Record Payment
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {student?.associationEndDate ? (
+            <Button
+              icon={<UserAddOutlined />}
+              onClick={() =>
+                Modal.confirm({
+                  title: "Re-associate Student",
+                  content: `Re-associate ${student?.name} to the organization?`,
+                  onOk: () => reassociateMutation.mutateAsync(),
+                })
+              }
+              loading={reassociateMutation.isPending}
+            >
+              Re-associate
+            </Button>
+          ) : (
+            <Button
+              danger
+              icon={<UserDeleteOutlined />}
+              onClick={() =>
+                Modal.confirm({
+                  title: "Mark as No Longer Associated",
+                  content: `Mark ${student?.name} as no longer associated? They will be removed from active lists.`,
+                  okText: "Confirm",
+                  okButtonProps: { danger: true },
+                  onOk: () => disassociateMutation.mutateAsync(),
+                })
+              }
+              loading={disassociateMutation.isPending}
+            >
+              No Longer Associated
+            </Button>
+          )}
+          {!student?.associationEndDate && (
+            <Button
+              icon={<VerticalAlignTopOutlined />}
+              onClick={() => setPromoteOpen(true)}
+            >
+              Promote
+            </Button>
+          )}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate(`/uac/payments/record?studentId=${id}`)}
+          >
+            Record Payment
+          </Button>
+        </div>
       </div>
 
       {/* Student Info */}
@@ -252,5 +338,38 @@ export default function StudentPaymentHistory() {
         />
       </Card>
     </div>
+
+    <Modal
+      title={`Promote ${student?.name ?? 'Student'}`}
+      open={promoteOpen}
+      onCancel={() => { setPromoteOpen(false); setPromoteToClass(undefined); setPromoteNotes(''); }}
+      onOk={() => promoteMutation.mutate()}
+      okText="Promote"
+      confirmLoading={promoteMutation.isPending}
+      okButtonProps={{ disabled: !promoteToClass }}
+    >
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 4, fontWeight: 500 }}>Promote to Class</div>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Select new class"
+          value={promoteToClass}
+          onChange={setPromoteToClass}
+          options={[9, 10, 11, 12, 13]
+            .filter((c) => c > (student?.class ?? 0))
+            .map((c) => ({ label: c === 13 ? 'Graduated (Class 13)' : `Class ${c}`, value: c }))}
+        />
+      </div>
+      <div>
+        <div style={{ marginBottom: 4, fontWeight: 500 }}>Notes (optional)</div>
+        <Input.TextArea
+          rows={2}
+          value={promoteNotes}
+          onChange={(e) => setPromoteNotes(e.target.value)}
+          placeholder="e.g. Passed final exam"
+        />
+      </div>
+    </Modal>
+    </>
   );
 }

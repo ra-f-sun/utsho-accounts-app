@@ -30,7 +30,12 @@ export interface Student {
   monthlyTuitionFee: number;
   admissionFee?: number;
   admissionDate?: string;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +67,12 @@ export interface CreateStudentDto {
   guardianName: string;
   contactNumber: string;
   monthlyTuitionFee: number;
+  admissionFee?: number;
+  admissionDate?: string;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
 }
 
 export interface FilterStudentDto {
@@ -87,4 +98,10 @@ export const studentsService = {
   update: (id: string, data: Partial<CreateStudentDto>) =>
     apiPatch<Student>(`/uac/students/${id}`, data),
   delete: (id: string) => apiDelete<Student>(`/uac/students/${id}`),
+  disassociate: (id: string) => apiPatch<Student>(`/uac/students/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<Student>(`/uac/students/${id}/reassociate`, {}),
+  promote: (id: string, data: { toClass: number; notes?: string }) =>
+    apiPost<Student>(`/uac/students/${id}/promote`, data),
+  promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
+    apiPost<{ promoted: number }>('/uac/students/promote-bulk', data),
 };

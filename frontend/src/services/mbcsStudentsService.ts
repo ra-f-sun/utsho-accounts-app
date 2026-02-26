@@ -29,8 +29,13 @@ export interface MbcsStudent {
   contactNumber: string;
   monthlyTuitionFee: number;
   admissionFee?: number;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
   admissionDate?: string;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,6 +68,10 @@ export interface CreateMbcsStudentDto {
   contactNumber: string;
   monthlyTuitionFee: number;
   admissionFee?: number;
+  readmissionFee?: number;
+  discountTuition?: number;
+  discountAdmission?: number;
+  discountReadmission?: number;
   admissionDate?: string;
 }
 
@@ -90,4 +99,10 @@ export const mbcsStudentsService = {
   update: (id: string, data: Partial<CreateMbcsStudentDto>) =>
     apiPatch<MbcsStudent>(`/mbcs/students/${id}`, data),
   delete: (id: string) => apiDelete<MbcsStudent>(`/mbcs/students/${id}`),
+  disassociate: (id: string) => apiPatch<MbcsStudent>(`/mbcs/students/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<MbcsStudent>(`/mbcs/students/${id}/reassociate`, {}),
+  promote: (id: string, data: { toClass: number; notes?: string }) =>
+    apiPost<MbcsStudent>(`/mbcs/students/${id}/promote`, data),
+  promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
+    apiPost<{ promoted: number }>('/mbcs/students/promote-bulk', data),
 };
