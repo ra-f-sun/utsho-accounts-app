@@ -57,6 +57,7 @@ import MecInvoiceByNumber from "./pages/mec/payments/MecInvoiceByNumber";
 import MecPaymentHistory from "./pages/mec/payments/MecPaymentHistory";
 import UsersList from "./pages/users/UsersList";
 import AddUser from "./pages/users/AddUser";
+import SettingsPage from "./pages/settings/SettingsPage";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -94,6 +95,11 @@ function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />
+
+                {/* Settings Routes — SUPER_ADMIN and DIRECTOR */}
+                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR']} />}>
+                  <Route path="settings" element={<SettingsPage />} />
+                </Route>
 
                 {/* Users Routes — SUPER_ADMIN only */}
                 <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>

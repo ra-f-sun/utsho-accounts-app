@@ -9,6 +9,7 @@ import {
   DollarOutlined,
   HistoryOutlined,
   WalletOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -45,6 +46,7 @@ export default function DashboardLayout() {
     "/mec/payments/record",
     "/mec/payment-history",
     "/mec/expenses",
+    "/settings",
   ];
   const selectedKey =
     allKeys
@@ -227,9 +229,27 @@ export default function DashboardLayout() {
         user?.role || "",
       ),
     },
+    // Settings — only visible to SUPER_ADMIN and DIRECTOR
+    ...((["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || ""))
+      ? [
+          {
+            key: "/settings",
+            icon: <SettingOutlined />,
+            label: "Settings",
+            onClick: () => navigate("/settings"),
+          },
+        ]
+      : []),
   ];
 
   const userMenuItems = [
+    {
+      key: "settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
+      onClick: () => navigate("/settings"),
+      disabled: !['SUPER_ADMIN', 'DIRECTOR'].includes(user?.role || ''),
+    },
     {
       key: "logout",
       icon: <LogoutOutlined />,

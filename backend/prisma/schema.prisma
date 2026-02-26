@@ -406,3 +406,16 @@ model InvoiceCounter {
   @@id([year, organization])
   @@map("invoice_counters")
 }
+
+model OrgSettings {
+  id           String   @id @default(uuid())
+  organization String   // 'uac', 'mbcs', 'mec'
+  settingKey   String   // e.g., 'tuition_default', 'admission_default', 'discount_tuition_options', 'study_materials'
+  settingValue Json     // flexible JSON value (number, string, array, object)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([organization, settingKey])
+  @@index([organization])
+  @@map("org_settings")
+}
