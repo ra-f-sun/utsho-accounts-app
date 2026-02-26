@@ -37,8 +37,9 @@ export class PayrollController {
   }
 
   @Get()
-  findAll(@Query() query: FilterMbcsPayrollDto) {
-    return this.payrollService.findAll(query.payableType, query.payableId, query.paymentMonth, query);
+  findAll(@Query() filters: FilterMbcsPayrollDto) {
+    const { page, limit, payableType, payableId, paymentMonth } = filters;
+    return this.payrollService.findAll(payableType, payableId, paymentMonth, { page, limit });
   }
 
   @Get('calculate/teacher/:teacherId/:month')

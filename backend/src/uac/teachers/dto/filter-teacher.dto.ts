@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum } from 'class-validator';
+import { IsOptional, IsEnum, IsString } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class FilterTeacherDto extends PaginationDto {
@@ -7,5 +7,6 @@ export class FilterTeacherDto extends PaginationDto {
   paymentType?: string;
 
   @IsOptional()
+  @IsString()
   search?: string; // Search by name or contact
 }

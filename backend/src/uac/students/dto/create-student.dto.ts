@@ -138,4 +138,25 @@ export class CreateStudentDto {
   @IsOptional()
   @IsDateString()
   admissionDate?: string;
+
+  // === Fee & Discount fields ===
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  readmissionFee?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountTuition?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountAdmission?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountReadmission?: number;
 }

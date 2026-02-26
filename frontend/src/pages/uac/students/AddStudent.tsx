@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   Input,
@@ -10,15 +10,23 @@ import {
   Row,
   Col,
   message,
+  Tooltip,
+  Typography,
 } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { studentsService } from "../../../services/studentsService";
 import type { CreateStudentDto } from "../../../services/studentsService";
+import settingsService, {
+  type OrgSetting,
+} from "../../../services/settingsService";
+import { UAC_CLASSES } from "../../../constants/uacClasses";
 import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
+const { Text } = Typography;
 
 export default function AddStudent() {
   const [form] = Form.useForm();
@@ -26,6 +34,50 @@ export default function AddStudent() {
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+
+  // Settings state
+  const [settingsRows, setSettingsRows] = useState<OrgSetting[]>([]);
+  const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
+  const [admissionDiscounts, setAdmissionDiscounts] = useState<number[]>([]);
+  const [readmissionDiscounts, setReadmissionDiscounts] = useState<number[]>([]);
+
+  useEffect(() => {
+    void settingsService.getAllSettings("uac").then((rows) => {
+      setSettingsRows(rows);
+      rows.forEach((r) => {
+        const vals =
+          (r.settingValue as { values: number[] } | null)?.values ?? [];
+        if (r.settingKey === "discount_tuition_options")
+          setTuitionDiscounts(vals);
+        if (r.settingKey === "discount_admission_options")
+          setAdmissionDiscounts(vals);
+        if (r.settingKey === "discount_readmission_options")
+          setReadmissionDiscounts(vals);
+      });
+    });
+  }, []);
+
+  function resolveFee(prefix: string, cls: number): number | null {
+    const overrideKey = `${prefix}_override_${cls}`;
+    const defaultKey = `${prefix}_default`;
+    const overrideRow = settingsRows.find((r) => r.settingKey === overrideKey);
+    const defaultRow = settingsRows.find((r) => r.settingKey === defaultKey);
+    const override = (overrideRow?.settingValue as { value: number } | null)
+      ?.value;
+    const def = (defaultRow?.settingValue as { value: number } | null)?.value;
+    return override ?? def ?? null;
+  }
+
+  function onClassChange(cls: number) {
+    const tuition = resolveFee("tuition", cls);
+    const admission = resolveFee("admission", cls);
+    const readmission = resolveFee("readmission", cls);
+    form.setFieldsValue({
+      monthlyTuitionFee: tuition,
+      admissionFee: admission,
+      readmissionFee: readmission,
+    });
+  }
 
   // Fetch existing student for edit
   const { data: existingData } = useQuery({
@@ -46,6 +98,9 @@ export default function AddStudent() {
           admissionDate: student.admissionDate
             ? dayjs(student.admissionDate)
             : undefined,
+          discountTuition: student.discountTuition ?? 0,
+          discountAdmission: student.discountAdmission ?? 0,
+          discountReadmission: student.discountReadmission ?? 0,
         });
       }
     }
@@ -81,6 +136,9 @@ export default function AddStudent() {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
+      discountTuition: values.discountTuition ?? 0,
+      discountAdmission: values.discountAdmission ?? 0,
+      discountReadmission: values.discountReadmission ?? 0,
     };
     if (isEditMode) {
       updateMutation.mutate(data);
@@ -153,10 +211,13 @@ export default function AddStudent() {
                 name="class"
                 rules={[{ required: true, message: "Please select class" }]}
               >
-                <Select placeholder="Select class">
-                  {[8, 9, 10, 11, 12].map((cls) => (
+                <Select
+                  placeholder="Select class"
+                  onChange={(cls: number) => onClassChange(cls)}
+                >
+                  {UAC_CLASSES.map(({ value: cls, label }) => (
                     <Option key={cls} value={cls}>
-                      Class {cls}
+                      {label}
                     </Option>
                   ))}
                 </Select>
@@ -319,7 +380,14 @@ export default function AddStudent() {
             </Col>
             <Col span={8}>
               <Form.Item
-                label="Monthly Tuition Fee (৳)"
+                label={
+                  <span>
+                    Monthly Tuition Fee (৳)&nbsp;
+                    <Tooltip title="Auto-filled from Settings → Configure UAC. Select a class to apply the fee.">
+                      <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
                 name="monthlyTuitionFee"
                 rules={[
                   { required: true, message: "Please enter monthly fee" },
@@ -328,19 +396,163 @@ export default function AddStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Enter amount"
+                  placeholder="Select class to auto-fill"
+                  disabled
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="Admission Fee (৳)" name="admissionFee">
+              <Form.Item
+                label={
+                  <span>
+                    Admission Fee (৳)&nbsp;
+                    <Tooltip title="Auto-filled from Settings → Configure UAC">
+                      <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
+                name="admissionFee"
+              >
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Enter amount"
+                  placeholder="Select class to auto-fill"
+                  disabled
                 />
               </Form.Item>
             </Col>
+            <Col span={8}>
+              <Form.Item
+                label={
+                  <span>
+                    Re-Admission Fee (৳)&nbsp;
+                    <Tooltip title="Auto-filled from Settings → Configure UAC">
+                      <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
+                    </Tooltip>
+                  </span>
+                }
+                name="readmissionFee"
+              >
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  placeholder="Select class to auto-fill"
+                  disabled
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Discounts */}
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="Discount on Tuition Fee" name="discountTuition">
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {tuitionDiscounts.map((v) => (
+                    <Option key={v} value={v}>
+                      ৳{v} off
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Discount on Admission Fee"
+                name="discountAdmission"
+              >
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {admissionDiscounts.map((v) => (
+                    <Option key={v} value={v}>
+                      ৳{v} off
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Discount on Re-Admission Fee"
+                name="discountReadmission"
+              >
+                <Select allowClear placeholder="No Discount">
+                  <Option value={0}>No Discount</Option>
+                  {readmissionDiscounts.map((v) => (
+                    <Option key={v} value={v}>
+                      ৳{v} off
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* Effective fee summary */}
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const tuition = getFieldValue("monthlyTuitionFee") ?? 0;
+              const admission = getFieldValue("admissionFee") ?? 0;
+              const readmission = getFieldValue("readmissionFee") ?? 0;
+              const dTuition = getFieldValue("discountTuition") ?? 0;
+              const dAdmission = getFieldValue("discountAdmission") ?? 0;
+              const dReadmission = getFieldValue("discountReadmission") ?? 0;
+              if (!tuition && !admission && !readmission) return null;
+              return (
+                <div
+                  style={{
+                    background: "#f6ffed",
+                    border: "1px solid #b7eb8f",
+                    borderRadius: 8,
+                    padding: "12px 16px",
+                    marginTop: 8,
+                  }}
+                >
+                  <Text strong style={{ display: "block", marginBottom: 4 }}>
+                    Effective Fees
+                  </Text>
+                  <Row gutter={16}>
+                    {tuition > 0 && (
+                      <Col>
+                        <Text>Tuition: </Text>
+                        <Text strong>৳{tuition - dTuition}</Text>
+                        {dTuition > 0 && (
+                          <Text type="secondary">
+                            {" "}(৳{tuition} − ৳{dTuition})
+                          </Text>
+                        )}
+                      </Col>
+                    )}
+                    {admission > 0 && (
+                      <Col>
+                        <Text>Admission: </Text>
+                        <Text strong>৳{admission - dAdmission}</Text>
+                        {dAdmission > 0 && (
+                          <Text type="secondary">
+                            {" "}(৳{admission} − ৳{dAdmission})
+                          </Text>
+                        )}
+                      </Col>
+                    )}
+                    {readmission > 0 && (
+                      <Col>
+                        <Text>Re-Admission: </Text>
+                        <Text strong>৳{readmission - dReadmission}</Text>
+                        {dReadmission > 0 && (
+                          <Text type="secondary">
+                            {" "}(৳{readmission} − ৳{dReadmission})
+                          </Text>
+                        )}
+                      </Col>
+                    )}
+                  </Row>
+                </div>
+              );
+            }}
+          </Form.Item>
+
+          <Row gutter={16} style={{ marginTop: 16 }}>
             <Col span={8}>
               <Form.Item
                 label="Admission Date"

@@ -1,10 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin } from "antd";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
   EyeOutlined,
+  UserDeleteOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
@@ -29,6 +31,28 @@ interface PayrollRecord {
 export default function MbcsTeacherPayrollHistory() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+
+  const disassociateMutation = useMutation({
+    mutationFn: () => mbcsTeachersService.disassociate(id!),
+    onSuccess: () => {
+      message.success("Teacher marked as no longer associated");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+    },
+    onError: () => message.error("Failed to disassociate teacher"),
+  });
+
+  const reassociateMutation = useMutation({
+    mutationFn: () => mbcsTeachersService.reassociate(id!),
+    onSuccess: () => {
+      message.success("Teacher re-associated successfully");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+    },
+    onError: () => message.error("Failed to re-associate teacher"),
+  });
 
   const { data: teacherData, isLoading: loadingTeacher } = useQuery({
     queryKey: ["mbcs-teacher", id],
@@ -141,13 +165,47 @@ export default function MbcsTeacherPayrollHistory() {
         >
           Back to Teachers
         </Button>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate(`/mbcs/payroll/create?teacherId=${id}`)}
-        >
-          Create Payroll
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {teacher?.associationEndDate ? (
+            <Button
+              icon={<UserAddOutlined />}
+              onClick={() =>
+                Modal.confirm({
+                  title: "Re-associate Teacher",
+                  content: `Re-associate ${teacher?.name} to the organization?`,
+                  onOk: () => reassociateMutation.mutateAsync(),
+                })
+              }
+              loading={reassociateMutation.isPending}
+            >
+              Re-associate
+            </Button>
+          ) : (
+            <Button
+              danger
+              icon={<UserDeleteOutlined />}
+              onClick={() =>
+                Modal.confirm({
+                  title: "Mark as No Longer Associated",
+                  content: `Mark ${teacher?.name} as no longer associated? They will be removed from active lists.`,
+                  okText: "Confirm",
+                  okButtonProps: { danger: true },
+                  onOk: () => disassociateMutation.mutateAsync(),
+                })
+              }
+              loading={disassociateMutation.isPending}
+            >
+              No Longer Associated
+            </Button>
+          )}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate(`/mbcs/payroll/create?teacherId=${id}`)}
+          >
+            Create Payroll
+          </Button>
+        </div>
       </div>
 
       <Card style={{ marginBottom: 16 }}>

@@ -42,6 +42,7 @@ export class TeachersService {
   async findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) {
     const where: Prisma.UacTeacherWhereInput = {
       isActive: true,
+      associationEndDate: null,
     };
 
     // Filter by payment type
@@ -129,6 +130,23 @@ export class TeachersService {
     return this.prisma.uacTeacher.update({
       where: { id },
       data: { isActive: false },
+    });
+  }
+
+  async disassociate(id: string) {
+    await this.findOne(id);
+    return this.prisma.uacTeacher.update({
+      where: { id },
+      data: { associationEndDate: new Date() },
+    });
+  }
+
+  async reassociate(id: string) {
+    const teacher = await this.prisma.uacTeacher.findUnique({ where: { id } });
+    if (!teacher) throw new NotFoundException(`Teacher with ID ${id} not found`);
+    return this.prisma.uacTeacher.update({
+      where: { id },
+      data: { associationEndDate: null },
     });
   }
 }

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Input, Space, App, Popconfirm } from "antd";
+import { Table, Button, Input, Space, App, Popconfirm, Tag } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
+  UserDeleteOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { staffService } from "../../../services/staffService";
@@ -43,6 +45,24 @@ export default function StaffList() {
     },
   });
 
+  const disassociateMutation = useMutation({
+    mutationFn: (id: string) => staffService.disassociate(id),
+    onSuccess: () => {
+      message.success("Staff member marked as no longer associated");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: () => message.error("Failed to disassociate staff member"),
+  });
+
+  const reassociateMutation = useMutation({
+    mutationFn: (id: string) => staffService.reassociate(id),
+    onSuccess: () => {
+      message.success("Staff member re-associated successfully");
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+    },
+    onError: () => message.error("Failed to re-associate staff member"),
+  });
+
   if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
   const columns: ColumnsType<Staff> = [
@@ -71,7 +91,7 @@ export default function StaffList() {
     {
       title: "Actions",
       key: "actions",
-      width: 120,
+      width: 160,
       render: (_: any, record: Staff) => (
         <Space>
           <Button
@@ -79,6 +99,37 @@ export default function StaffList() {
             icon={<EditOutlined />}
             onClick={() => navigate(`/uac/staff/edit/${record.id}`)}
           />
+          {record.associationEndDate ? (
+            <Popconfirm
+              title="Re-associate this staff member?"
+              onConfirm={() => reassociateMutation.mutate(record.id)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                type="link"
+                icon={<UserAddOutlined />}
+                loading={reassociateMutation.isPending}
+                title="Re-associate"
+              />
+            </Popconfirm>
+          ) : (
+            <Popconfirm
+              title="Mark as no longer associated?"
+              onConfirm={() => disassociateMutation.mutate(record.id)}
+              okText="Yes"
+              cancelText="No"
+              okButtonProps={{ danger: true }}
+            >
+              <Button
+                type="link"
+                danger
+                icon={<UserDeleteOutlined />}
+                loading={disassociateMutation.isPending}
+                title="No Longer Associated"
+              />
+            </Popconfirm>
+          )}
           <Popconfirm
             title="Are you sure to delete this staff member?"
             onConfirm={() => deleteMutation.mutate(record.id)}

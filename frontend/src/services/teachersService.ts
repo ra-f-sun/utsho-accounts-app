@@ -9,6 +9,7 @@ export interface Teacher {
   perLectureRate?: number;
   subjects?: string;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,4 +42,6 @@ export const teachersService = {
   update: (id: string, data: Partial<CreateTeacherDto>) =>
     apiPatch<Teacher>(`/uac/teachers/${id}`, data),
   delete: (id: string) => apiDelete<Teacher>(`/uac/teachers/${id}`),
+  disassociate: (id: string) => apiPatch<Teacher>(`/uac/teachers/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<Teacher>(`/uac/teachers/${id}/reassociate`, {}),
 };

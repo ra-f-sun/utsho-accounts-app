@@ -18,6 +18,7 @@ export class StaffService {
   async findAll(search?: string, pagination?: PaginationDto) {
     const where: Prisma.UacStaffWhereInput = {
       isActive: true,
+      associationEndDate: null,
     };
 
     // Search by name, contact, or designation
@@ -76,6 +77,23 @@ export class StaffService {
     return this.prisma.uacStaff.update({
       where: { id },
       data: { isActive: false },
+    });
+  }
+
+  async disassociate(id: string) {
+    await this.findOne(id);
+    return this.prisma.uacStaff.update({
+      where: { id },
+      data: { associationEndDate: new Date() },
+    });
+  }
+
+  async reassociate(id: string) {
+    const staff = await this.prisma.uacStaff.findUnique({ where: { id } });
+    if (!staff) throw new NotFoundException(`Staff with ID ${id} not found`);
+    return this.prisma.uacStaff.update({
+      where: { id },
+      data: { associationEndDate: null },
     });
   }
 }

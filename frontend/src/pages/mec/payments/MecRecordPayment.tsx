@@ -56,7 +56,7 @@ export default function MecRecordPayment() {
         setSelectedStudentId(studentId);
         form.setFieldsValue({
           studentId,
-          amount: student.monthlyTuitionFee,
+          amount: (student.monthlyTuitionFee ?? 0) - (student.discountTuition ?? 0),
         });
       }
     }
@@ -116,10 +116,15 @@ export default function MecRecordPayment() {
     setSelectedStudentId(studentId);
     const student = allStudents.find((s) => s.id === studentId);
     if (student) {
-      // Pre-fill the first line item's amount with the monthly tuition fee
+      // Pre-fill the first line item's amount with the effective tuition fee (minus discount)
       const lineItems = form.getFieldValue("lineItems") || [{}];
       if (lineItems.length > 0) {
-        lineItems[0] = { ...lineItems[0], amount: student.monthlyTuitionFee };
+        lineItems[0] = {
+          ...lineItems[0],
+          amount:
+            (student.monthlyTuitionFee ?? 0) -
+            (student.discountTuition ?? 0),
+        };
         form.setFieldValue("lineItems", lineItems);
       }
     }

@@ -51,8 +51,9 @@ export class MecPaymentsController {
   }
 
   @Get()
-  findAll(@Query() query: FilterMecPaymentDto) {
-    return this.paymentsService.findAll(query, query);
+  findAll(@Query() filters: FilterMecPaymentDto) {
+    const { page, limit, ...filterParams } = filters;
+    return this.paymentsService.findAll(filterParams, { page, limit });
   }
 
   @Get('student/:studentId/summary')

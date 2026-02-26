@@ -13,7 +13,7 @@ export class StaffService {
   }
 
   async findAll(pagination?: PaginationDto) {
-    const where = { isActive: true };
+    const where: { isActive: boolean; associationEndDate: null } = { isActive: true, associationEndDate: null };
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -56,6 +56,23 @@ export class StaffService {
     return this.prisma.mbcsStaff.update({
       where: { id },
       data: { isActive: false },
+    });
+  }
+
+  async disassociate(id: string) {
+    await this.findOne(id);
+    return this.prisma.mbcsStaff.update({
+      where: { id },
+      data: { associationEndDate: new Date() },
+    });
+  }
+
+  async reassociate(id: string) {
+    const staff = await this.prisma.mbcsStaff.findUnique({ where: { id } });
+    if (!staff) throw new NotFoundException(`Staff with ID ${id} not found`);
+    return this.prisma.mbcsStaff.update({
+      where: { id },
+      data: { associationEndDate: null },
     });
   }
 }

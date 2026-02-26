@@ -25,6 +25,7 @@ import {
 import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
+import settingsService from "../../../services/settingsService";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -94,14 +95,34 @@ export default function RecordPayment() {
   // Get currently selected student object
   const selectedStudent = allStudents.find((s) => s.id === selectedStudentId);
 
-  // Auto-fill tuition amount on type change for a specific line item
+  // Fetch study materials setting
+  const { data: studyMaterialsData } = useQuery({
+    queryKey: ["uac-settings", "study_materials"],
+    queryFn: () => settingsService.getSetting("uac", "study_materials"),
+  });
+  const studyMaterials: Array<{ name: string; price: number }> =
+    (studyMaterialsData as { settingValue?: { items: Array<{ name: string; price: number }> } } | null)
+      ?.settingValue?.items ?? [];
+
+  // Auto-fill amount on type change — discount-aware
   const onLineItemTypeChange = (type: string, fieldIndex: number) => {
-    if (type === "tuition" && selectedStudent?.monthlyTuitionFee) {
-      const lineItems = form.getFieldValue("lineItems") || [];
-      lineItems[fieldIndex] = {
-        ...lineItems[fieldIndex],
-        amount: selectedStudent.monthlyTuitionFee,
-      };
+    if (!selectedStudent) return;
+    const lineItems: any[] = form.getFieldValue("lineItems") || [];
+    let amount: number | undefined;
+    if (type === "tuition") {
+      amount =
+        (selectedStudent.monthlyTuitionFee ?? 0) -
+        (selectedStudent.discountTuition ?? 0);
+    } else if (type === "admission") {
+      const base = selectedStudent.admissionFee ?? 0;
+      if (base > 0) amount = base - (selectedStudent.discountAdmission ?? 0);
+    } else if (type === "readmission") {
+      const base = selectedStudent.readmissionFee ?? 0;
+      if (base > 0)
+        amount = base - (selectedStudent.discountReadmission ?? 0);
+    }
+    if (amount !== undefined) {
+      lineItems[fieldIndex] = { ...lineItems[fieldIndex], amount };
       form.setFieldValue("lineItems", lineItems);
     }
   };
@@ -353,25 +374,66 @@ export default function RecordPayment() {
                             name,
                             "paymentType",
                           ]);
-                          return type === "tuition" ? (
-                            <Col flex="160px">
-                              <Form.Item
-                                {...restField}
-                                name={[name, "paymentMonth"]}
-                                label="Month"
-                                rules={[
-                                  { required: true, message: "Required" },
-                                ]}
-                                style={{ marginBottom: 0 }}
-                              >
-                                <DatePicker
-                                  picker="month"
-                                  style={{ width: "100%" }}
-                                  format="MMM YYYY"
-                                />
-                              </Form.Item>
-                            </Col>
-                          ) : null;
+                          if (type === "tuition") {
+                            return (
+                              <Col flex="160px">
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, "paymentMonth"]}
+                                  label="Month"
+                                  rules={[
+                                    { required: true, message: "Required" },
+                                  ]}
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <DatePicker
+                                    picker="month"
+                                    style={{ width: "100%" }}
+                                    format="MMM YYYY"
+                                  />
+                                </Form.Item>
+                              </Col>
+                            );
+                          }
+                          if (type === "study_materials" && studyMaterials.length > 0) {
+                            return (
+                              <Col flex="200px">
+                                <Form.Item
+                                  label="Select Material"
+                                  style={{ marginBottom: 0 }}
+                                >
+                                  <Select
+                                    placeholder="Pick a material"
+                                    onChange={(materialName: string) => {
+                                      const mat = studyMaterials.find(
+                                        (m) => m.name === materialName,
+                                      );
+                                      if (mat) {
+                                        const lineItems: any[] =
+                                          form.getFieldValue("lineItems") || [];
+                                        lineItems[index] = {
+                                          ...lineItems[index],
+                                          amount: mat.price,
+                                          notes: mat.name,
+                                        };
+                                        form.setFieldValue(
+                                          "lineItems",
+                                          lineItems,
+                                        );
+                                      }
+                                    }}
+                                  >
+                                    {studyMaterials.map((m) => (
+                                      <Option key={m.name} value={m.name}>
+                                        {m.name} — ৳{m.price}
+                                      </Option>
+                                    ))}
+                                  </Select>
+                                </Form.Item>
+                              </Col>
+                            );
+                          }
+                          return null;
                         }}
                       </Form.Item>
 

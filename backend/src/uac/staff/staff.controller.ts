@@ -32,8 +32,9 @@ export class StaffController {
   }
 
   @Get()
-  findAll(@Query() query: FilterStaffDto) {
-    return this.staffService.findAll(query.search, query);
+  findAll(@Query() filters: FilterStaffDto) {
+    const { page, limit, ...rest } = filters;
+    return this.staffService.findAll(rest.search, { page, limit });
   }
 
   @Get(':id')
@@ -52,5 +53,15 @@ export class StaffController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.staffService.remove(id);
+  }
+
+  @Patch(':id/disassociate')
+  disassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.disassociate(id);
+  }
+
+  @Patch(':id/reassociate')
+  reassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.staffService.reassociate(id);
   }
 }

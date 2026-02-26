@@ -7,6 +7,7 @@ export interface Staff {
   designation: string;
   monthlySalary: number;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,4 +32,6 @@ export const staffService = {
   update: (id: string, data: Partial<CreateStaffDto>) =>
     apiPatch<Staff>(`/uac/staff/${id}`, data),
   delete: (id: string) => apiDelete<Staff>(`/uac/staff/${id}`),
+  disassociate: (id: string) => apiPatch<Staff>(`/uac/staff/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<Staff>(`/uac/staff/${id}/reassociate`, {}),
 };

@@ -51,8 +51,9 @@ export class PaymentsController {
   }
 
   @Get()
-  findAll(@Query() query: FilterPaymentDto) {
-    return this.paymentsService.findAll(query, query);
+  findAll(@Query() filters: FilterPaymentDto) {
+    const { page, limit, ...filterParams } = filters;
+    return this.paymentsService.findAll(filterParams, { page, limit });
   }
 
   @Get('student/:studentId/summary')

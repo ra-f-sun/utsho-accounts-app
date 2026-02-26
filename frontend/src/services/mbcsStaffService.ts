@@ -7,6 +7,7 @@ export interface MbcsStaff {
   designation?: string;
   monthlySalary: number;
   isActive: boolean;
+  associationEndDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,4 +28,6 @@ export const mbcsStaffService = {
   update: (id: string, data: Partial<CreateMbcsStaffDto>) =>
     apiPatch<MbcsStaff>(`/mbcs/staff/${id}`, data),
   delete: (id: string) => apiDelete<MbcsStaff>(`/mbcs/staff/${id}`),
+  disassociate: (id: string) => apiPatch<MbcsStaff>(`/mbcs/staff/${id}/disassociate`, {}),
+  reassociate: (id: string) => apiPatch<MbcsStaff>(`/mbcs/staff/${id}/reassociate`, {}),
 };

@@ -9,6 +9,8 @@ import {
   DollarOutlined,
   HistoryOutlined,
   WalletOutlined,
+  SettingOutlined,
+  VerticalAlignTopOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -26,6 +28,7 @@ export default function DashboardLayout() {
     "/dashboard",
     "/users",
     "/uac/students",
+    "/uac/students/promote",
     "/uac/teachers",
     "/uac/staff",
     "/uac/payments",
@@ -34,6 +37,7 @@ export default function DashboardLayout() {
     "/uac/payroll",
     "/uac/expenses",
     "/mbcs/students",
+    "/mbcs/students/promote",
     "/mbcs/teachers",
     "/mbcs/staff",
     "/mbcs/payments",
@@ -45,6 +49,7 @@ export default function DashboardLayout() {
     "/mec/payments/record",
     "/mec/payment-history",
     "/mec/expenses",
+    "/settings",
   ];
   const selectedKey =
     allKeys
@@ -96,6 +101,16 @@ export default function DashboardLayout() {
           label: "Students",
           onClick: () => navigate("/uac/students"),
         },
+        ...(["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || "")
+          ? [
+              {
+                key: "/uac/students/promote",
+                icon: <VerticalAlignTopOutlined />,
+                label: "Promote Students",
+                onClick: () => navigate("/uac/students/promote"),
+              },
+            ]
+          : []),
         {
           key: "/uac/teachers",
           label: "Teachers",
@@ -150,6 +165,16 @@ export default function DashboardLayout() {
           label: "Students",
           onClick: () => navigate("/mbcs/students"),
         },
+        ...(["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || "")
+          ? [
+              {
+                key: "/mbcs/students/promote",
+                icon: <VerticalAlignTopOutlined />,
+                label: "Promote Students",
+                onClick: () => navigate("/mbcs/students/promote"),
+              },
+            ]
+          : []),
         {
           key: "/mbcs/teachers",
           label: "Teachers",
@@ -227,9 +252,27 @@ export default function DashboardLayout() {
         user?.role || "",
       ),
     },
+    // Settings — only visible to SUPER_ADMIN and DIRECTOR
+    ...((["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || ""))
+      ? [
+          {
+            key: "/settings",
+            icon: <SettingOutlined />,
+            label: "Settings",
+            onClick: () => navigate("/settings"),
+          },
+        ]
+      : []),
   ];
 
   const userMenuItems = [
+    {
+      key: "settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
+      onClick: () => navigate("/settings"),
+      disabled: !['SUPER_ADMIN', 'DIRECTOR'].includes(user?.role || ''),
+    },
     {
       key: "logout",
       icon: <LogoutOutlined />,

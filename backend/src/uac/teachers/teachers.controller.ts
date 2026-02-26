@@ -32,8 +32,9 @@ export class TeachersController {
   }
 
   @Get()
-  findAll(@Query() query: FilterTeacherDto) {
-    return this.teachersService.findAll(query, query);
+  findAll(@Query() filters: FilterTeacherDto) {
+    const { page, limit, ...filterParams } = filters;
+    return this.teachersService.findAll(filterParams, { page, limit });
   }
 
   @Get(':id')
@@ -52,5 +53,15 @@ export class TeachersController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.teachersService.remove(id);
+  }
+
+  @Patch(':id/disassociate')
+  disassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.teachersService.disassociate(id);
+  }
+
+  @Patch(':id/reassociate')
+  reassociate(@Param('id', ParseUUIDPipe) id: string) {
+    return this.teachersService.reassociate(id);
   }
 }

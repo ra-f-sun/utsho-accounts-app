@@ -36,12 +36,13 @@ export class ExpensesController {
   }
 
   @Get()
-  findAll(@Query() query: FilterExpenseDto) {
+  findAll(@Query() filters: FilterExpenseDto) {
+    const { page, limit, organization, expenseType, expenseMonth } = filters;
     return this.expensesService.findAll(
-      query.organization,
-      query.expenseType,
-      query.expenseMonth,
-      query,
+      organization,
+      expenseType,
+      expenseMonth,
+      { page, limit },
     );
   }
 
