@@ -17,6 +17,16 @@ export interface MecPayment {
   notes?: string;
   createdBy: string;
   createdAt: string;
+  // Dual invoice fields (Feature 6A)
+  guardianAmount?: number;
+  officeSubTotal?: number;
+  guardianSubTotal?: number;
+  additionalDiscount?: number;
+  officeGrandTotal?: number;
+  guardianGrandTotal?: number;
+  officePaid?: number;
+  guardianPaid?: number;
+  dueAmount?: number;
 }
 
 export interface CreateMecPaymentDto {
@@ -39,6 +49,8 @@ export interface CreateMecMultiPaymentDto {
   paymentDate: string;
   paymentMethod: string;
   lineItems: MecPaymentLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
 }
 
 export const mecPaymentsService = {

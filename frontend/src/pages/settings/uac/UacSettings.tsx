@@ -3,6 +3,7 @@ import UacTuitionSettings from "./UacTuitionSettings";
 import UacAdmissionSettings from "./UacAdmissionSettings";
 import UacStudyMaterialsSettings from "./UacStudyMaterialsSettings";
 import UacDiscountSettings from "./UacDiscountSettings";
+import UacInvoiceSettings from "./UacInvoiceSettings";
 
 const tabItems = [
   {
@@ -24,6 +25,11 @@ const tabItems = [
     key: "discounts",
     label: "Discount Options",
     children: <UacDiscountSettings />,
+  },
+  {
+    key: "invoice_mode",
+    label: "Invoice Mode",
+    children: <UacInvoiceSettings />,
   },
 ];
 

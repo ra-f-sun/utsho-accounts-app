@@ -11,7 +11,7 @@ const ORG_ADDRESS = "Bashabo, Dhaka";
 const fmt = (s: string) =>
   s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
+const MbcsStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
   ({ data }, ref) => (
     <div
       ref={ref}
@@ -51,7 +51,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
           <span
             style={{
               display: "inline-block",
-              background: "rgba(255,255,255,0.25)",
+              background: "rgba(245,34,45,0.3)",
               color: "#fff",
               fontSize: 10,
               fontWeight: 700,
@@ -62,7 +62,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
               marginTop: 4,
             }}
           >
-            Guardian&#39;s Copy
+            Office Copy
           </span>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
             {data.invoiceNumber}
@@ -186,7 +186,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
                       {dayjs(item.paymentMonth).format("MMM YYYY")}
                     </td>
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                      ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
+                      ৳{item.amount.toLocaleString()}
                     </td>
                   </tr>
                 ))}
@@ -211,7 +211,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
             Total Amount Paid
           </span>
           <span style={{ fontSize: 34, fontWeight: 800, color: "#fff" }}>
-            ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
+            ৳{(data.officePaid ?? data.amount).toLocaleString()}
           </span>
         </div>
 
@@ -250,5 +250,5 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
   ),
 );
 
-MbcsStudentInvoice.displayName = "MbcsStudentInvoice";
-export default MbcsStudentInvoice;
+MbcsStudentOfficeInvoice.displayName = "MbcsStudentOfficeInvoice";
+export default MbcsStudentOfficeInvoice;

@@ -40,4 +40,14 @@ export class CreateMecMultiPaymentDto {
   @ValidateNested({ each: true })
   @Type(() => MecPaymentLineItemDto)
   lineItems: MecPaymentLineItemDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  additionalDiscount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  dueAmount?: number;
 }

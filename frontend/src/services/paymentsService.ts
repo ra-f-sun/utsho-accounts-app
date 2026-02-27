@@ -20,6 +20,16 @@ export interface Payment {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  // Dual invoice fields (Feature 6A)
+  guardianAmount?: number;
+  officeSubTotal?: number;
+  guardianSubTotal?: number;
+  additionalDiscount?: number;
+  officeGrandTotal?: number;
+  guardianGrandTotal?: number;
+  officePaid?: number;
+  guardianPaid?: number;
+  dueAmount?: number;
 }
 
 export interface CreatePaymentDto {
@@ -44,6 +54,8 @@ export interface CreateMultiPaymentDto {
   paymentDate: string;
   paymentMethod: string;
   lineItems: PaymentLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
 }
 
 export interface FilterPaymentDto {

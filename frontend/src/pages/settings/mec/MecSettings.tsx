@@ -1,6 +1,7 @@
 import { Tabs } from "antd";
 import MecTuitionSettings from "./MecTuitionSettings";
 import MecDiscountSettings from "./MecDiscountSettings";
+import MecInvoiceSettings from "./MecInvoiceSettings";
 
 const tabItems = [
   {
@@ -12,6 +13,11 @@ const tabItems = [
     key: "discounts",
     label: "Discount Options",
     children: <MecDiscountSettings />,
+  },
+  {
+    key: "invoice_mode",
+    label: "Invoice Mode",
+    children: <MecInvoiceSettings />,
   },
 ];
 

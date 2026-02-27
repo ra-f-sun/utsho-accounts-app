@@ -126,7 +126,7 @@ model UacPayment {
   studentId     String
   student       UacStudent @relation(fields: [studentId], references: [id])
   paymentType   String // 'tuition','admission','readmission','exam','sheet','session_charge','study_materials','study_tour','other'
-  amount        Float
+  amount        Float      // Office/actual amount (post-discount) — source of truth for financials
   paymentMonth  DateTime // YYYY-MM-01 format
   paymentDate   DateTime
   paymentMethod String // 'cash', 'bank', 'mobile'
@@ -136,6 +136,16 @@ model UacPayment {
   createdAt     DateTime   @default(now())
   isActive      Boolean    @default(true)
   updatedAt     DateTime   @updatedAt
+  // Dual invoice fields (Feature 6A)
+  guardianAmount     Float?              // Display amount for guardian (pre-discount), per-line-item
+  officeSubTotal     Float?              // Sum of actual (post-discount) amounts (invoice-level)
+  guardianSubTotal   Float?              // Sum of guardian (pre-discount) amounts (invoice-level)
+  additionalDiscount Float?   @default(0) // Extra discount entered by accountant (invoice-level)
+  officeGrandTotal   Float?              // officeSubTotal - additionalDiscount
+  guardianGrandTotal Float?              // guardianSubTotal - additionalDiscount
+  officePaid         Float?              // officeGrandTotal - dueAmount
+  guardianPaid       Float?              // guardianGrandTotal - dueAmount
+  dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
@@ -269,7 +279,7 @@ model MbcsPayment {
   studentId     String
   student       MbcsStudent @relation(fields: [studentId], references: [id])
   paymentType   String // 'tuition','admission','readmission','exam','session_charge','study_materials','study_tour','stationary','other'
-  amount        Float
+  amount        Float       // Office/actual amount (post-discount) — source of truth for financials
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod String
@@ -279,6 +289,16 @@ model MbcsPayment {
   createdAt     DateTime    @default(now())
   isActive      Boolean     @default(true)
   updatedAt     DateTime    @updatedAt
+  // Dual invoice fields (Feature 6A)
+  guardianAmount     Float?              // Display amount for guardian (pre-discount), per-line-item
+  officeSubTotal     Float?              // Sum of actual (post-discount) amounts (invoice-level)
+  guardianSubTotal   Float?              // Sum of guardian (pre-discount) amounts (invoice-level)
+  additionalDiscount Float?   @default(0) // Extra discount entered by accountant (invoice-level)
+  officeGrandTotal   Float?              // officeSubTotal - additionalDiscount
+  guardianGrandTotal Float?              // guardianSubTotal - additionalDiscount
+  officePaid         Float?              // officeGrandTotal - dueAmount
+  guardianPaid       Float?              // guardianGrandTotal - dueAmount
+  dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
@@ -378,7 +398,7 @@ model MecPayment {
   studentId     String
   student       MecStudent @relation(fields: [studentId], references: [id])
   // Note: MEC only has tuition payments, no paymentType enum needed
-  amount        Float
+  amount        Float      // Office/actual amount (post-discount) — source of truth for financials
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod String
@@ -388,6 +408,16 @@ model MecPayment {
   createdAt     DateTime   @default(now())
   isActive      Boolean    @default(true)
   updatedAt     DateTime   @updatedAt
+  // Dual invoice fields (Feature 6A)
+  guardianAmount     Float?              // Display amount for guardian (pre-discount), per-line-item
+  officeSubTotal     Float?              // Sum of actual (post-discount) amounts (invoice-level)
+  guardianSubTotal   Float?              // Sum of guardian (pre-discount) amounts (invoice-level)
+  additionalDiscount Float?   @default(0) // Extra discount entered by accountant (invoice-level)
+  officeGrandTotal   Float?              // officeSubTotal - additionalDiscount
+  guardianGrandTotal Float?              // guardianSubTotal - additionalDiscount
+  officePaid         Float?              // officeGrandTotal - dueAmount
+  guardianPaid       Float?              // guardianGrandTotal - dueAmount
+  dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])

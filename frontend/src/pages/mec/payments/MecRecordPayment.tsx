@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Form,
   Select,
@@ -13,6 +13,7 @@ import {
   Divider,
   Space,
   Typography,
+  Collapse,
 } from "antd";
 import { Input } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
@@ -22,6 +23,7 @@ import { mecPaymentsService } from "../../../services/mecPaymentsService";
 import type { CreateMecMultiPaymentDto } from "../../../services/mecPaymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
+import settingsService from "../../../services/settingsService";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -46,6 +48,14 @@ export default function MecRecordPayment() {
   });
 
   const allStudents: MecStudent[] = studentsData?.data?.data || [];
+
+  // Fetch invoice mode setting
+  const { data: invoiceModeData } = useQuery({
+    queryKey: ["mec-settings", "invoice_mode"],
+    queryFn: () => settingsService.getSetting("mec", "invoice_mode"),
+  });
+  const invoiceMode =
+    (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
 
   // Auto-populate from URL ?studentId=
   useEffect(() => {
@@ -73,7 +83,7 @@ export default function MecRecordPayment() {
       queryClient.invalidateQueries({ queryKey: ["mec-payments"] });
       queryClient.invalidateQueries({ queryKey: ["mec-students"] });
       setSelectedStudentId(undefined);
-      form.resetFields();
+      form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
     },
     onError: (err: any) => {
       if (err?.response?.status === 409) {
@@ -108,6 +118,8 @@ export default function MecRecordPayment() {
       paymentDate,
       paymentMethod: values.paymentMethod,
       lineItems,
+      additionalDiscount: values.additionalDiscount ?? 0,
+      dueAmount: values.dueAmount ?? 0,
     };
     createMutation.mutate(data);
   };
@@ -131,6 +143,31 @@ export default function MecRecordPayment() {
   };
 
   const selectedStudent = allStudents.find((s) => s.id === selectedStudentId);
+
+  // Live form watchers for summary card
+  const formLineItems = Form.useWatch("lineItems", form);
+  const additionalDiscountValue = Form.useWatch("additionalDiscount", form) ?? 0;
+  const dueAmountValue = Form.useWatch("dueAmount", form) ?? 0;
+
+  const guardianSubTotal = useMemo(() => {
+    if (!Array.isArray(formLineItems)) return 0;
+    return formLineItems.reduce((sum: number, item: any) => {
+      if (!item) return sum;
+      if (invoiceMode === "unified") return sum + (item.amount ?? 0);
+      // MEC: all items are tuition — guardian amount = full monthly fee (pre-discount)
+      return sum + (selectedStudent?.monthlyTuitionFee ?? item.amount ?? 0);
+    }, 0);
+  }, [formLineItems, selectedStudent, invoiceMode]);
+
+  const officeSubTotal = useMemo(() => {
+    if (!Array.isArray(formLineItems)) return 0;
+    return formLineItems.reduce((sum: number, item: any) => sum + (item?.amount ?? 0), 0);
+  }, [formLineItems]);
+
+  const guardianGrandTotal = guardianSubTotal - additionalDiscountValue;
+  const officeGrandTotal = officeSubTotal - additionalDiscountValue;
+  const guardianPaid = guardianGrandTotal - dueAmountValue;
+  const officePaid = officeGrandTotal - dueAmountValue;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -168,7 +205,7 @@ export default function MecRecordPayment() {
         form={form}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{ lineItems: [{}], paymentDate: dayjs() }}
+        initialValues={{ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 }}
       >
         <Card title="Student Selection" style={{ marginBottom: 16 }}>
           <Form.Item
@@ -304,6 +341,116 @@ export default function MecRecordPayment() {
               </>
             )}
           </Form.List>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card title="Payment Summary" style={{ marginBottom: 16 }}>
+          <Row gutter={24}>
+            <Col span={invoiceMode === "dual" ? 12 : 24}>
+              {invoiceMode === "dual" && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#667eea",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Guardian Copy
+                </div>
+              )}
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>Sub Total</Col>
+                <Col>৳{guardianSubTotal.toFixed(2)}</Col>
+              </Row>
+              <Form.Item
+                name="additionalDiscount"
+                label="Additional Discount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber min={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>
+                  <strong>Grand Total</strong>
+                </Col>
+                <Col>
+                  <strong>৳{guardianGrandTotal.toFixed(2)}</strong>
+                </Col>
+              </Row>
+              <Form.Item
+                name="dueAmount"
+                label="Due Amount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber
+                  min={0}
+                  max={guardianGrandTotal}
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+              <Divider style={{ margin: "8px 0" }} />
+              <Row justify="space-between">
+                <Col>
+                  <strong>Paid</strong>
+                </Col>
+                <Col>
+                  <strong style={{ color: "#52c41a" }}>
+                    ৳{guardianPaid.toFixed(2)}
+                  </strong>
+                </Col>
+              </Row>
+            </Col>
+
+            {invoiceMode === "dual" && (
+              <Col span={12}>
+                <Collapse ghost>
+                  <Collapse.Panel
+                    header={
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#f5222d",
+                          textTransform: "uppercase",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Office Summary (Actual)
+                      </span>
+                    }
+                    key="office"
+                  >
+                    <Row justify="space-between" style={{ marginBottom: 8 }}>
+                      <Col>Sub Total</Col>
+                      <Col>৳{officeSubTotal.toFixed(2)}</Col>
+                    </Row>
+                    <Row justify="space-between" style={{ marginBottom: 8 }}>
+                      <Col>
+                        <strong>Grand Total</strong>
+                      </Col>
+                      <Col>
+                        <strong>৳{officeGrandTotal.toFixed(2)}</strong>
+                      </Col>
+                    </Row>
+                    <Divider style={{ margin: "8px 0" }} />
+                    <Row justify="space-between">
+                      <Col>
+                        <strong>Paid</strong>
+                      </Col>
+                      <Col>
+                        <strong style={{ color: "#52c41a" }}>
+                          ৳{officePaid.toFixed(2)}
+                        </strong>
+                      </Col>
+                    </Row>
+                  </Collapse.Panel>
+                </Collapse>
+              </Col>
+            )}
+          </Row>
         </Card>
 
         <Space>

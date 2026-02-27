@@ -1,15 +1,15 @@
 import { useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Space, Spin } from "antd";
+import { Button, Space, Spin, Tabs } from "antd";
 import {
   PrinterOutlined,
-  DownloadOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
 import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
 import type { MbcsPayment } from "../../../services/mbcsPaymentsService";
 import MbcsStudentInvoice from "../../../components/invoices/MbcsStudentInvoice";
+import MbcsStudentOfficeInvoice from "../../../components/invoices/MbcsStudentOfficeInvoice";
 import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
 export default function MbcsInvoiceByNumber() {
@@ -70,15 +70,24 @@ export default function MbcsInvoiceByNumber() {
 
   const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: first.invoiceNumber,
-    amount: totalAmount,
+    amount: first.officePaid ?? payments.reduce((sum: number, p: MbcsPayment) => sum + p.amount, 0),
     paymentDate: first.paymentDate,
     paymentMonth: first.paymentMonth,
     paymentMethod: first.paymentMethod,
     createdAt: first.createdAt,
     student: first.student,
+    guardianSubTotal: first.guardianSubTotal ?? undefined,
+    officeSubTotal: first.officeSubTotal ?? undefined,
+    additionalDiscount: first.additionalDiscount ?? undefined,
+    guardianGrandTotal: first.guardianGrandTotal ?? undefined,
+    officeGrandTotal: first.officeGrandTotal ?? undefined,
+    guardianPaid: first.guardianPaid ?? undefined,
+    officePaid: first.officePaid ?? undefined,
+    dueAmount: first.dueAmount ?? undefined,
     lineItems: payments.map((p: MbcsPayment) => ({
       paymentType: p.paymentType,
       amount: p.amount,
+      guardianAmount: p.guardianAmount ?? undefined,
       paymentMonth: p.paymentMonth,
       notes: p.notes,
     })),
@@ -99,21 +108,41 @@ export default function MbcsInvoiceByNumber() {
         >
           Back to Payments
         </Button>
-        <Space>
-          <Button icon={<PrinterOutlined />} onClick={handlePrint}>
-            Print
-          </Button>
-          <Button
-            type="primary"
-            icon={<DownloadOutlined />}
-            onClick={handlePrint}
-          >
-            Download / Print
-          </Button>
-        </Space>
       </div>
 
-      <MbcsStudentInvoice ref={invoiceRef} data={invoiceData} />
+      <Tabs
+        defaultActiveKey="guardian"
+        items={[
+          {
+            key: "guardian",
+            label: "Guardian's Copy",
+            children: (
+              <div>
+                <Space style={{ marginBottom: 12 }}>
+                  <Button icon={<PrinterOutlined />} onClick={() => printRef(invoiceRef)}>
+                    Print Guardian Copy
+                  </Button>
+                </Space>
+                <MbcsStudentInvoice ref={invoiceRef} data={invoiceData} />
+              </div>
+            ),
+          },
+          {
+            key: "office",
+            label: "Office Copy",
+            children: (
+              <div>
+                <Space style={{ marginBottom: 12 }}>
+                  <Button icon={<PrinterOutlined />} onClick={() => printRef(officeRef)}>
+                    Print Office Copy
+                  </Button>
+                </Space>
+                <MbcsStudentOfficeInvoice ref={officeRef} data={invoiceData} />
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

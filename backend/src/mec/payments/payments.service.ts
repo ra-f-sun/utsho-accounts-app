@@ -164,12 +164,36 @@ export class MecPaymentsService {
       }
     }
 
+    // Determine invoice mode (dual vs unified)
+    const invoiceModeSetting = await this.prisma.orgSettings.findUnique({
+      where: { organization_settingKey: { organization: 'mec', settingKey: 'invoice_mode' } },
+    });
+    const invoiceMode = (invoiceModeSetting?.settingValue as string) ?? 'dual';
+
+    // Compute dual-invoice amounts (MEC: all tuition, guardian = full tuition fee)
+    const additionalDiscount = dto.additionalDiscount ?? 0;
+    const dueAmount = dto.dueAmount ?? 0;
+
+    const lineItemsWithGuardian = dto.lineItems.map((item) => {
+      const guardianAmount = invoiceMode === 'unified'
+        ? item.amount
+        : (student.monthlyTuitionFee ?? item.amount);
+      return { ...item, guardianAmount };
+    });
+
+    const officeSubTotal = dto.lineItems.reduce((s, i) => s + i.amount, 0);
+    const guardianSubTotal = lineItemsWithGuardian.reduce((s, i) => s + i.guardianAmount, 0);
+    const officeGrandTotal = officeSubTotal - additionalDiscount;
+    const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+    const officePaid = officeGrandTotal - dueAmount;
+    const guardianPaid = guardianGrandTotal - dueAmount;
+
     const invoiceNumber =
       await this.invoiceService.generateInvoiceNumber('mec');
 
     return this.prisma.$transaction(async (tx) => {
       const payments = await Promise.all(
-        dto.lineItems.map((item) =>
+        lineItemsWithGuardian.map((item) =>
           tx.mecPayment.create({
             data: {
               studentId: dto.studentId,
@@ -180,6 +204,16 @@ export class MecPaymentsService {
               notes: item.notes,
               invoiceNumber,
               createdBy,
+              // Dual invoice fields
+              guardianAmount: item.guardianAmount,
+              officeSubTotal,
+              guardianSubTotal,
+              additionalDiscount,
+              officeGrandTotal,
+              guardianGrandTotal,
+              officePaid,
+              guardianPaid,
+              dueAmount,
             },
             include: {
               student: {

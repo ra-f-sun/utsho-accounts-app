@@ -11,8 +11,8 @@ const ORG_ADDRESS = "Bashabo, Dhaka";
 const fmt = (s: string) =>
   s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-/** Simplified single-column layout for MEC — tuition-focused, minimal. */
-const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
+/** Office Copy invoice for MEC — uses actual (post-discount) amounts. */
+const MecStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
   ({ data }, ref) => (
     <div
       ref={ref}
@@ -47,7 +47,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
         <span
           style={{
             display: "inline-block",
-            background: "rgba(255,255,255,0.25)",
+            background: "rgba(245,34,45,0.25)",
             color: "#fff",
             fontSize: 10,
             fontWeight: 700,
@@ -58,7 +58,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
             marginBottom: 8,
           }}
         >
-          Guardian&#39;s Copy
+          Office Copy
         </span>
         <h1 style={{ margin: "6px 0 0", fontSize: 24, color: COLOR, fontWeight: 800 }}>
           {ORG_NAME}
@@ -97,7 +97,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
         )}
       </div>
 
-      {/* Payment details in a two-column key-value layout */}
+      {/* Payment details */}
       <div
         style={{
           display: "grid",
@@ -149,7 +149,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                     {dayjs(item.paymentMonth).format("MMMM YYYY")}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                    ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
+                    ৳{item.amount.toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -173,7 +173,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           Amount Paid
         </p>
         <p style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 800, color: COLOR }}>
-          ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
+          ৳{(data.officePaid ?? data.amount).toLocaleString()}
         </p>
       </div>
 
@@ -209,5 +209,5 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
   ),
 );
 
-MecStudentInvoice.displayName = "MecStudentInvoice";
-export default MecStudentInvoice;
+MecStudentOfficeInvoice.displayName = "MecStudentOfficeInvoice";
+export default MecStudentOfficeInvoice;

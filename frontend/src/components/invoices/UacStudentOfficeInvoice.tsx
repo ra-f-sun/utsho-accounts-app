@@ -10,7 +10,7 @@ const ORG_ADDRESS = "Bashabo, Dhaka";
 const fmt = (s: string) =>
   s.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
-const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
+const UacStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoiceData }>(
   ({ data }, ref) => (
     <div
       ref={ref}
@@ -74,8 +74,8 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           <span
             style={{
               display: "inline-block",
-              background: "#e6f0ff",
-              color: COLOR,
+              background: "#fff1f0",
+              color: "#f5222d",
               fontSize: 10,
               fontWeight: 700,
               padding: "2px 10px",
@@ -85,7 +85,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
               marginTop: 4,
             }}
           >
-            Guardian&#39;s Copy
+            Office Copy
           </span>
           <p style={{ margin: "6px 0 0", fontSize: 14, fontWeight: 600, color: COLOR }}>
             {data.invoiceNumber}
@@ -198,7 +198,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                     {dayjs(item.paymentMonth).format("MMM YYYY")}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                    ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
+                    ৳{item.amount.toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -224,7 +224,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           Total Amount Paid
         </span>
         <span style={{ fontSize: 34, fontWeight: 800, color: COLOR }}>
-          ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
+          ৳{(data.officePaid ?? data.amount).toLocaleString()}
         </span>
       </div>
 
@@ -262,5 +262,5 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
   ),
 );
 
-UacStudentInvoice.displayName = "UacStudentInvoice";
-export default UacStudentInvoice;
+UacStudentOfficeInvoice.displayName = "UacStudentOfficeInvoice";
+export default UacStudentOfficeInvoice;

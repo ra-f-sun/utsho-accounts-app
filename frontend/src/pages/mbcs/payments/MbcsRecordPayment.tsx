@@ -14,6 +14,7 @@ import {
   Divider,
   Space,
   Typography,
+  Collapse,
 } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,6 +47,14 @@ export default function MbcsRecordPayment() {
   const [selectedStudentId, setSelectedStudentId] = useState<
     string | undefined
   >();
+
+  // Fetch invoice mode setting
+  const { data: invoiceModeData } = useQuery({
+    queryKey: ["mbcs-settings", "invoice_mode"],
+    queryFn: () => settingsService.getSetting("mbcs", "invoice_mode"),
+  });
+  const invoiceMode =
+    (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
 
   // Fetch study materials setting
   const { data: studyMaterialsData } = useQuery({
@@ -137,7 +146,7 @@ export default function MbcsRecordPayment() {
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["mbcs-payments"] });
       queryClient.invalidateQueries({ queryKey: ["mbcs-payment-history"] });
-      form.resetFields();
+      form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
       setSelectedStudentId(undefined);
     },
     onError: (err: any) => {
@@ -175,9 +184,42 @@ export default function MbcsRecordPayment() {
       paymentDate,
       paymentMethod: values.paymentMethod,
       lineItems,
+      additionalDiscount: values.additionalDiscount ?? 0,
+      dueAmount: values.dueAmount ?? 0,
     };
     createMutation.mutate(data);
   };
+
+  // Live form watchers for summary card
+  const formLineItems = Form.useWatch("lineItems", form);
+  const additionalDiscountValue = Form.useWatch("additionalDiscount", form) ?? 0;
+  const dueAmountValue = Form.useWatch("dueAmount", form) ?? 0;
+
+  const guardianSubTotal = useMemo(() => {
+    if (!Array.isArray(formLineItems)) return 0;
+    return formLineItems.reduce((sum: number, item: any) => {
+      if (!item) return sum;
+      if (invoiceMode === "unified") return sum + (item.amount ?? 0);
+      if (item.paymentType === "tuition") {
+        return sum + (selectedStudent?.monthlyTuitionFee ?? item.amount ?? 0);
+      } else if (item.paymentType === "admission") {
+        return sum + (selectedStudent?.admissionFee ?? item.amount ?? 0);
+      } else if (item.paymentType === "readmission") {
+        return sum + (selectedStudent?.readmissionFee ?? item.amount ?? 0);
+      }
+      return sum + (item.amount ?? 0);
+    }, 0);
+  }, [formLineItems, selectedStudent, invoiceMode]);
+
+  const officeSubTotal = useMemo(() => {
+    if (!Array.isArray(formLineItems)) return 0;
+    return formLineItems.reduce((sum: number, item: any) => sum + (item?.amount ?? 0), 0);
+  }, [formLineItems]);
+
+  const guardianGrandTotal = guardianSubTotal - additionalDiscountValue;
+  const officeGrandTotal = officeSubTotal - additionalDiscountValue;
+  const guardianPaid = guardianGrandTotal - dueAmountValue;
+  const officePaid = officeGrandTotal - dueAmountValue;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -215,7 +257,7 @@ export default function MbcsRecordPayment() {
         form={form}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{ lineItems: [{}], paymentDate: dayjs() }}
+        initialValues={{ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 }}
       >
         <Card title="Student Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
@@ -488,6 +530,116 @@ export default function MbcsRecordPayment() {
               </>
             )}
           </Form.List>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card title="Payment Summary" style={{ marginBottom: 16 }}>
+          <Row gutter={24}>
+            <Col span={invoiceMode === "dual" ? 12 : 24}>
+              {invoiceMode === "dual" && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#667eea",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Guardian Copy
+                </div>
+              )}
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>Sub Total</Col>
+                <Col>৳{guardianSubTotal.toFixed(2)}</Col>
+              </Row>
+              <Form.Item
+                name="additionalDiscount"
+                label="Additional Discount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber min={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>
+                  <strong>Grand Total</strong>
+                </Col>
+                <Col>
+                  <strong>৳{guardianGrandTotal.toFixed(2)}</strong>
+                </Col>
+              </Row>
+              <Form.Item
+                name="dueAmount"
+                label="Due Amount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber
+                  min={0}
+                  max={guardianGrandTotal}
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+              <Divider style={{ margin: "8px 0" }} />
+              <Row justify="space-between">
+                <Col>
+                  <strong>Paid</strong>
+                </Col>
+                <Col>
+                  <strong style={{ color: "#52c41a" }}>
+                    ৳{guardianPaid.toFixed(2)}
+                  </strong>
+                </Col>
+              </Row>
+            </Col>
+
+            {invoiceMode === "dual" && (
+              <Col span={12}>
+                <Collapse ghost>
+                  <Collapse.Panel
+                    header={
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#f5222d",
+                          textTransform: "uppercase",
+                          letterSpacing: 1,
+                        }}
+                      >
+                        Office Summary (Actual)
+                      </span>
+                    }
+                    key="office"
+                  >
+                    <Row justify="space-between" style={{ marginBottom: 8 }}>
+                      <Col>Sub Total</Col>
+                      <Col>৳{officeSubTotal.toFixed(2)}</Col>
+                    </Row>
+                    <Row justify="space-between" style={{ marginBottom: 8 }}>
+                      <Col>
+                        <strong>Grand Total</strong>
+                      </Col>
+                      <Col>
+                        <strong>৳{officeGrandTotal.toFixed(2)}</strong>
+                      </Col>
+                    </Row>
+                    <Divider style={{ margin: "8px 0" }} />
+                    <Row justify="space-between">
+                      <Col>
+                        <strong>Paid</strong>
+                      </Col>
+                      <Col>
+                        <strong style={{ color: "#52c41a" }}>
+                          ৳{officePaid.toFixed(2)}
+                        </strong>
+                      </Col>
+                    </Row>
+                  </Collapse.Panel>
+                </Collapse>
+              </Col>
+            )}
+          </Row>
         </Card>
 
         <Form.Item>

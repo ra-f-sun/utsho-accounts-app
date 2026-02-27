@@ -20,6 +20,16 @@ export interface MbcsPayment {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Dual invoice fields (Feature 6A)
+  guardianAmount?: number;
+  officeSubTotal?: number;
+  guardianSubTotal?: number;
+  additionalDiscount?: number;
+  officeGrandTotal?: number;
+  guardianGrandTotal?: number;
+  officePaid?: number;
+  guardianPaid?: number;
+  dueAmount?: number;
 }
 
 export interface CreateMbcsPaymentDto {
@@ -44,6 +54,8 @@ export interface CreateMbcsMultiPaymentDto {
   paymentDate: string;
   paymentMethod: string;
   lineItems: MbcsPaymentLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
 }
 
 export interface FilterMbcsPaymentDto {

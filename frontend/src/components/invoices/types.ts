@@ -17,6 +17,8 @@ export interface PaymentLineItem {
   amount: number;
   paymentMonth: string;
   notes?: string;
+  /** Full/pre-discount amount shown on guardian copy (dual invoice mode). */
+  guardianAmount?: number;
 }
 
 /** Data contract for student payment invoices (UAC, MBCS, MEC). */
@@ -33,6 +35,15 @@ export interface StudentPaymentInvoiceData {
   student?: StudentInfo;
   /** Present when the invoice has multiple line items. */
   lineItems?: PaymentLineItem[];
+  // --- Dual Invoice fields ---
+  guardianSubTotal?: number;
+  officeSubTotal?: number;
+  additionalDiscount?: number;
+  guardianGrandTotal?: number;
+  officeGrandTotal?: number;
+  guardianPaid?: number;
+  officePaid?: number;
+  dueAmount?: number;
 }
 
 
