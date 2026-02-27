@@ -31,16 +31,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-API_TESTING.md
-POSTGRES_SETUP.md
-TEST_UAC_STUDENTS.md
-IMPLEMENTATION_ANALYSIS.md
-REFACTOR_CHECKLIST.md
-BRANCH_v0.5_DEVLOG.md
-PROJECT_REVIEW.md
-REFACTOR_CHECKLIST_2.md
-FEATURE_UPGRADE_CHECKLIST_v1.2.md
-DB_SYNC_GUIDE_v1.2.md
 
 # Node / Dependencies
 node_modules/
