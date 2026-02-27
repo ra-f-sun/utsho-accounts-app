@@ -60,6 +60,9 @@ import AddUser from "./pages/users/AddUser";
 import SettingsPage from "./pages/settings/SettingsPage";
 import PromoteStudents from "./pages/uac/students/PromoteStudents";
 import MbcsPromoteStudents from "./pages/mbcs/students/MbcsPromoteStudents";
+import CollectDue from "./pages/uac/payments/CollectDue";
+import MbcsCollectDue from "./pages/mbcs/payments/MbcsCollectDue";
+import MecCollectDue from "./pages/mec/payments/MecCollectDue";
 import ErrorBoundary from "./components/ErrorBoundary";
 import NotFoundPage from "./pages/NotFoundPage";
 
@@ -126,6 +129,7 @@ function App() {
                   <Route path="uac/staff/edit/:id" element={<AddStaff />} />
                   <Route path="uac/payments" element={<PaymentsList />} />
                   <Route path="uac/payments/record" element={<RecordPayment />} />
+                  <Route path="uac/payments/collect-due" element={<CollectDue />} />
                   <Route path="uac/payments/invoice/:invoiceNumber" element={<InvoiceByNumber />} />
                   <Route path="uac/payments/:id/invoice" element={<PaymentInvoice />} />
                   <Route path="uac/payment-history" element={<UacPaymentHistory />} />
@@ -155,6 +159,7 @@ function App() {
                   <Route path="mbcs/staff/edit/:id" element={<AddMbcsStaff />} />
                   <Route path="mbcs/payments" element={<MbcsPaymentsList />} />
                   <Route path="mbcs/payments/record" element={<MbcsRecordPayment />} />
+                  <Route path="mbcs/payments/collect-due" element={<MbcsCollectDue />} />
                   <Route path="mbcs/payments/invoice/:invoiceNumber" element={<MbcsInvoiceByNumber />} />
                   <Route path="mbcs/payments/:id/invoice" element={<MbcsPaymentInvoice />} />
                   <Route path="mbcs/payment-history" element={<MbcsPaymentHistory />} />
@@ -175,6 +180,7 @@ function App() {
                   <Route path="mec/students/edit/:id" element={<AddMecStudent />} />
                   <Route path="mec/students/:id/payments" element={<MecStudentPaymentHistory />} />
                   <Route path="mec/payments/record" element={<MecRecordPayment />} />
+                  <Route path="mec/payments/collect-due" element={<MecCollectDue />} />
                   <Route path="mec/payments/invoice/:invoiceNumber" element={<MecInvoiceByNumber />} />
                   <Route path="mec/payments/:id/invoice" element={<MecPaymentInvoice />} />
                   <Route path="mec/payment-history" element={<MecPaymentHistory />} />

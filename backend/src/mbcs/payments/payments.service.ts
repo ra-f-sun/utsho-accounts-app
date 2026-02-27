@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -11,6 +12,56 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { FilterPaymentDto } from './dto/filter-payment.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { CreateMbcsMultiPaymentDto } from './dto/create-multi-payment.dto';
+import { CollectMbcsDueDto } from './dto/collect-due.dto';
+
+const MBCS_PRIORITY_ORDER = [
+  { group: 'tuition', types: ['tuition'] },
+  { group: 'admission', types: ['admission'] },
+  { group: 'readmission', types: ['readmission'] },
+  {
+    group: 'others',
+    types: [
+      'exam',
+      'session_charge',
+      'study_materials',
+      'study_tour',
+      'stationary',
+      'other',
+    ],
+  },
+];
+
+function allocatePaid(
+  lineItems: { paymentType: string; amount: number }[],
+  totalPaid: number,
+  priorityOrder: { group: string; types: string[] }[],
+) {
+  const result: {
+    paymentType: string;
+    amount: number;
+    paidAmount: number;
+    dueAmount: number;
+  }[] = [];
+  let remaining = totalPaid;
+
+  for (const pg of priorityOrder) {
+    const items = lineItems.filter((i) => pg.types.includes(i.paymentType));
+    for (const item of items) {
+      if (remaining >= item.amount) {
+        result.push({ ...item, paidAmount: item.amount, dueAmount: 0 });
+        remaining -= item.amount;
+      } else {
+        result.push({
+          ...item,
+          paidAmount: remaining,
+          dueAmount: item.amount - remaining,
+        });
+        remaining = 0;
+      }
+    }
+  }
+  return result;
+}
 
 @Injectable()
 export class PaymentsService {
@@ -148,7 +199,7 @@ export class PaymentsService {
       throw new NotFoundException(`Student with ID ${dto.studentId} not found`);
     }
 
-    // Check for duplicate tuition payments
+    // Check for duplicate tuition payments (skip for due collections)
     for (const item of dto.lineItems) {
       if (item.paymentType === 'tuition' && item.paymentMonth) {
         const existing = await this.prisma.mbcsPayment.findFirst({
@@ -157,6 +208,7 @@ export class PaymentsService {
             paymentType: 'tuition',
             paymentMonth: new Date(item.paymentMonth),
             isActive: true,
+            isDueCollection: false,
           },
         });
         if (existing) {
@@ -245,6 +297,222 @@ export class PaymentsService {
         ),
       );
       return { invoiceNumber, payments };
+    });
+  }
+
+  /**
+   * Get due profile for a student — all outstanding invoices with per-type remaining dues
+   */
+  async getDueProfile(studentId: string) {
+    const originalPayments = await this.prisma.mbcsPayment.findMany({
+      where: {
+        studentId,
+        isDueCollection: false,
+        isActive: true,
+        dueAmount: { gt: 0 },
+      },
+      orderBy: { paymentDate: 'asc' },
+    });
+
+    const invoiceMap = new Map<string, typeof originalPayments>();
+    for (const p of originalPayments) {
+      if (!invoiceMap.has(p.invoiceNumber)) {
+        invoiceMap.set(p.invoiceNumber, []);
+      }
+      invoiceMap.get(p.invoiceNumber)!.push(p);
+    }
+
+    const profiles: object[] = [];
+    for (const [invoiceNumber, rows] of invoiceMap.entries()) {
+      const originalTotalDue = rows[0].dueAmount ?? 0;
+      const originalOfficePaid = rows[0].officePaid ?? 0;
+
+      const priorCollections = await this.prisma.mbcsPayment.findMany({
+        where: {
+          parentInvoiceNumber: invoiceNumber,
+          isDueCollection: true,
+          isActive: true,
+        },
+      });
+
+      const seenCollectionInvoices = new Set<string>();
+      let priorCollectedTotal = 0;
+      for (const pc of priorCollections) {
+        if (!seenCollectionInvoices.has(pc.invoiceNumber)) {
+          seenCollectionInvoices.add(pc.invoiceNumber);
+          priorCollectedTotal += pc.officePaid ?? 0;
+        }
+      }
+
+      const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+      if (remainingDue <= 0) continue;
+
+      const lineItems = rows.map((r) => ({
+        paymentType: r.paymentType,
+        amount: r.amount,
+      }));
+      const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
+      const allocated = allocatePaid(
+        lineItems,
+        totalPaidSoFar,
+        MBCS_PRIORITY_ORDER,
+      );
+      const perItemDues = allocated
+        .filter((i) => i.dueAmount > 0)
+        .map((i) => ({
+          paymentType: i.paymentType,
+          originalAmount: i.amount,
+          paidSoFar: i.paidAmount,
+          remainingDue: i.dueAmount,
+        }));
+
+      profiles.push({
+        invoiceNumber,
+        paymentDate: rows[0].paymentDate,
+        originalTotalDue,
+        priorCollectedTotal,
+        remainingDue,
+        perItemDues,
+      });
+    }
+
+    return { studentId, profiles };
+  }
+
+  /**
+   * Record a due collection against an existing invoice (Feature 6B)
+   */
+  async collectDue(dto: CollectMbcsDueDto, createdBy: string) {
+    const originalRows = await this.prisma.mbcsPayment.findMany({
+      where: {
+        invoiceNumber: dto.parentInvoiceNumber,
+        isDueCollection: false,
+        isActive: true,
+      },
+      include: {
+        student: {
+          select: { id: true, name: true, class: true, shift: true },
+        },
+      },
+    });
+
+    if (!originalRows.length) {
+      throw new NotFoundException(
+        `Invoice ${dto.parentInvoiceNumber} not found`,
+      );
+    }
+
+    const originalTotalDue = originalRows[0].dueAmount ?? 0;
+    const originalOfficePaid = originalRows[0].officePaid ?? 0;
+
+    if (originalTotalDue <= 0) {
+      throw new BadRequestException(
+        `Invoice ${dto.parentInvoiceNumber} has no outstanding due`,
+      );
+    }
+
+    const priorCollections = await this.prisma.mbcsPayment.findMany({
+      where: {
+        parentInvoiceNumber: dto.parentInvoiceNumber,
+        isDueCollection: true,
+        isActive: true,
+      },
+    });
+
+    const seenCollectionInvoices = new Set<string>();
+    let priorCollectedTotal = 0;
+    for (const pc of priorCollections) {
+      if (!seenCollectionInvoices.has(pc.invoiceNumber)) {
+        seenCollectionInvoices.add(pc.invoiceNumber);
+        priorCollectedTotal += pc.officePaid ?? 0;
+      }
+    }
+
+    const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+    if (remainingDue <= 0) {
+      throw new BadRequestException(
+        `Invoice ${dto.parentInvoiceNumber} has no remaining due`,
+      );
+    }
+
+    if (dto.paidAmount > remainingDue) {
+      throw new BadRequestException(
+        `Payment amount exceeds remaining due of ${remainingDue}`,
+      );
+    }
+
+    const lineItems = originalRows.map((r) => ({
+      paymentType: r.paymentType,
+      amount: r.amount,
+    }));
+    const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
+    const existingAllocation = allocatePaid(
+      lineItems,
+      totalPaidSoFar,
+      MBCS_PRIORITY_ORDER,
+    );
+    const dueItemsNow = existingAllocation
+      .filter((i) => i.dueAmount > 0)
+      .map((i) => ({ paymentType: i.paymentType, amount: i.dueAmount }));
+
+    const newAllocation = allocatePaid(
+      dueItemsNow,
+      dto.paidAmount,
+      MBCS_PRIORITY_ORDER,
+    );
+    const itemsToPay = newAllocation.filter((i) => i.paidAmount > 0);
+
+    const newDueAmount = Math.max(0, remainingDue - dto.paidAmount);
+    const officeGrandTotal = remainingDue;
+    const guardianGrandTotal = remainingDue;
+    const officePaid = dto.paidAmount;
+    const guardianPaid = dto.paidAmount;
+
+    const newInvoiceNumber =
+      await this.invoiceService.generateInvoiceNumber('mbcs');
+
+    return this.prisma.$transaction(async (tx) => {
+      const payments = await Promise.all(
+        itemsToPay.map((item) => {
+          const originalRow = originalRows.find(
+            (r) => r.paymentType === item.paymentType,
+          )!;
+          return tx.mbcsPayment.create({
+            data: {
+              studentId: originalRow.studentId,
+              paymentType: item.paymentType,
+              amount: item.paidAmount,
+              paymentMonth: originalRow.paymentMonth,
+              paymentDate: new Date(dto.paymentDate),
+              paymentMethod: dto.paymentMethod,
+              notes: dto.notes,
+              invoiceNumber: newInvoiceNumber,
+              createdBy,
+              isDueCollection: true,
+              parentInvoiceNumber: dto.parentInvoiceNumber,
+              guardianAmount: item.paidAmount,
+              officeSubTotal: officeGrandTotal,
+              guardianSubTotal: guardianGrandTotal,
+              additionalDiscount: 0,
+              officeGrandTotal,
+              guardianGrandTotal,
+              officePaid,
+              guardianPaid,
+              dueAmount: newDueAmount,
+            },
+            include: {
+              student: {
+                select: { id: true, name: true, class: true, shift: true },
+              },
+            },
+          });
+        }),
+      );
+      return {
+        invoiceNumber: newInvoiceNumber,
+        payments,
+        remainingDue: newDueAmount,
+      };
     });
   }
 

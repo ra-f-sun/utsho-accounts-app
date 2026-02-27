@@ -933,14 +933,14 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
 
 #### Database Changes
 
-- [ ] **6.10** — Add due collection fields to payment models in `prisma/schema.prisma`:
+- [x] **6.10** — Add due collection fields to payment models in `prisma/schema.prisma`:
   ```prisma
   // Add to UacPayment, MbcsPayment, MecPayment:
   parentInvoiceNumber  String?   // Links due collection to original invoice
   isDueCollection      Boolean   @default(false)  // Distinguishes from fresh payments
   ```
 
-- [ ] **6.11** — Add due collection fields to payroll models:
+- [x] **6.11** — Add due collection fields to payroll models:
   ```prisma
   // Add to UacPayroll, MbcsPayroll:
   parentPayrollId    String?   // Links due collection to original payroll
@@ -949,7 +949,7 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
 
 #### Tasks — Student Due Collection
 
-- [ ] **6.12** — Backend: Create due collection endpoint:
+- [x] **6.12** — Backend: Create due collection endpoint:
   ```
   POST /api/uac/students/:id/collect-due
   Body: {
@@ -971,9 +971,9 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
 
 **Decision (S12): Immutable rows (append-only)** — Original payment rows keep their original `dueAmount` unchanged. Due collection creates new payment rows with `isDueCollection = true`. Current due = `original dueAmount - sum(collection amounts for same parentInvoiceNumber)`. Financial records remain audit-friendly and append-only.
 
-- [ ] **6.13** — Same endpoint for MBCS and MEC
+- [x] **6.13** — Same endpoint for MBCS and MEC
 
-- [ ] **6.14** — Frontend: Create `CollectDue.tsx` (UAC) — dedicated due collection page:
+- [x] **6.14** — Frontend: Create `CollectDue.tsx` (UAC) — dedicated due collection page:
   - Select student (or pre-filled from "Collect" button)
   - Load due profile: single list of outstanding dues per type (one amount column — same for both copies)
   - Checkboxes to select which dues to collect
@@ -983,16 +983,16 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
   - Submit → calls collect-due API
   - Shows success + option to print both invoices
 
-- [ ] **6.15** — Same for MBCS: `MbcsCollectDue.tsx`
-- [ ] **6.16** — Same for MEC: `MecCollectDue.tsx`
+- [x] **6.15** — Same for MBCS: `MbcsCollectDue.tsx`
+- [x] **6.16** — Same for MEC: `MecCollectDue.tsx`
 
-- [ ] **6.17** — Add routes and sidebar link for Collect Due pages:
+- [x] **6.17** — Add routes and sidebar link for Collect Due pages:
   - Under each org: `/uac/collect-due`, `/mbcs/collect-due`, `/mec/collect-due`
   - Or as a sub-option under "Payments" in the sidebar
 
 #### Tasks — Payroll Due Collection
 
-- [ ] **6.18** — Backend: Create payroll due collection endpoint:
+- [x] **6.18** — Backend: Create payroll due collection endpoint:
   ```
   POST /api/uac/payroll/:id/collect-due
   Body: { paidAmount: number, paymentDate: string, notes?: string }
@@ -1003,17 +1003,17 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
   3. Amount = `paidAmount`, `dueAmount` = remaining
   4. No priority needed (single item)
 
-- [ ] **6.19** — Same for MBCS payroll
+- [x] **6.19** — Same for MBCS payroll
 
-- [ ] **6.20** — Frontend: Add "Collect Due" button on payroll history rows where `dueAmount > 0`:
+- [x] **6.20** — Frontend: Add "Collect Due" button on payroll history rows where `dueAmount > 0`:
   - Opens modal: "Collect Payroll Due — ৳X remaining. Amount: [____]"
   - Submit → calls collect-due API → refresh list
 
-- [ ] **6.21** — Same for MBCS payroll history
+- [x] **6.21** — Same for MBCS payroll history
 
 #### Duplicate Prevention Update
 
-- [ ] **6.22** — Backend: Update duplicate prevention in payment services:
+- [x] **6.22** — Backend: Update duplicate prevention in payment services:
   - **Current:** Blocks duplicate tuition payments for the same month
   - **New:** Skip duplicate check when `isDueCollection = true` (due collections are continuations, not duplicates)
   - Also consider: For fresh payments, check if there's already an unpaid due for the same type and suggest "Collect Due" instead

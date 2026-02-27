@@ -406,9 +406,11 @@ export default function MecRecordPayment() {
 
             {invoiceMode === "dual" && (
               <Col span={12}>
-                <Collapse ghost>
-                  <Collapse.Panel
-                    header={
+                <Collapse
+                  ghost
+                  items={[{
+                    key: "office",
+                    label: (
                       <span
                         style={{
                           fontSize: 12,
@@ -420,34 +422,36 @@ export default function MecRecordPayment() {
                       >
                         Office Summary (Actual)
                       </span>
-                    }
-                    key="office"
-                  >
-                    <Row justify="space-between" style={{ marginBottom: 8 }}>
-                      <Col>Sub Total</Col>
-                      <Col>৳{officeSubTotal.toFixed(2)}</Col>
-                    </Row>
-                    <Row justify="space-between" style={{ marginBottom: 8 }}>
-                      <Col>
-                        <strong>Grand Total</strong>
-                      </Col>
-                      <Col>
-                        <strong>৳{officeGrandTotal.toFixed(2)}</strong>
-                      </Col>
-                    </Row>
-                    <Divider style={{ margin: "8px 0" }} />
-                    <Row justify="space-between">
-                      <Col>
-                        <strong>Paid</strong>
-                      </Col>
-                      <Col>
-                        <strong style={{ color: "#52c41a" }}>
-                          ৳{officePaid.toFixed(2)}
-                        </strong>
-                      </Col>
-                    </Row>
-                  </Collapse.Panel>
-                </Collapse>
+                    ),
+                    children: (
+                      <>
+                        <Row justify="space-between" style={{ marginBottom: 8 }}>
+                          <Col>Sub Total</Col>
+                          <Col>৳{officeSubTotal.toFixed(2)}</Col>
+                        </Row>
+                        <Row justify="space-between" style={{ marginBottom: 8 }}>
+                          <Col>
+                            <strong>Grand Total</strong>
+                          </Col>
+                          <Col>
+                            <strong>৳{officeGrandTotal.toFixed(2)}</strong>
+                          </Col>
+                        </Row>
+                        <Divider style={{ margin: "8px 0" }} />
+                        <Row justify="space-between">
+                          <Col>
+                            <strong>Paid</strong>
+                          </Col>
+                          <Col>
+                            <strong style={{ color: "#52c41a" }}>
+                              ৳{officePaid.toFixed(2)}
+                            </strong>
+                          </Col>
+                        </Row>
+                      </>
+                    ),
+                  }]}
+                />
               </Col>
             )}
           </Row>

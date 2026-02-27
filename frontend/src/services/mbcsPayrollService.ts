@@ -13,6 +13,10 @@ export interface MbcsPayroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Due collection fields (Feature 6B)
+  dueAmount?: number;
+  isDueCollection?: boolean;
+  parentPayrollId?: string;
 }
 
 export interface CreateMbcsPayrollDto {
@@ -51,4 +55,6 @@ export const mbcsPayrollService = {
   update: (id: string, data: Partial<CreateMbcsPayrollDto>) =>
     apiPatch<MbcsPayroll>(`/mbcs/payroll/${id}`, data),
   delete: (id: string) => apiDelete<MbcsPayroll>(`/mbcs/payroll/${id}`),
+  collectDue: (id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
+    apiPost<MbcsPayroll>(`/mbcs/payroll/${id}/collect-due`, data),
 };

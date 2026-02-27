@@ -146,10 +146,14 @@ model UacPayment {
   officePaid         Float?              // officeGrandTotal - dueAmount
   guardianPaid       Float?              // guardianGrandTotal - dueAmount
   dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
+  // Due collection fields (Feature 6B)
+  parentInvoiceNumber String?             // Links due collection to original invoice
+  isDueCollection     Boolean  @default(false) // Distinguishes due collection from fresh payment
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
   @@index([invoiceNumber])
+  @@index([parentInvoiceNumber])
   @@map("uac_payments")
 }
 
@@ -182,6 +186,10 @@ model UacPayroll {
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
+  // Due collection fields (Feature 6B)
+  dueAmount       Float?   @default(0) // Amount kept as due
+  parentPayrollId String?             // Links due collection to original payroll
+  isDueCollection Boolean  @default(false)
 
   @@index([payableType, payableId, paymentMonth])
   @@map("uac_payroll")
@@ -299,10 +307,14 @@ model MbcsPayment {
   officePaid         Float?              // officeGrandTotal - dueAmount
   guardianPaid       Float?              // guardianGrandTotal - dueAmount
   dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
+  // Due collection fields (Feature 6B)
+  parentInvoiceNumber String?             // Links due collection to original invoice
+  isDueCollection     Boolean  @default(false)
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
   @@index([invoiceNumber])
+  @@index([parentInvoiceNumber])
   @@map("mbcs_payments")
 }
 
@@ -335,6 +347,10 @@ model MbcsPayroll {
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
+  // Due collection fields (Feature 6B)
+  dueAmount       Float?   @default(0) // Amount kept as due
+  parentPayrollId String?             // Links due collection to original payroll
+  isDueCollection Boolean  @default(false)
 
   @@index([payableType, payableId, paymentMonth])
   @@map("mbcs_payroll")
@@ -418,10 +434,14 @@ model MecPayment {
   officePaid         Float?              // officeGrandTotal - dueAmount
   guardianPaid       Float?              // guardianGrandTotal - dueAmount
   dueAmount          Float?   @default(0) // Amount kept as due (invoice-level)
+  // Due collection fields (Feature 6B)
+  parentInvoiceNumber String?             // Links due collection to original invoice
+  isDueCollection     Boolean  @default(false)
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
   @@index([invoiceNumber])
+  @@index([parentInvoiceNumber])
   @@map("mec_payments")
 }
 

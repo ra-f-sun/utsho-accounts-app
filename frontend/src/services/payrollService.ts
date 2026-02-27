@@ -13,6 +13,10 @@ export interface Payroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Due collection fields (Feature 6B)
+  dueAmount?: number;
+  isDueCollection?: boolean;
+  parentPayrollId?: string;
 }
 
 export interface CreatePayrollDto {
@@ -50,4 +54,6 @@ export const payrollService = {
   update: (id: string, data: Partial<CreatePayrollDto>) =>
     apiPatch<Payroll>(`/uac/payroll/${id}`, data),
   delete: (id: string) => apiDelete<Payroll>(`/uac/payroll/${id}`),
+  collectDue: (id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
+    apiPost<Payroll>(`/uac/payroll/${id}/collect-due`, data),
 };

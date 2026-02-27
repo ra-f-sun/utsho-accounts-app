@@ -30,6 +30,9 @@ export interface Payment {
   officePaid?: number;
   guardianPaid?: number;
   dueAmount?: number;
+  // Due collection fields (Feature 6B)
+  isDueCollection?: boolean;
+  parentInvoiceNumber?: string;
 }
 
 export interface CreatePaymentDto {
@@ -103,4 +106,37 @@ export const paymentsService = {
   update: (id: string, data: Partial<CreatePaymentDto>) =>
     apiPatch<Payment>(`/uac/payments/${id}`, data),
   delete: (id: string) => apiDelete<Payment>(`/uac/payments/${id}`),
+  getDueProfile: (studentId: string) =>
+    apiGet<{ studentId: string; profiles: DueProfile[] }>(
+      `/uac/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (data: CollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: Payment[]; remainingDue: number }>(
+      "/uac/payments/collect-due",
+      data,
+    ),
 };
+
+export interface DueProfileItem {
+  paymentType: string;
+  originalAmount: number;
+  paidSoFar: number;
+  remainingDue: number;
+}
+
+export interface DueProfile {
+  invoiceNumber: string;
+  paymentDate: string;
+  originalTotalDue: number;
+  priorCollectedTotal: number;
+  remainingDue: number;
+  perItemDues: DueProfileItem[];
+}
+
+export interface CollectDueDto {
+  parentInvoiceNumber: string;
+  paidAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}

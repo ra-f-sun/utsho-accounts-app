@@ -27,6 +27,9 @@ export interface MecPayment {
   officePaid?: number;
   guardianPaid?: number;
   dueAmount?: number;
+  // Due collection fields (Feature 6B)
+  isDueCollection?: boolean;
+  parentInvoiceNumber?: string;
 }
 
 export interface CreateMecPaymentDto {
@@ -90,4 +93,37 @@ export const mecPaymentsService = {
     apiPatch<MecPayment>(`/mec/payments/${id}`, data),
 
   remove: (id: string) => apiDelete<MecPayment>(`/mec/payments/${id}`),
+  getDueProfile: (studentId: string) =>
+    apiGet<{ studentId: string; profiles: MecDueProfile[] }>(
+      `/mec/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (data: MecCollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: MecPayment[]; remainingDue: number }>(
+      "/mec/payments/collect-due",
+      data,
+    ),
 };
+
+export interface MecDueProfileItem {
+  paymentType: string;
+  originalAmount: number;
+  paidSoFar: number;
+  remainingDue: number;
+}
+
+export interface MecDueProfile {
+  invoiceNumber: string;
+  paymentDate: string;
+  originalTotalDue: number;
+  priorCollectedTotal: number;
+  remainingDue: number;
+  perItemDues: MecDueProfileItem[];
+}
+
+export interface MecCollectDueDto {
+  parentInvoiceNumber: string;
+  paidAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}

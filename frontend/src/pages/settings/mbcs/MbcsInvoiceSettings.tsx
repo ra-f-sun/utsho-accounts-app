@@ -43,7 +43,7 @@ export default function MbcsInvoiceSettings() {
         Choose how payment receipts are generated for <strong>MBCS</strong> students.
       </Paragraph>
       <Divider />
-      <Space direction="vertical" size="large">
+      <Space orientation="vertical" size="large">
         <div>
           <Text strong style={{ display: "block", marginBottom: 8 }}>
             Invoice Copy Mode

@@ -10,6 +10,7 @@ import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
 import { UpdatePayrollDto } from './dto/update-payroll.dto';
+import { CollectPayrollDueDto } from './dto/collect-payroll-due.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -186,6 +187,76 @@ export class PayrollService {
     }
 
     throw new BadRequestException('Invalid teacher payment type');
+  }
+
+  /**
+   * Collect outstanding due on an existing payroll record (Feature 6B)
+   */
+  async collectDue(payrollId: string, dto: CollectPayrollDueDto, createdBy: string) {
+    const original = await this.prisma.uacPayroll.findFirst({
+      where: { id: payrollId, isActive: true, isDueCollection: false },
+    });
+
+    if (!original) {
+      throw new NotFoundException(`Payroll record ${payrollId} not found`);
+    }
+
+    const originalDue = original.dueAmount ?? 0;
+    if (originalDue <= 0) {
+      throw new BadRequestException(
+        `Payroll record ${payrollId} has no outstanding due`,
+      );
+    }
+
+    // Sum prior payroll collections
+    const priorCollections = await this.prisma.uacPayroll.findMany({
+      where: {
+        parentPayrollId: payrollId,
+        isDueCollection: true,
+        isActive: true,
+      },
+    });
+    const priorCollectedTotal = priorCollections.reduce(
+      (s, r) => s + r.amount,
+      0,
+    );
+
+    const remainingDue = Math.max(0, originalDue - priorCollectedTotal);
+    if (remainingDue <= 0) {
+      throw new BadRequestException(
+        `Payroll record ${payrollId} has no remaining due`,
+      );
+    }
+
+    if (dto.paidAmount > remainingDue) {
+      throw new BadRequestException(
+        `Payment amount exceeds remaining due of ${remainingDue}`,
+      );
+    }
+
+    const newDueAmount = Math.max(0, remainingDue - dto.paidAmount);
+    const newInvoiceNumber =
+      await this.invoiceService.generateInvoiceNumber('uac');
+
+    return this.prisma.$transaction(async (tx) => {
+      return tx.uacPayroll.create({
+        data: {
+          payableType: original.payableType,
+          payableId: original.payableId,
+          paymentMonth: original.paymentMonth,
+          amount: dto.paidAmount,
+          totalLectures: null,
+          paymentDate: new Date(dto.paymentDate),
+          paymentMethod: dto.paymentMethod,
+          invoiceNumber: newInvoiceNumber,
+          notes: dto.notes,
+          createdBy,
+          isDueCollection: true,
+          parentPayrollId: payrollId,
+          dueAmount: newDueAmount,
+        },
+      });
+    });
   }
 
   /**

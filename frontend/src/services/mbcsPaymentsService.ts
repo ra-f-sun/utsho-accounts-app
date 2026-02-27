@@ -30,6 +30,9 @@ export interface MbcsPayment {
   officePaid?: number;
   guardianPaid?: number;
   dueAmount?: number;
+  // Due collection fields (Feature 6B)
+  isDueCollection?: boolean;
+  parentInvoiceNumber?: string;
 }
 
 export interface CreateMbcsPaymentDto {
@@ -104,4 +107,37 @@ export const mbcsPaymentsService = {
   update: (id: string, data: Partial<CreateMbcsPaymentDto>) =>
     apiPatch<MbcsPayment>(`/mbcs/payments/${id}`, data),
   delete: (id: string) => apiDelete<MbcsPayment>(`/mbcs/payments/${id}`),
+  getDueProfile: (studentId: string) =>
+    apiGet<{ studentId: string; profiles: MbcsDueProfile[] }>(
+      `/mbcs/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (data: MbcsCollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: MbcsPayment[]; remainingDue: number }>(
+      "/mbcs/payments/collect-due",
+      data,
+    ),
 };
+
+export interface MbcsDueProfileItem {
+  paymentType: string;
+  originalAmount: number;
+  paidSoFar: number;
+  remainingDue: number;
+}
+
+export interface MbcsDueProfile {
+  invoiceNumber: string;
+  paymentDate: string;
+  originalTotalDue: number;
+  priorCollectedTotal: number;
+  remainingDue: number;
+  perItemDues: MbcsDueProfileItem[];
+}
+
+export interface MbcsCollectDueDto {
+  parentInvoiceNumber: string;
+  paidAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}
