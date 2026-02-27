@@ -102,6 +102,8 @@ export const mecPaymentsService = {
       "/mec/payments/collect-due",
       data,
     ),
+  getDueSummary: (studentId: string) =>
+    apiGet<MecDueSummary>(`/mec/payments/student/${studentId}/due-summary`),
 };
 
 export interface MecDueProfileItem {
@@ -126,4 +128,17 @@ export interface MecCollectDueDto {
   paymentDate: string;
   paymentMethod: string;
   notes?: string;
+}
+
+export interface MecDueSummaryItem {
+  due: number;
+  status: 'due' | 'paid';
+}
+
+export interface MecDueSummary {
+  studentId: string;
+  totalDue: number;
+  breakdown: {
+    tuition: MecDueSummaryItem;
+  };
 }

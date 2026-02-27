@@ -115,6 +115,8 @@ export const paymentsService = {
       "/uac/payments/collect-due",
       data,
     ),
+  getDueSummary: (studentId: string) =>
+    apiGet<DueSummary>(`/uac/payments/student/${studentId}/due-summary`),
 };
 
 export interface DueProfileItem {
@@ -139,4 +141,20 @@ export interface CollectDueDto {
   paymentDate: string;
   paymentMethod: string;
   notes?: string;
+}
+
+export interface DueSummaryItem {
+  due: number;
+  status: 'due' | 'paid' | 'na';
+}
+
+export interface DueSummary {
+  studentId: string;
+  totalDue: number;
+  breakdown: {
+    tuition: DueSummaryItem;
+    admission: DueSummaryItem;
+    readmission: DueSummaryItem;
+    others: DueSummaryItem;
+  };
 }

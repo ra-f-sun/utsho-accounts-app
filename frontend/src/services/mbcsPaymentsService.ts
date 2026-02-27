@@ -116,6 +116,8 @@ export const mbcsPaymentsService = {
       "/mbcs/payments/collect-due",
       data,
     ),
+  getDueSummary: (studentId: string) =>
+    apiGet<DueSummary>(`/mbcs/payments/student/${studentId}/due-summary`),
 };
 
 export interface MbcsDueProfileItem {
@@ -140,4 +142,20 @@ export interface MbcsCollectDueDto {
   paymentDate: string;
   paymentMethod: string;
   notes?: string;
+}
+
+export interface DueSummaryItem {
+  due: number;
+  status: 'due' | 'paid' | 'na';
+}
+
+export interface DueSummary {
+  studentId: string;
+  totalDue: number;
+  breakdown: {
+    tuition: DueSummaryItem;
+    admission: DueSummaryItem;
+    readmission: DueSummaryItem;
+    others: DueSummaryItem;
+  };
 }

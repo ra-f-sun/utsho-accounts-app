@@ -12,12 +12,14 @@ import {
   Col,
   Card,
   Tabs,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
   FilePdfOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import QueryError from "../../../components/QueryError";
@@ -60,6 +62,7 @@ export default function MecPaymentHistory() {
     paymentMonth: dayjs().startOf("month").toISOString(),
   });
   const [activeTab, setActiveTab] = useState("tuition-status");
+  const [showDueOnly, setShowDueOnly] = useState(false);
 
   // Fetch all active students
   const { data: studentsData } = useQuery({
@@ -396,7 +399,7 @@ export default function MecPaymentHistory() {
           </Select>
         </>
       )}
-      {activeTab === "all-payments" && (
+      {(activeTab === "guardian-records" || activeTab === "office-records") && (
         <Select
           placeholder="Method"
           style={{ width: 150 }}
@@ -422,6 +425,104 @@ export default function MecPaymentHistory() {
         Record Payment
       </Button>
     </Space>
+  );
+
+  // Office-facing columns (per-row, shows actual amounts + due)
+  const officeColumns: ColumnsType<MecPayment> = [
+    {
+      title: "Invoice #",
+      dataIndex: "invoiceNumber",
+      key: "invoiceNumber",
+      width: 160,
+      render: (text: string) => <strong>{text}</strong>,
+    },
+    {
+      title: "Student",
+      key: "student",
+      render: (_: unknown, record: MecPayment) => {
+        const student = record.student;
+        return (
+          <div>
+            <strong>{student?.name}</strong>
+            {student?.class && (
+              <div style={{ fontSize: 12, color: "#888" }}>Class {student.class}</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Month",
+      dataIndex: "paymentMonth",
+      key: "paymentMonth",
+      width: 110,
+      render: (date: string) => (date ? dayjs(date).format("MMM YYYY") : "-"),
+    },
+    {
+      title: "Amount (Office)",
+      dataIndex: "amount",
+      key: "amount",
+      width: 130,
+      render: (amount: number) => (
+        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      ),
+    },
+    {
+      title: "Due",
+      key: "dueAmount",
+      width: 110,
+      render: (_: unknown, record: MecPayment) =>
+        (record.dueAmount ?? 0) > 0 ? (
+          <Tag icon={<ExclamationCircleOutlined />} color="error">
+            ৳{record.dueAmount!.toLocaleString()}
+          </Tag>
+        ) : (
+          <Tag color="success">No Due</Tag>
+        ),
+    },
+    {
+      title: "Date",
+      dataIndex: "paymentDate",
+      key: "paymentDate",
+      width: 100,
+      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 130,
+      render: (_: unknown, record: MecPayment) => (
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<FilePdfOutlined />}
+            onClick={() =>
+              navigate(`/mec/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)
+            }
+          >
+            Invoice
+          </Button>
+          {(record.dueAmount ?? 0) > 0 && (
+            <Button
+              type="primary"
+              size="small"
+              danger
+              onClick={() =>
+                navigate(`/mec/payments/collect-due?studentId=${record.studentId}`)
+              }
+            >
+              Collect
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  const officePmts = useMemo(
+    () => showDueOnly ? allPayments.filter((p) => (p.dueAmount ?? 0) > 0) : allPayments,
+    [allPayments, showDueOnly],
   );
 
   if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
@@ -509,8 +610,8 @@ export default function MecPaymentHistory() {
             ),
           },
           {
-            key: "all-payments",
-            label: `All Payments (${groupedMecPayments.length})`,
+            key: "guardian-records",
+            label: `Guardian Records (${groupedMecPayments.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
@@ -542,6 +643,49 @@ export default function MecPaymentHistory() {
                   );
                 }}
               />
+            ),
+          },
+          {
+            key: "office-records",
+            label: `Office Records (${officePmts.length})`,
+            children: (
+              <div>
+                <Space style={{ marginBottom: 12 }}>
+                  <span style={{ fontWeight: 500 }}>Show Due Only:</span>
+                  <Switch checked={showDueOnly} onChange={setShowDueOnly} />
+                  {showDueOnly && <Tag color="error">{officePmts.length} with due</Tag>}
+                </Space>
+                <Table
+                  columns={officeColumns}
+                  dataSource={officePmts}
+                  rowKey="id"
+                  loading={loadingPayments}
+                  pagination={{
+                    pageSize: 15,
+                    showSizeChanger: true,
+                    showTotal: (total) => `${total} records`,
+                  }}
+                  summary={(pageData) => {
+                    const total = pageData.reduce((sum, row) => sum + row.amount, 0);
+                    const totalDue = pageData.reduce((sum, row) => sum + (row.dueAmount ?? 0), 0);
+                    return (
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0} colSpan={2}>
+                          <strong>Page Total</strong>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={2} />
+                        <Table.Summary.Cell index={3}>
+                          <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={4}>
+                          <strong style={{ color: "#ff4d4f" }}>৳{totalDue.toLocaleString()}</strong>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={5} colSpan={2} />
+                      </Table.Summary.Row>
+                    );
+                  }}
+                />
+              </div>
             ),
           },
         ]}

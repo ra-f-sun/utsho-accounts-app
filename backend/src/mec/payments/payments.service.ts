@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
@@ -168,7 +173,12 @@ export class MecPaymentsService {
 
     // Determine invoice mode (dual vs unified)
     const invoiceModeSetting = await this.prisma.orgSettings.findUnique({
-      where: { organization_settingKey: { organization: 'mec', settingKey: 'invoice_mode' } },
+      where: {
+        organization_settingKey: {
+          organization: 'mec',
+          settingKey: 'invoice_mode',
+        },
+      },
     });
     const invoiceMode = (invoiceModeSetting?.settingValue as string) ?? 'dual';
 
@@ -177,14 +187,18 @@ export class MecPaymentsService {
     const dueAmount = dto.dueAmount ?? 0;
 
     const lineItemsWithGuardian = dto.lineItems.map((item) => {
-      const guardianAmount = invoiceMode === 'unified'
-        ? item.amount
-        : (student.monthlyTuitionFee ?? item.amount);
+      const guardianAmount =
+        invoiceMode === 'unified'
+          ? item.amount
+          : (student.monthlyTuitionFee ?? item.amount);
       return { ...item, guardianAmount };
     });
 
     const officeSubTotal = dto.lineItems.reduce((s, i) => s + i.amount, 0);
-    const guardianSubTotal = lineItemsWithGuardian.reduce((s, i) => s + i.guardianAmount, 0);
+    const guardianSubTotal = lineItemsWithGuardian.reduce(
+      (s, i) => s + i.guardianAmount,
+      0,
+    );
     const officeGrandTotal = officeSubTotal - additionalDiscount;
     const guardianGrandTotal = guardianSubTotal - additionalDiscount;
     const officePaid = officeGrandTotal - dueAmount;
@@ -282,12 +296,14 @@ export class MecPaymentsService {
         priorCollectedTotal,
         remainingDue,
         // MEC has only tuition type
-        perItemDues: [{
-          paymentType: 'tuition',
-          originalAmount: rows.reduce((s, r) => s + r.amount, 0),
-          paidSoFar: (rows[0].officePaid ?? 0) + priorCollectedTotal,
-          remainingDue,
-        }],
+        perItemDues: [
+          {
+            paymentType: 'tuition',
+            originalAmount: rows.reduce((s, r) => s + r.amount, 0),
+            paidSoFar: (rows[0].officePaid ?? 0) + priorCollectedTotal,
+            remainingDue,
+          },
+        ],
       });
     }
 
@@ -316,7 +332,6 @@ export class MecPaymentsService {
     }
 
     const originalTotalDue = originalRows[0].dueAmount ?? 0;
-    const originalOfficePaid = originalRows[0].officePaid ?? 0;
 
     if (originalTotalDue <= 0) {
       throw new BadRequestException(
@@ -424,9 +439,67 @@ export class MecPaymentsService {
     return payments;
   }
 
+  /**
+   * Get due summary for a student (MEC: tuition only — no paymentType field)
+   */
+  async getDueSummary(studentId: string) {
+    const payments = await this.prisma.mecPayment.findMany({
+      where: { studentId, isActive: true, isDueCollection: false },
+      orderBy: { paymentDate: 'asc' },
+    });
+
+    // Group by invoiceNumber
+    const byInvoice = new Map<string, typeof payments>();
+    for (const p of payments) {
+      if (!byInvoice.has(p.invoiceNumber)) byInvoice.set(p.invoiceNumber, []);
+      byInvoice.get(p.invoiceNumber)!.push(p);
+    }
+
+    let tuitionDue = 0;
+
+    for (const [invoiceNumber, rows] of byInvoice) {
+      const originalTotalDue = rows[0].dueAmount ?? 0;
+      if (originalTotalDue <= 0) continue;
+
+      const originalOfficePaid = rows[0].officePaid ?? 0;
+
+      const priorCollections = await this.prisma.mecPayment.findMany({
+        where: {
+          parentInvoiceNumber: invoiceNumber,
+          isDueCollection: true,
+          isActive: true,
+        },
+      });
+      const seen = new Set<string>();
+      let priorCollectedTotal = 0;
+      for (const pc of priorCollections) {
+        if (!seen.has(pc.invoiceNumber)) {
+          seen.add(pc.invoiceNumber);
+          priorCollectedTotal += pc.officePaid ?? 0;
+        }
+      }
+
+      const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+      if (remainingDue > 0) {
+        // MEC does not track per-type; the total amount not yet paid is tuition due
+        const invoiceTotal = rows.reduce((sum, r) => sum + r.amount, 0);
+        const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
+        tuitionDue += Math.max(0, invoiceTotal - totalPaidSoFar);
+      }
+    }
+
+    return {
+      studentId,
+      totalDue: tuitionDue,
+      breakdown: {
+        tuition: { due: tuitionDue, status: tuitionDue > 0 ? 'due' : 'paid' },
+      },
+    };
+  }
+
   async getStudentPaymentSummary(studentId: string) {
     const payments = await this.prisma.mecPayment.findMany({
-      where: { studentId, isActive: true },
+      where: { studentId },
       orderBy: { paymentDate: 'desc' },
     });
 

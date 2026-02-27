@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Select, Input } from "antd";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Select, Input, Alert } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
@@ -9,6 +9,7 @@ import {
   UserDeleteOutlined,
   UserAddOutlined,
   VerticalAlignTopOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
@@ -89,6 +90,14 @@ export default function StudentPaymentHistory() {
     enabled: !!id,
   });
 
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["uac-due-summary", id],
+    queryFn: () => paymentsService.getDueSummary(id!),
+    enabled: !!id,
+  });
+
+  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+
   const payments: Payment[] = paymentsData?.data?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
@@ -123,12 +132,19 @@ export default function StudentPaymentHistory() {
       ),
     },
     {
-      title: "Amount",
+      title: "Amount (Office)",
       dataIndex: "amount",
       key: "amount",
-      width: 100,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      width: 120,
+      render: (amount: number, record: Payment) => (
+        <div>
+          <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+          {(record.dueAmount ?? 0) > 0 && (
+            <div style={{ fontSize: 11, color: "#ff4d4f" }}>
+              Due: ৳{record.dueAmount!.toLocaleString()}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -323,6 +339,45 @@ export default function StudentPaymentHistory() {
           })}
         </Row>
       </Card>
+
+      {/* Due Summary Card */}
+      {dueSummary && (dueSummary as { totalDue?: number }).totalDue! > 0 && (
+        <Card
+          title={
+            <span>
+              <ExclamationCircleOutlined style={{ color: "#ff4d4f", marginRight: 8 }} />
+              Outstanding Due Summary
+            </span>
+          }
+          style={{ marginBottom: 16, borderColor: "#ffccc7" }}
+          styles={{ header: { color: "#cf1322" } }}
+        >
+          <Row gutter={16}>
+            {Object.entries((dueSummary as { breakdown?: Record<string, { due: number; status: string }> }).breakdown ?? {}).map(([type, info]) => {
+              if (info.status === "na") return null;
+              return (
+                <Col span={6} key={type}>
+                  <Statistic
+                    title={type.charAt(0).toUpperCase() + type.slice(1)}
+                    value={info.due > 0 ? `৳${info.due.toLocaleString()}` : "No Due"}
+                    styles={{ content: { color: info.due > 0 ? "#cf1322" : "#52c41a", fontSize: 16 } }}
+                  />
+                  <Tag color={info.due > 0 ? "error" : "success"} style={{ marginTop: 4 }}>
+                    {info.due > 0 ? "DUE" : "PAID"}
+                  </Tag>
+                </Col>
+              );
+            })}
+          </Row>
+          <Alert
+            type="warning"
+            title={`Total Outstanding: ৳${(dueSummary as { totalDue?: number }).totalDue?.toLocaleString()}`}
+            description="Collect due by clicking 'Record Payment' and selecting a due invoice."
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        </Card>
+      )}
 
       {/* Payment Records Table */}
       <Card title="All Payment Records">

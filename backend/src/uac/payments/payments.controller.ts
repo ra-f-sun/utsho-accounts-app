@@ -52,10 +52,7 @@ export class PaymentsController {
   }
 
   @Post('collect-due')
-  collectDue(
-    @Body() dto: CollectDueDto,
-    @CurrentUser() user: JwtUser,
-  ) {
+  collectDue(@Body() dto: CollectDueDto, @CurrentUser() user: JwtUser) {
     return this.paymentsService.collectDue(dto, user.id);
   }
 
@@ -73,6 +70,11 @@ export class PaymentsController {
   @Get('student/:studentId/summary')
   getStudentSummary(@Param('studentId', ParseUUIDPipe) studentId: string) {
     return this.paymentsService.getStudentPaymentSummary(studentId);
+  }
+
+  @Get('student/:studentId/due-summary')
+  getDueSummary(@Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.paymentsService.getDueSummary(studentId);
   }
 
   @Get(':id')

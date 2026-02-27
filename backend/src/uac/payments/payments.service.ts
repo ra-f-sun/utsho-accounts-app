@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
@@ -248,7 +253,12 @@ export class PaymentsService {
 
     // Determine invoice mode (dual vs unified)
     const invoiceModeSetting = await this.prisma.orgSettings.findUnique({
-      where: { organization_settingKey: { organization: 'uac', settingKey: 'invoice_mode' } },
+      where: {
+        organization_settingKey: {
+          organization: 'uac',
+          settingKey: 'invoice_mode',
+        },
+      },
     });
     const invoiceMode = (invoiceModeSetting?.settingValue as string) ?? 'dual';
 
@@ -273,7 +283,10 @@ export class PaymentsService {
     });
 
     const officeSubTotal = dto.lineItems.reduce((s, i) => s + i.amount, 0);
-    const guardianSubTotal = lineItemsWithGuardian.reduce((s, i) => s + i.guardianAmount, 0);
+    const guardianSubTotal = lineItemsWithGuardian.reduce(
+      (s, i) => s + i.guardianAmount,
+      0,
+    );
     const officeGrandTotal = officeSubTotal - additionalDiscount;
     const guardianGrandTotal = guardianSubTotal - additionalDiscount;
     const officePaid = officeGrandTotal - dueAmount;
@@ -538,7 +551,11 @@ export class PaymentsService {
           });
         }),
       );
-      return { invoiceNumber: newInvoiceNumber, payments, remainingDue: newDueAmount };
+      return {
+        invoiceNumber: newInvoiceNumber,
+        payments,
+        remainingDue: newDueAmount,
+      };
     });
   }
 
@@ -569,16 +586,23 @@ export class PaymentsService {
   /**
    * Load payment priority order from OrgSettings (falls back to default if not set)
    */
-  private async getPaymentPriority(): Promise<{ group: string; types: string[] }[]> {
+  private async getPaymentPriority(): Promise<
+    { group: string; types: string[] }[]
+  > {
     try {
       const setting = await this.prisma.orgSettings.findUnique({
-        where: { organization_settingKey: { organization: 'uac', settingKey: 'payment_priority' } },
+        where: {
+          organization_settingKey: {
+            organization: 'uac',
+            settingKey: 'payment_priority',
+          },
+        },
       });
       if (setting?.settingValue) {
         const raw =
           typeof setting.settingValue === 'string'
-            ? JSON.parse(setting.settingValue as string)
-            : setting.settingValue;
+            ? (JSON.parse(setting.settingValue) as { order?: unknown })
+            : (setting.settingValue as { order?: unknown });
         if (Array.isArray(raw?.order)) {
           return buildPriorityOrder(raw.order as string[], UAC_OTHERS_TYPES);
         }
@@ -587,6 +611,105 @@ export class PaymentsService {
       // fall through to default
     }
     return UAC_PRIORITY_ORDER;
+  }
+
+  /**
+   * Get due summary for a student, grouped by payment type category.
+   * Re-runs allocation logic per invoice to compute accurate per-type dues.
+   */
+  async getDueSummary(studentId: string) {
+    const priorityOrder = await this.getPaymentPriority();
+
+    // Fetch all original (non-collection) payments for this student
+    const payments = await this.prisma.uacPayment.findMany({
+      where: { studentId, isActive: true, isDueCollection: false },
+      orderBy: { paymentDate: 'asc' },
+    });
+
+    // Group by invoiceNumber
+    const byInvoice = new Map<string, typeof payments>();
+    for (const p of payments) {
+      if (!byInvoice.has(p.invoiceNumber)) byInvoice.set(p.invoiceNumber, []);
+      byInvoice.get(p.invoiceNumber)!.push(p);
+    }
+
+    // For each invoice, gather prior collections and run allocatePaid
+    const dues: Record<string, number> = {};
+
+    for (const [invoiceNumber, rows] of byInvoice) {
+      const originalTotalDue = rows[0].dueAmount ?? 0;
+      if (originalTotalDue <= 0) continue;
+
+      const originalOfficePaid = rows[0].officePaid ?? 0;
+
+      // Sum prior due collections for this invoice
+      const priorCollections = await this.prisma.uacPayment.findMany({
+        where: {
+          parentInvoiceNumber: invoiceNumber,
+          isDueCollection: true,
+          isActive: true,
+        },
+      });
+      const seen = new Set<string>();
+      let priorCollectedTotal = 0;
+      for (const pc of priorCollections) {
+        if (!seen.has(pc.invoiceNumber)) {
+          seen.add(pc.invoiceNumber);
+          priorCollectedTotal += pc.officePaid ?? 0;
+        }
+      }
+
+      const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+      if (remainingDue <= 0) continue;
+
+      // Re-run allocation with total paid to find which items still have due
+      const lineItems = rows.map((r) => ({
+        paymentType: r.paymentType,
+        amount: r.amount,
+      }));
+      const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
+      const allocated = allocatePaid(lineItems, totalPaidSoFar, priorityOrder);
+
+      for (const a of allocated) {
+        if (a.dueAmount > 0) {
+          dues[a.paymentType] = (dues[a.paymentType] ?? 0) + a.dueAmount;
+        }
+      }
+    }
+
+    const OTHERS_TYPES = UAC_OTHERS_TYPES;
+    const hasType = (type: string) =>
+      payments.some((p) => p.paymentType === type);
+    const hasOthers = () =>
+      payments.some((p) => OTHERS_TYPES.includes(p.paymentType));
+
+    const typeDue = (type: string) => dues[type] ?? 0;
+    const othersDue = OTHERS_TYPES.reduce((sum, t) => sum + (dues[t] ?? 0), 0);
+    const tuitionDue = typeDue('tuition');
+    const admissionDue = typeDue('admission');
+    const readmissionDue = typeDue('readmission');
+
+    return {
+      studentId,
+      totalDue: tuitionDue + admissionDue + readmissionDue + othersDue,
+      breakdown: {
+        tuition: { due: tuitionDue, status: tuitionDue > 0 ? 'due' : 'paid' },
+        admission: {
+          due: admissionDue,
+          status:
+            admissionDue > 0 ? 'due' : hasType('admission') ? 'paid' : 'na',
+        },
+        readmission: {
+          due: readmissionDue,
+          status:
+            readmissionDue > 0 ? 'due' : hasType('readmission') ? 'paid' : 'na',
+        },
+        others: {
+          due: othersDue,
+          status: othersDue > 0 ? 'due' : hasOthers() ? 'paid' : 'na',
+        },
+      },
+    };
   }
 
   /**

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal } from "antd";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Alert } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
@@ -9,6 +9,7 @@ import {
   UserDeleteOutlined,
   UserAddOutlined,
   VerticalAlignTopOutlined,
+  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
@@ -91,6 +92,14 @@ export default function MecStudentPaymentHistory() {
     enabled: !!id,
   });
 
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["mec-due-summary", id],
+    queryFn: () => mecPaymentsService.getDueSummary(id!),
+    enabled: !!id,
+  });
+
+  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+
   const payments: MecPayment[] = paymentsData?.data?.data || [];
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
 
@@ -121,12 +130,19 @@ export default function MecStudentPaymentHistory() {
       render: (date: string) => dayjs(date).format("MMM YYYY"),
     },
     {
-      title: "Amount",
+      title: "Amount (Office)",
       dataIndex: "amount",
       key: "amount",
-      width: 110,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      width: 120,
+      render: (amount: number, record: MecPayment) => (
+        <div>
+          <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+          {(record.dueAmount ?? 0) > 0 && (
+            <div style={{ fontSize: 11, color: "#ff4d4f" }}>
+              Due: ৳{record.dueAmount!.toLocaleString()}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -316,6 +332,44 @@ export default function MecStudentPaymentHistory() {
           })}
         </Row>
       </Card>
+
+      {/* Due Summary — MEC tuition only */}
+      {dueSummary && (dueSummary as { totalDue?: number }).totalDue! > 0 && (
+        <Card
+          title={
+            <span>
+              <ExclamationCircleOutlined style={{ color: "#ff4d4f", marginRight: 8 }} />
+              Outstanding Due
+            </span>
+          }
+          style={{ marginBottom: 16, borderColor: "#ffccc7" }}
+          styles={{ header: { color: "#cf1322" } }}
+        >
+          <Row gutter={16}>
+            <Col span={8}>
+              <Statistic
+                title="Tuition Due"
+                value={`৳${(dueSummary as { breakdown?: { tuition?: { due?: number } } }).breakdown?.tuition?.due?.toLocaleString() ?? 0}`}
+                styles={{ content: { color: "#cf1322", fontSize: 18 } }}
+              />
+            </Col>
+            <Col span={8}>
+              <Statistic
+                title="Total Outstanding"
+                value={`৳${(dueSummary as { totalDue?: number }).totalDue?.toLocaleString()}`}
+                styles={{ content: { color: "#cf1322", fontSize: 18 } }}
+              />
+            </Col>
+          </Row>
+          <Alert
+            type="warning"
+            title="Outstanding tuition due exists for this student."
+            description="Collect due by clicking 'Record Payment' and selecting a due invoice."
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        </Card>
+      )}
 
       {/* Payment Records Table */}
       <Card title="All Payment Records">

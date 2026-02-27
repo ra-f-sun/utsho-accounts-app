@@ -1136,29 +1136,29 @@ On the "Office Records" tab, add a filter: **"Show Due Only"** — filters to sh
 
 #### Tasks
 
-- [ ] **6.26** — Frontend: Update `StudentPaymentHistory.tsx` (UAC):
+- [x] **6.26** — Frontend: Update `StudentPaymentHistory.tsx` (UAC):
   - Add "Due Summary" card above the payment grid
   - Compute due per category from payment rows using office amounts
   - Use priority-based allocation data
 
-- [ ] **6.27** — Same for MBCS: `MbcsStudentPaymentHistory.tsx`
-- [ ] **6.28** — Same for MEC: `MecStudentPaymentHistory.tsx`
+- [x] **6.27** — Same for MBCS: `MbcsStudentPaymentHistory.tsx`
+- [x] **6.28** — Same for MEC: `MecStudentPaymentHistory.tsx`
 
-- [ ] **6.29** — Frontend: Restructure `UacPaymentHistory.tsx` tabs:
+- [x] **6.29** — Frontend: Restructure `UacPaymentHistory.tsx` tabs:
   - Rename "All Payments" → "Guardian Records" (or per decision on S10)
   - Add new "Office Records" tab showing office copy data
   - Add "Show Due Only" filter on Office Records tab
   - Add "Collect" button on due rows
 
-- [ ] **6.30** — Same for MBCS: `MbcsPaymentHistory.tsx`
-- [ ] **6.31** — Same for MEC: `MecPaymentHistory.tsx`
+- [x] **6.30** — Same for MBCS: `MbcsPaymentHistory.tsx`
+- [x] **6.31** — Same for MEC: `MecPaymentHistory.tsx`
 
-- [ ] **6.32** — Backend: Add endpoint or query param to fetch payments with office vs guardian perspective:
+- [x] **6.32** — Backend: Add endpoint or query param to fetch payments with office vs guardian perspective:
   - `GET /api/uac/payments?view=office` — returns `amount`, `officeSubTotal`, `officePaid`, etc.
   - `GET /api/uac/payments?view=guardian` — returns `guardianAmount`, `guardianSubTotal`, `guardianPaid`, etc.
   - Or simply return all fields and let frontend pick which to display
 
-- [ ] **6.33** — Backend: Add endpoint to fetch due summary for a student:
+- [x] **6.33** — Backend: Add endpoint to fetch due summary for a student:
   ```
   GET /api/uac/students/:id/due-summary
   Response: {
