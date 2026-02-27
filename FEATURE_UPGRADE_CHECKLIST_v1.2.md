@@ -1052,12 +1052,12 @@ payment_priority → { "order": ["tuition", "admission", "readmission", "others"
 
 #### Tasks
 
-- [ ] **6.23** — Frontend: Add "Payment Priority" sub-tab to each org's settings page:
+- [x] **6.23** — Frontend: Add "Payment Priority" sub-tab to each org's settings page:
   - Drag-and-drop sortable list of payment types: Tuition, Admission, Readmission, Others
   - Save button → `settingsService.upsert(org, 'payment_priority', { order: [...] })`
   - Default order if not set: `["tuition", "admission", "readmission", "others"]`
 
-- [ ] **6.24** — Backend: Add priority-based due allocation logic to payment service:
+- [x] **6.24** — Backend: Add priority-based due allocation logic to payment service:
   - When `dueAmount > 0` on a multi-line payment:
     - Fetch priority order from settings
     - Allocate `officePaid` amount across line items in priority order
@@ -1066,7 +1066,7 @@ payment_priority → { "order": ["tuition", "admission", "readmission", "others"
 
 **Decision (S9): Store `dueAmount` per payment row** — Each row in the payment table gets its own `dueAmount` computed from priority allocation. The invoice-level due is the sum. The existing `dueAmount` field on each payment row (from 6.1) is filled per-row by the priority allocation algorithm.
 
-- [ ] **6.25** — Backend: Implement due allocation algorithm:
+- [x] **6.25** — Backend: Implement due allocation algorithm:
   ```
   function allocateDue(lineItems, totalPaid, priorityOrder):
     remaining = totalPaid

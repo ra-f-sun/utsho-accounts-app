@@ -26,6 +26,27 @@ const UAC_PRIORITY_ORDER = [
   },
 ];
 
+const UAC_OTHERS_TYPES = [
+  'exam',
+  'sheet',
+  'session_charge',
+  'study_materials',
+  'study_tour',
+  'other',
+];
+
+function buildPriorityOrder(
+  order: string[],
+  othersTypes: string[],
+): { group: string; types: string[] }[] {
+  return order.map((group) => {
+    if (group === 'others') {
+      return { group: 'others', types: othersTypes };
+    }
+    return { group, types: [group] };
+  });
+}
+
 function allocatePaid(
   lineItems: { paymentType: string; amount: number }[],
   totalPaid: number,
@@ -302,6 +323,9 @@ export class PaymentsService {
    * Get due profile for a student — all outstanding invoices with per-type remaining dues
    */
   async getDueProfile(studentId: string) {
+    // Load priority order from settings (falls back to default)
+    const priorityOrder = await this.getPaymentPriority();
+
     // Fetch original invoice rows (not due collections) that have outstanding due
     const originalPayments = await this.prisma.uacPayment.findMany({
       where: {
@@ -355,7 +379,7 @@ export class PaymentsService {
         amount: r.amount,
       }));
       const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
-      const allocated = allocatePaid(lineItems, totalPaidSoFar, UAC_PRIORITY_ORDER);
+      const allocated = allocatePaid(lineItems, totalPaidSoFar, priorityOrder);
       const perItemDues = allocated
         .filter((i) => i.dueAmount > 0)
         .map((i) => ({
@@ -382,6 +406,9 @@ export class PaymentsService {
    * Record a due collection against an existing invoice (Feature 6B)
    */
   async collectDue(dto: CollectDueDto, createdBy: string) {
+    // Load priority order from settings (falls back to default)
+    const priorityOrder = await this.getPaymentPriority();
+
     const originalRows = await this.prisma.uacPayment.findMany({
       where: {
         invoiceNumber: dto.parentInvoiceNumber,
@@ -450,7 +477,7 @@ export class PaymentsService {
     const existingAllocation = allocatePaid(
       lineItems,
       totalPaidSoFar,
-      UAC_PRIORITY_ORDER,
+      priorityOrder,
     );
     const dueItemsNow = existingAllocation
       .filter((i) => i.dueAmount > 0)
@@ -460,7 +487,7 @@ export class PaymentsService {
     const newAllocation = allocatePaid(
       dueItemsNow,
       dto.paidAmount,
-      UAC_PRIORITY_ORDER,
+      priorityOrder,
     );
     const itemsToPay = newAllocation.filter((i) => i.paidAmount > 0);
 
@@ -537,6 +564,29 @@ export class PaymentsService {
       );
     }
     return payments;
+  }
+
+  /**
+   * Load payment priority order from OrgSettings (falls back to default if not set)
+   */
+  private async getPaymentPriority(): Promise<{ group: string; types: string[] }[]> {
+    try {
+      const setting = await this.prisma.orgSettings.findUnique({
+        where: { organization_settingKey: { organization: 'uac', settingKey: 'payment_priority' } },
+      });
+      if (setting?.settingValue) {
+        const raw =
+          typeof setting.settingValue === 'string'
+            ? JSON.parse(setting.settingValue as string)
+            : setting.settingValue;
+        if (Array.isArray(raw?.order)) {
+          return buildPriorityOrder(raw.order as string[], UAC_OTHERS_TYPES);
+        }
+      }
+    } catch {
+      // fall through to default
+    }
+    return UAC_PRIORITY_ORDER;
   }
 
   /**

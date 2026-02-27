@@ -4,6 +4,7 @@ import MbcsAdmissionSettings from "./MbcsAdmissionSettings";
 import MbcsStudyMaterialsSettings from "./MbcsStudyMaterialsSettings";
 import MbcsDiscountSettings from "./MbcsDiscountSettings";
 import MbcsInvoiceSettings from "./MbcsInvoiceSettings";
+import MbcsPaymentPrioritySettings from "./MbcsPaymentPrioritySettings";
 
 const tabItems = [
   {
@@ -30,6 +31,11 @@ const tabItems = [
     key: "invoice_mode",
     label: "Invoice Mode",
     children: <MbcsInvoiceSettings />,
+  },
+  {
+    key: "payment_priority",
+    label: "Payment Priority",
+    children: <MbcsPaymentPrioritySettings />,
   },
 ];
 

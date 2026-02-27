@@ -31,6 +31,27 @@ const MBCS_PRIORITY_ORDER = [
   },
 ];
 
+const MBCS_OTHERS_TYPES = [
+  'exam',
+  'session_charge',
+  'study_materials',
+  'study_tour',
+  'stationary',
+  'other',
+];
+
+function buildPriorityOrder(
+  order: string[],
+  othersTypes: string[],
+): { group: string; types: string[] }[] {
+  return order.map((group) => {
+    if (group === 'others') {
+      return { group: 'others', types: othersTypes };
+    }
+    return { group, types: [group] };
+  });
+}
+
 function allocatePaid(
   lineItems: { paymentType: string; amount: number }[],
   totalPaid: number,
@@ -304,6 +325,9 @@ export class PaymentsService {
    * Get due profile for a student — all outstanding invoices with per-type remaining dues
    */
   async getDueProfile(studentId: string) {
+    // Load priority order from settings (falls back to default)
+    const priorityOrder = await this.getPaymentPriority();
+
     const originalPayments = await this.prisma.mbcsPayment.findMany({
       where: {
         studentId,
@@ -355,7 +379,7 @@ export class PaymentsService {
       const allocated = allocatePaid(
         lineItems,
         totalPaidSoFar,
-        MBCS_PRIORITY_ORDER,
+        priorityOrder,
       );
       const perItemDues = allocated
         .filter((i) => i.dueAmount > 0)
@@ -383,6 +407,9 @@ export class PaymentsService {
    * Record a due collection against an existing invoice (Feature 6B)
    */
   async collectDue(dto: CollectMbcsDueDto, createdBy: string) {
+    // Load priority order from settings (falls back to default)
+    const priorityOrder = await this.getPaymentPriority();
+
     const originalRows = await this.prisma.mbcsPayment.findMany({
       where: {
         invoiceNumber: dto.parentInvoiceNumber,
@@ -449,7 +476,7 @@ export class PaymentsService {
     const existingAllocation = allocatePaid(
       lineItems,
       totalPaidSoFar,
-      MBCS_PRIORITY_ORDER,
+      priorityOrder,
     );
     const dueItemsNow = existingAllocation
       .filter((i) => i.dueAmount > 0)
@@ -458,7 +485,7 @@ export class PaymentsService {
     const newAllocation = allocatePaid(
       dueItemsNow,
       dto.paidAmount,
-      MBCS_PRIORITY_ORDER,
+      priorityOrder,
     );
     const itemsToPay = newAllocation.filter((i) => i.paidAmount > 0);
 
@@ -538,6 +565,29 @@ export class PaymentsService {
       );
     }
     return payments;
+  }
+
+  /**
+   * Load payment priority order from OrgSettings (falls back to default if not set)
+   */
+  private async getPaymentPriority(): Promise<{ group: string; types: string[] }[]> {
+    try {
+      const setting = await this.prisma.orgSettings.findUnique({
+        where: { organization_settingKey: { organization: 'mbcs', settingKey: 'payment_priority' } },
+      });
+      if (setting?.settingValue) {
+        const raw =
+          typeof setting.settingValue === 'string'
+            ? JSON.parse(setting.settingValue as string)
+            : setting.settingValue;
+        if (Array.isArray(raw?.order)) {
+          return buildPriorityOrder(raw.order as string[], MBCS_OTHERS_TYPES);
+        }
+      }
+    } catch {
+      // fall through to default
+    }
+    return MBCS_PRIORITY_ORDER;
   }
 
   async getStudentPaymentSummary(studentId: string) {
