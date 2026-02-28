@@ -4,7 +4,7 @@ export interface OrgSetting {
   id: string;
   organization: string;
   settingKey: string;
-  settingValue: any;
+  settingValue: unknown;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,7 +24,7 @@ export const getSetting = (
 export const upsertSetting = (
   org: string,
   key: string,
-  value: any,
+  value: unknown,
 ): Promise<ApiResponse<OrgSetting>> =>
   api.put(`/settings/${org}/${key}`, { value }) as unknown as Promise<
     ApiResponse<OrgSetting>
@@ -33,7 +33,7 @@ export const upsertSetting = (
 /** Atomically upsert multiple settings */
 export const bulkUpsertSettings = (
   org: string,
-  settings: Array<{ key: string; value: any }>,
+  settings: Array<{ key: string; value: unknown }>,
 ): Promise<ApiResponse<void>> =>
   api.put(`/settings/${org}/bulk`, {
     settings,

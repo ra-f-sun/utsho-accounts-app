@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
 import type { TeacherAttendance } from "../../../services/teacherAttendanceService";
 import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -58,7 +59,7 @@ export default function TeacherAttendanceList() {
     {
       title: "Teacher",
       key: "teacher",
-      render: (_: any, record: TeacherAttendance) => (
+      render: (_: unknown, record: TeacherAttendance) => (
         <div>
           <strong>{record.teacher?.name || "Unknown"}</strong>
           <div style={{ fontSize: 12, color: "#888" }}>
@@ -104,7 +105,7 @@ export default function TeacherAttendanceList() {
       title: "Actions",
       key: "actions",
       width: 80,
-      render: (_: any, record: TeacherAttendance) => (
+      render: (_: unknown, record: TeacherAttendance) => (
         <Popconfirm
           title="Delete this attendance record?"
           onConfirm={() => deleteMutation.mutate(record.id)}
@@ -136,7 +137,7 @@ export default function TeacherAttendanceList() {
             }
             allowClear
             showSearch
-            options={teachers.map((t: any) => ({
+            options={teachers.map((t: Teacher) => ({
               value: t.id,
               label: t.name,
             }))}

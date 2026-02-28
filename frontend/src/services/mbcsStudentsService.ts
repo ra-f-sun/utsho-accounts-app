@@ -105,4 +105,6 @@ export const mbcsStudentsService = {
     apiPost<MbcsStudent>(`/mbcs/students/${id}/promote`, data),
   promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
     apiPost<{ promoted: number }>('/mbcs/students/promote-bulk', data),
+  importStudents: (students: CreateMbcsStudentDto[]) =>
+    apiPost<MbcsStudent[]>('/mbcs/students/import', { students }),
 };

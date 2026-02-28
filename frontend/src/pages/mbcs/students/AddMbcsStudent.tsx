@@ -129,7 +129,10 @@ export default function AddMbcsStudent() {
     onError: () => message.error("Failed to update student"),
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: Omit<CreateMbcsStudentDto, 'dateOfBirth' | 'admissionDate'> & {
+    dateOfBirth?: ReturnType<typeof dayjs>;
+    admissionDate?: ReturnType<typeof dayjs>;
+  }) => {
     const data = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),

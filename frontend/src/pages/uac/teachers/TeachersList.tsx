@@ -88,7 +88,7 @@ export default function TeachersList() {
       title: "Salary/Rate",
       key: "payment",
       width: 150,
-      render: (_: any, record: Teacher) => {
+      render: (_: unknown, record: Teacher) => {
         if (record.paymentType === "fixed") {
           return `৳${record.monthlySalary?.toLocaleString()}/month`;
         }
@@ -106,7 +106,7 @@ export default function TeachersList() {
       title: "Actions",
       key: "actions",
       width: 120,
-      render: (_: any, record: Teacher) => (
+      render: (_: unknown, record: Teacher) => (
         <Space>
           <Button
             type="link"

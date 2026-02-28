@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Avatar, Dropdown, Typography } from "antd";
 import {
@@ -11,6 +11,7 @@ import {
   WalletOutlined,
   SettingOutlined,
   VerticalAlignTopOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -52,6 +53,7 @@ export default function DashboardLayout() {
     "/mec/payments/collect-due",
     "/mec/payment-history",
     "/mec/expenses",
+    "/import-export",
     "/settings",
   ];
   const selectedKey =
@@ -60,20 +62,21 @@ export default function DashboardLayout() {
       .sort((a, b) => b.length - a.length)[0] || "/dashboard";
 
   // Auto-open the parent submenu
-  const openKeys = pathname.startsWith("/uac")
+  const openKeys = useMemo(() => pathname.startsWith("/uac")
     ? ["uac"]
     : pathname.startsWith("/mbcs")
       ? ["mbcs"]
       : pathname.startsWith("/mec")
         ? ["mec"]
-        : [];
+        : [], [pathname]);
 
   // Controlled open keys — updates when route changes
   const [currentOpenKeys, setCurrentOpenKeys] = useState<string[]>(openKeys);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync menu state with route
     setCurrentOpenKeys(openKeys);
-  }, [pathname]);
+  }, [pathname, openKeys]);
 
   const handleLogout = () => {
     logout();
@@ -277,13 +280,26 @@ export default function DashboardLayout() {
     ...((["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || ""))
       ? [
           {
+            key: "/import-export",
+            icon: <SwapOutlined />,
+            label: "Import & Export",
+            onClick: () => navigate("/import-export"),
+          },
+          {
             key: "/settings",
             icon: <SettingOutlined />,
             label: "Settings",
             onClick: () => navigate("/settings"),
           },
         ]
-      : []),
+      : [
+          {
+            key: "/import-export",
+            icon: <SwapOutlined />,
+            label: "Import & Export",
+            onClick: () => navigate("/import-export"),
+          },
+        ]),
   ];
 
   const userMenuItems = [

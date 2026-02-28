@@ -186,8 +186,10 @@ model UacPayroll {
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
-  // Due collection fields (Feature 6B)
+  // Due fields (Feature 6F)
+  paidAmount      Float?              // What was actually paid (defaults to amount)
   dueAmount       Float?   @default(0) // Amount kept as due
+  // Due collection fields (Feature 6B)
   parentPayrollId String?             // Links due collection to original payroll
   isDueCollection Boolean  @default(false)
 
@@ -347,8 +349,10 @@ model MbcsPayroll {
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
-  // Due collection fields (Feature 6B)
+  // Due fields (Feature 6F)
+  paidAmount      Float?              // What was actually paid (defaults to amount)
   dueAmount       Float?   @default(0) // Amount kept as due
+  // Due collection fields (Feature 6B)
   parentPayrollId String?             // Links due collection to original payroll
   isDueCollection Boolean  @default(false)
 

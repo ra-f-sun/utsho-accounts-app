@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Select, Input, Alert } from "antd";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Select, Input, Alert, Space } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
@@ -10,6 +10,7 @@ import {
   UserAddOutlined,
   VerticalAlignTopOutlined,
   ExclamationCircleOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
@@ -98,50 +99,129 @@ export default function StudentPaymentHistory() {
 
   const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
 
-  const payments: Payment[] = paymentsData?.data?.data || [];
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const payments: Payment[] = useMemo(
+    () => paymentsData?.data?.data || [],
+    [paymentsData],
+  );
+
+  // Group payments by invoice to get per-invoice totals
+  const invoiceMap = new Map<string, Payment[]>();
+  for (const p of payments) {
+    if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
+    invoiceMap.get(p.invoiceNumber)!.push(p);
+  }
+
+  // Total Paid = sum of officePaid per unique invoice (use first row of each invoice)
+  const totalPaid = Array.from(invoiceMap.values()).reduce((sum, rows) => {
+    return sum + (rows[0].officePaid ?? rows.reduce((s, r) => s + r.amount, 0));
+  }, 0);
+
+  // Total unique invoices (not line items)
+  const totalInvoices = invoiceMap.size;
 
   // Build paid months set for current year
   const currentYear = new Date().getFullYear();
-  const paidMonths = new Set(
-    payments
-      .filter((p) => p.paymentType === "tuition")
-      .map((p) => dayjs(p.paymentMonth).format("YYYY-MM")),
-  );
+  const monthlyTuition =
+    (student?.monthlyTuitionFee ?? 0) - (student?.discountTuition ?? 0);
+
+  // Sum tuition amounts per month (works across original + due collection rows)
+  const tuitionByMonth = new Map<string, number>();
+  for (const p of payments) {
+    if (p.paymentType === "tuition") {
+      const key = dayjs(p.paymentMonth).format("YYYY-MM");
+      tuitionByMonth.set(key, (tuitionByMonth.get(key) ?? 0) + p.amount);
+    }
+  }
+
+  const paidMonths = new Set<string>();
+  const partialMonths = new Set<string>();
+  for (const [key, total] of tuitionByMonth) {
+    if (monthlyTuition > 0 && total >= monthlyTuition) {
+      paidMonths.add(key);
+    } else if (total > 0) {
+      partialMonths.add(key);
+    }
+  }
 
   // Admission month key — months before this are "N/A" (student not yet enrolled)
   const admissionMonthKey = student?.admissionDate
     ? dayjs(student.admissionDate).format("YYYY-MM")
     : null;
 
-  const columns: ColumnsType<Payment> = [
+  const TYPE_COLORS: Record<string, string> = {
+    tuition: "blue",
+    admission: "green",
+    readmission: "cyan",
+    exam: "orange",
+    sheet: "purple",
+    session_charge: "magenta",
+    study_materials: "geekblue",
+    study_tour: "lime",
+    other: "default",
+  };
+
+  interface GroupedRow {
+    invoiceNumber: string;
+    paymentTypes: string[];
+    amount: number;
+    dueAmount: number;
+    paymentMonth: string;
+    paymentDate: string;
+    paymentMethod: string;
+  }
+
+  const groupedPayments = useMemo((): GroupedRow[] => {
+    const invoiceMap = new Map<string, Payment[]>();
+    for (const p of payments) {
+      if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
+      invoiceMap.get(p.invoiceNumber)!.push(p);
+    }
+    return Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        invoiceNumber: first.invoiceNumber,
+        paymentTypes: group.map((r) => r.paymentType),
+        amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((s, r) => s + r.amount, 0),
+        dueAmount: first.dueAmount ?? 0,
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+  }, [payments]);
+
+  const columns: ColumnsType<GroupedRow> = [
     {
       title: "Invoice",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
-      width: 140,
+      width: 150,
       render: (text: string) => <strong>{text}</strong>,
     },
     {
       title: "Type",
-      dataIndex: "paymentType",
       key: "paymentType",
-      width: 130,
-      render: (type: string) => (
-        <Tag color="blue">{type.replace(/_/g, " ").toUpperCase()}</Tag>
+      width: 180,
+      render: (_: unknown, record: GroupedRow) => (
+        <Space size={[0, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
       title: "Amount (Office)",
-      dataIndex: "amount",
       key: "amount",
-      width: 120,
-      render: (amount: number, record: Payment) => (
+      width: 130,
+      render: (_: unknown, record: GroupedRow) => (
         <div>
-          <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
-          {(record.dueAmount ?? 0) > 0 && (
+          <strong style={{ color: "#2e7d32" }}>৳{record.amount.toLocaleString()}</strong>
+          {record.dueAmount > 0 && (
             <div style={{ fontSize: 11, color: "#ff4d4f" }}>
-              Due: ৳{record.dueAmount!.toLocaleString()}
+              Due: ৳{record.dueAmount.toLocaleString()}
             </div>
           )}
         </div>
@@ -174,11 +254,12 @@ export default function StudentPaymentHistory() {
       title: "Actions",
       key: "actions",
       width: 60,
-      render: (_: any, record: Payment) => (
+      render: (_: unknown, record: GroupedRow) => (
         <Button
           type="link"
           icon={<EyeOutlined />}
-          onClick={() => navigate(`/uac/payments/${record.id}/invoice`)}
+          title="View Invoice"
+          onClick={() => navigate(`/uac/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)}
         />
       ),
     },
@@ -258,6 +339,12 @@ export default function StudentPaymentHistory() {
           >
             Record Payment
           </Button>
+          <Button
+            icon={<DollarOutlined />}
+            onClick={() => navigate(`/uac/payments/collect-due?studentId=${id}`)}
+          >
+            Collect Due
+          </Button>
         </div>
       </div>
 
@@ -283,7 +370,7 @@ export default function StudentPaymentHistory() {
             />
           </Col>
           <Col span={8}>
-            <Statistic title="Total Payments" value={payments.length} />
+            <Statistic title="Total Payments" value={totalInvoices} />
           </Col>
         </Row>
       </Card>
@@ -299,22 +386,29 @@ export default function StudentPaymentHistory() {
             const isBeforeAdmission =
               admissionMonthKey !== null && monthKey < admissionMonthKey;
             const isPaid = !isBeforeAdmission && paidMonths.has(monthKey);
+            const isPartial = !isBeforeAdmission && !isPaid && partialMonths.has(monthKey);
             const bg = isBeforeAdmission
               ? "#f5f5f5"
               : isPaid
                 ? "#f6ffed"
-                : "#fff2f0";
+                : isPartial
+                  ? "#fffbe6"
+                  : "#fff2f0";
             const borderColor = isBeforeAdmission
               ? "#d9d9d9"
               : isPaid
                 ? "#b7eb8f"
-                : "#ffccc7";
-            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : "Unpaid";
+                : isPartial
+                  ? "#ffe58f"
+                  : "#ffccc7";
+            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
             const tagColor = isBeforeAdmission
               ? "default"
               : isPaid
                 ? "success"
-                : "error";
+                : isPartial
+                  ? "warning"
+                  : "error";
             return (
               <Col span={4} key={monthKey}>
                 <div
@@ -372,7 +466,7 @@ export default function StudentPaymentHistory() {
           <Alert
             type="warning"
             title={`Total Outstanding: ৳${(dueSummary as { totalDue?: number }).totalDue?.toLocaleString()}`}
-            description="Collect due by clicking 'Record Payment' and selecting a due invoice."
+            description="Use the 'Collect Due' page to collect outstanding payments from this student."
             showIcon
             style={{ marginTop: 16 }}
           />
@@ -383,8 +477,8 @@ export default function StudentPaymentHistory() {
       <Card title="All Payment Records">
         <Table
           columns={columns}
-          dataSource={payments}
-          rowKey="id"
+          dataSource={groupedPayments}
+          rowKey="invoiceNumber"
           loading={loadingPayments}
           pagination={{
             pageSize: 10,

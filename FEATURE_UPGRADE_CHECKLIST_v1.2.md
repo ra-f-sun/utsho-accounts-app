@@ -1183,10 +1183,10 @@ All analytics (dashboard, revenue calculations, outstanding payment counts) must
 
 #### Tasks
 
-- [ ] **6.34** — Backend: Audit `analytics.service.ts` to ensure all queries use `amount` (office amount), NOT `guardianAmount`
+- [x] **6.34** — Backend: Audit `analytics.service.ts` to ensure all queries use `amount` (office amount), NOT `guardianAmount`
   - Since `amount` (the existing field) already stores the actual/office value, and `guardianAmount` is new, this should already be correct — but needs verification
 
-- [ ] **6.35** — Frontend: Ensure dashboard cards and charts use office-perspective data
+- [x] **6.35** — Frontend: Ensure dashboard cards and charts use office-perspective data
 
 ---
 
@@ -1207,18 +1207,18 @@ If due > 0, it should reflect on the teacher's/staff's payment history.
 
 #### Database Changes
 
-- [ ] **6.36** — Add due fields to payroll models:
+- [x] **6.36** — Add due fields to payroll models:
   ```prisma
   // Add to UacPayroll, MbcsPayroll:
   paidAmount Float?   // What was actually paid
   dueAmount  Float?   @default(0)  // amount - paidAmount
   ```
 
-- [ ] **6.37** — Run migration: `npx prisma migrate dev --name add_payroll_due_fields`
+- [x] **6.37** — Run migration: `npx prisma migrate dev --name add_payroll_due_fields`
 
 #### Tasks
 
-- [ ] **6.38** — Frontend: Update `CreatePayroll.tsx` (UAC):
+- [x] **6.38** — Frontend: Update `CreatePayroll.tsx` (UAC):
   - **Fix:** Make the Amount field **always editable** (remove `disabled` when calculated data is present)
   - Add new fields below Amount:
     - **Sub Total:** = Amount (read-only)
@@ -1226,23 +1226,23 @@ If due > 0, it should reflect on the teacher's/staff's payment history.
     - **Paid:** InputNumber, default = GrandTotal, editable
     - **Due:** auto-calculated, read-only = GrandTotal - Paid
 
-- [ ] **6.39** — Backend: Update UAC `CreatePayrollDto`:
+- [x] **6.39** — Backend: Update UAC `CreatePayrollDto`:
   - Add `paidAmount` (optional Float, defaults to `amount`)
   - Backend calculates `dueAmount = amount - paidAmount`
 
-- [ ] **6.40** — Apply same to MBCS payroll (frontend + backend)
+- [x] **6.40** — Apply same to MBCS payroll (frontend + backend)
 
 ### 6G. Teacher/Staff Due in Payment History
 
 #### What Is Needed
 On teacher and staff individual payment history pages, show their due status.
 
-- [ ] **6.41** — Frontend: Update `TeacherPayrollHistory.tsx` (UAC):
+- [x] **6.41** — Frontend: Update `TeacherPayrollHistory.tsx` (UAC):
   - Add "Due" section showing total unpaid amount across all payroll records where `dueAmount > 0`
 
-- [ ] **6.42** — Same for MBCS teacher payroll history
+- [x] **6.42** — Same for MBCS teacher payroll history
 
-- [ ] **6.43** — Staff due: if staff have a payroll history page, add the same due section
+- [x] **6.43** — Staff due: if staff have a payroll history page, add the same due section
 
 ---
 
@@ -1298,7 +1298,7 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 
 ##### 7A-1. Import Template & Download
 
-- [ ] **7.1** — Frontend: Create `frontend/src/pages/import-export/ImportStudents.tsx`:
+- [x] **7.1** — Frontend: Create `frontend/src/pages/import-export/ImportStudents.tsx`:
   - Step 1: Select Organization (UAC/MBCS/MEC)
   - Step 2: Select Class (dropdown of classes for selected org)
   - Step 3: Select Shift/Branch (MBCS only) or Group (UAC, if applicable)
@@ -1307,26 +1307,26 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
   - Step 6: Parse file → show preview table with validation status per row
   - Step 7: "Import" button → POST array of student data to backend
 
-- [ ] **7.2** — Frontend: Template generation utility (`frontend/src/utils/importTemplate.ts`):
+- [x] **7.2** — Frontend: Template generation utility (`frontend/src/utils/importTemplate.ts`):
   - Uses `xlsx` library to generate a blank template with:
     - Column headers (from template format table above)
     - Data validation hints in first row or second sheet
     - Instructions sheet
 
-- [ ] **7.3** — Frontend: File parsing utility (`frontend/src/utils/importParser.ts`):
+- [x] **7.3** — Frontend: File parsing utility (`frontend/src/utils/importParser.ts`):
   - Parse .xlsx using `xlsx` library
   - Parse .csv using simple split logic
   - Map columns to student DTO fields
   - Validate each row (required fields, date format, phone format)
   - Return `{ valid: StudentRow[], invalid: ErrorRow[] }`
 
-- [ ] **7.4** — Frontend: After parsing, apply settings:
+- [x] **7.4** — Frontend: After parsing, apply settings:
   - Fetch tuition fee from settings for the selected class
   - Set `monthlyTuitionFee` from settings
   - Set `admissionFee` from settings (if applicable)
   - Set selected class and shift/branch/group from the dropdowns
 
-- [ ] **7.5** — Backend: Add batch create endpoint:
+- [x] **7.5** — Backend: Add batch create endpoint:
   ```
   POST /api/uac/students/import
   Body: { students: CreateStudentDto[] }
@@ -1335,18 +1335,18 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
   - Create in a `$transaction`
   - Return `{ created: number, errors: Array<{index: number, error: string}> }`
 
-- [ ] **7.6** — Same backend endpoint for MBCS and MEC
+- [x] **7.6** — Same backend endpoint for MBCS and MEC
 
 ##### 7A-2. Export Students
 
-- [ ] **7.7** — Frontend: Create `frontend/src/pages/import-export/ExportStudents.tsx`:
+- [x] **7.7** — Frontend: Create `frontend/src/pages/import-export/ExportStudents.tsx`:
   - Select Organization
   - Select Class (optional — "All Classes" option)
   - Select Shift/Branch (MBCS) or Group (UAC) — optional
   - "Export" button → fetches students via existing API → generates Excel using `xlsx`
   - Downloads the file
 
-- [ ] **7.8** — Frontend: Export utility (`frontend/src/utils/exportStudents.ts`):
+- [x] **7.8** — Frontend: Export utility (`frontend/src/utils/exportStudents.ts`):
   - Takes student array
   - Maps to Excel-friendly columns
   - Generates .xlsx file using `xlsx` library
@@ -1354,13 +1354,13 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 
 ##### 7A-3. Sidebar & Routes
 
-- [ ] **7.9** — Add "Import & Export" menu item to sidebar in `DashboardLayout.tsx`:
+- [x] **7.9** — Add "Import & Export" menu item to sidebar in `DashboardLayout.tsx`:
   - Under each org module OR as a top-level menu:
     - Option A: Under each org (e.g., UAC → Import/Export, MBCS → Import/Export)
     - Option B: Top-level "Import & Export" with org selection inside
   - **Recommended: Top-level "Import & Export" with org selection inside** — cleaner sidebar, single entry point
 
-- [ ] **7.10** — Add routes in `App.tsx`:
+- [x] **7.10** — Add routes in `App.tsx`:
   - `/import-export` → main import/export page (with org tab selection)
   - The page can have tabs: [Import Students] [Export Students]
   - Accessible to `SUPER_ADMIN` and `DIRECTOR` only? Or also accountants for their own org?
@@ -1369,7 +1369,7 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 >
 > All roles can export (read operation). Only `SUPER_ADMIN` and `DIRECTOR` can import (write operation). ✅
 
-- [ ] **7.11** — Add "Import & Export" to sidebar, with proper role-based visibility
+- [x] **7.11** — Add "Import & Export" to sidebar, with proper role-based visibility
 
 ---
 

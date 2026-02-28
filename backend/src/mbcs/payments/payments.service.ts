@@ -81,6 +81,24 @@ function allocatePaid(
       }
     }
   }
+
+  // Handle items not matched by any priority group (catch-all)
+  const matchedTypes = new Set(result.map((r) => r.paymentType));
+  const unmatched = lineItems.filter((i) => !matchedTypes.has(i.paymentType));
+  for (const item of unmatched) {
+    if (remaining >= item.amount) {
+      result.push({ ...item, paidAmount: item.amount, dueAmount: 0 });
+      remaining -= item.amount;
+    } else {
+      result.push({
+        ...item,
+        paidAmount: remaining,
+        dueAmount: item.amount - remaining,
+      });
+      remaining = 0;
+    }
+  }
+
   return result;
 }
 
@@ -153,26 +171,47 @@ export class PaymentsService {
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    // Paginate by unique invoiceNumbers so grouped invoices stay intact
+    const [invoicePage, allInvoices] = await Promise.all([
       this.prisma.mbcsPayment.findMany({
         where,
-        include: {
-          student: {
-            select: {
-              id: true,
-              name: true,
-              class: true,
-              shift: true,
-              contactNumber: true,
-            },
-          },
-        },
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
         orderBy: { paymentDate: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.mbcsPayment.count({ where }),
+      this.prisma.mbcsPayment.findMany({
+        where,
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
+      }),
     ]);
+
+    const invoiceNumbers = invoicePage.map((p) => p.invoiceNumber);
+    const total = allInvoices.length;
+
+    const data =
+      invoiceNumbers.length > 0
+        ? await this.prisma.mbcsPayment.findMany({
+            where: {
+              invoiceNumber: { in: invoiceNumbers },
+              isActive: true,
+            },
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  name: true,
+                  class: true,
+                  shift: true,
+                  contactNumber: true,
+                },
+              },
+            },
+            orderBy: { paymentDate: 'desc' },
+          })
+        : [];
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -278,6 +317,13 @@ export class PaymentsService {
     );
     const officeGrandTotal = officeSubTotal - additionalDiscount;
     const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+
+    if (dueAmount > officeGrandTotal) {
+      throw new BadRequestException(
+        `dueAmount (${dueAmount}) cannot exceed the total payable amount (${officeGrandTotal})`,
+      );
+    }
+
     const officePaid = officeGrandTotal - dueAmount;
     const guardianPaid = guardianGrandTotal - dueAmount;
 
@@ -658,10 +704,92 @@ export class PaymentsService {
     const hasOthers = () =>
       payments.some((p) => OTHERS.includes(p.paymentType));
 
-    const tuitionDue = dues['tuition'] ?? 0;
-    const admissionDue = dues['admission'] ?? 0;
-    const readmissionDue = dues['readmission'] ?? 0;
     const othersDue = OTHERS.reduce((sum, t) => sum + (dues[t] ?? 0), 0);
+    let tuitionDue = dues['tuition'] ?? 0;
+    let admissionDue = dues['admission'] ?? 0;
+    let readmissionDue = dues['readmission'] ?? 0;
+
+    // Enhance dues with fully-unpaid months/fees from the student's stored fee fields
+    const student = await this.prisma.mbcsStudent.findUnique({
+      where: { id: studentId },
+      select: {
+        monthlyTuitionFee: true,
+        admissionFee: true,
+        readmissionFee: true,
+        discountTuition: true,
+        discountAdmission: true,
+        discountReadmission: true,
+        admissionDate: true,
+        associationEndDate: true,
+      },
+    });
+
+    if (student) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+
+      // Determine end month for due calculation (respect associationEndDate)
+      let endMonth = currentMonth;
+      if (student.associationEndDate) {
+        const endDate = new Date(student.associationEndDate);
+        const endYear = endDate.getFullYear();
+        const endMo = endDate.getMonth() + 1;
+        if (endYear < currentYear) {
+          endMonth = 0; // departed in a previous year — no dues this year
+        } else if (endYear === currentYear) {
+          endMonth = Math.min(endMo, currentMonth);
+        }
+      }
+
+      let startMonth = 1;
+      if (student.admissionDate) {
+        const admYear = student.admissionDate.getFullYear();
+        const admMonth = student.admissionDate.getMonth() + 1;
+        if (admYear > currentYear) {
+          startMonth = currentMonth + 1; // admitted in a future year — no dues
+        } else if (admYear === currentYear) {
+          startMonth = admMonth;
+        } else {
+          startMonth = 1;
+        }
+      }
+
+      const paidTuitionMonthKeys = new Set(
+        payments
+          .filter((p) => p.paymentType === 'tuition')
+          .map((p) => {
+            const d = new Date(p.paymentMonth);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          }),
+      );
+
+      let unpaidMonthCount = 0;
+      for (let m = startMonth; m <= endMonth; m++) {
+        const key = `${currentYear}-${String(m).padStart(2, '0')}`;
+        if (!paidTuitionMonthKeys.has(key)) unpaidMonthCount++;
+      }
+      tuitionDue +=
+        unpaidMonthCount *
+        Math.max(
+          0,
+          (student.monthlyTuitionFee ?? 0) - (student.discountTuition ?? 0),
+        );
+
+      if (!hasType('admission') && (student.admissionFee ?? 0) > 0) {
+        admissionDue += Math.max(
+          0,
+          student.admissionFee! - (student.discountAdmission ?? 0),
+        );
+      }
+
+      if (!hasType('readmission') && (student.readmissionFee ?? 0) > 0) {
+        readmissionDue += Math.max(
+          0,
+          student.readmissionFee! - (student.discountReadmission ?? 0),
+        );
+      }
+    }
 
     return {
       studentId,

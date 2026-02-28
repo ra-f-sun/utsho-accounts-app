@@ -16,10 +16,9 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  FilePdfOutlined,
+  EyeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import QueryError from "../../../components/QueryError";
@@ -75,7 +74,7 @@ export default function MbcsPaymentHistory() {
     queryKey: ["mbcs-students"],
     queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: MbcsStudent[] = studentsData?.data?.data || [];
+  const allStudents: MbcsStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mbcs-payment-history", filters],
@@ -85,7 +84,7 @@ export default function MbcsPaymentHistory() {
         paymentMethod: filters.paymentMethod,
       }, 1, 1000),
   });
-  const allPayments: MbcsPayment[] = paymentsData?.data?.data || [];
+  const allPayments: MbcsPayment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
 
   // Cross-reference students × tuition payments for selected month
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -204,13 +203,12 @@ export default function MbcsPaymentHistory() {
           <Button
             type="link"
             size="small"
-            icon={<FilePdfOutlined />}
+            icon={<EyeOutlined />}
+            title="View Invoice"
             onClick={() =>
-              navigate(`/mbcs/payments/${record.payment!.id}/invoice`)
+              navigate(`/mbcs/payments/invoice/${encodeURIComponent(record.payment!.invoiceNumber)}`)
             }
-          >
-            View
-          </Button>
+          />
         ) : null,
     },
     {
@@ -242,10 +240,46 @@ export default function MbcsPaymentHistory() {
     },
   ];
 
+  // Guardian row: grouped by invoiceNumber
+  interface GuardianRow {
+    id: string;
+    studentId: string;
+    student?: MbcsPayment["student"];
+    invoiceNumber: string;
+    paymentTypes: string[];
+    amount: number;
+    paymentMonth?: string;
+    paymentDate?: string;
+    paymentMethod?: string;
+  }
+
+  const guardianRows = useMemo((): GuardianRow[] => {
+    const invoiceMap = new Map<string, MbcsPayment[]>();
+    for (const p of allPayments) {
+      const key = p.invoiceNumber;
+      if (!invoiceMap.has(key)) invoiceMap.set(key, []);
+      invoiceMap.get(key)!.push(p);
+    }
+    return Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        id: first.id,
+        studentId: first.studentId,
+        student: first.student,
+        invoiceNumber: first.invoiceNumber,
+        paymentTypes: group.map((p) => p.paymentType),
+        amount: first.guardianPaid ?? first.guardianGrandTotal ?? group.reduce((sum, p) => sum + (p.guardianAmount ?? p.amount), 0),
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+  }, [allPayments]);
+
   // Guardian-facing columns (shows guardian amounts)
-  const paymentsColumns: ColumnsType<MbcsPayment> = [
+  const paymentsColumns: ColumnsType<GuardianRow> = [
     {
-      title: "Invoice #",
+      title: "Invoice",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
       width: 150,
@@ -254,7 +288,7 @@ export default function MbcsPaymentHistory() {
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: MbcsPayment) => {
+      render: (_: unknown, record: GuardianRow) => {
         const student = record.student;
         return (
           <div>
@@ -269,22 +303,25 @@ export default function MbcsPaymentHistory() {
     },
     {
       title: "Type",
-      dataIndex: "paymentType",
       key: "paymentType",
-      width: 140,
-      render: (type: string) => (
-        <Tag color={PAYMENT_TYPE_COLORS[type] || "default"}>
-          {type.replace(/_/g, " ").toUpperCase()}
-        </Tag>
+      width: 180,
+      render: (_: unknown, record: GuardianRow) => (
+        <Space size={[0, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={PAYMENT_TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
       title: "Amount (Guardian)",
       key: "guardianAmount",
       width: 140,
-      render: (_: unknown, record: MbcsPayment) => (
+      render: (_: unknown, record: GuardianRow) => (
         <strong style={{ color: "#2e7d32" }}>
-          ৳{(record.guardianAmount ?? record.amount).toLocaleString()}
+          ৳{record.amount.toLocaleString()}
         </strong>
       ),
     },
@@ -303,26 +340,47 @@ export default function MbcsPaymentHistory() {
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
     },
     {
-      title: "Invoice",
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 100,
+      render: (method: string) =>
+        method ? <Tag>{method.toUpperCase()}</Tag> : "-",
+    },
+    {
+      title: "Actions",
       key: "invoice",
       width: 80,
-      render: (_: unknown, record: MbcsPayment) => (
+      render: (_: unknown, record: GuardianRow) => (
         <Button
           type="link"
           size="small"
-          icon={<FilePdfOutlined />}
-          onClick={() => navigate(`/mbcs/payments/${record.id}/invoice`)}
-        >
-          View
-        </Button>
+          icon={<EyeOutlined />}
+          title="View Invoice"
+          onClick={() => navigate(`/mbcs/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)}
+        />
       ),
     },
   ];
 
+  // Office row: grouped by invoiceNumber
+  interface OfficeRow {
+    id: string;
+    studentId: string;
+    student?: MbcsPayment["student"];
+    invoiceNumber: string;
+    paymentTypes: string[];
+    amount: number;
+    dueAmount: number;
+    paymentMonth?: string;
+    paymentDate?: string;
+    paymentMethod?: string;
+  }
+
   // Office-facing columns (shows actual office amounts + due tracking)
-  const officeColumns: ColumnsType<MbcsPayment> = [
+  const officeColumns: ColumnsType<OfficeRow> = [
     {
-      title: "Invoice #",
+      title: "Invoice",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
       width: 150,
@@ -331,7 +389,7 @@ export default function MbcsPaymentHistory() {
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: MbcsPayment) => {
+      render: (_: unknown, record: OfficeRow) => {
         const student = record.student;
         return (
           <div>
@@ -346,36 +404,32 @@ export default function MbcsPaymentHistory() {
     },
     {
       title: "Type",
-      dataIndex: "paymentType",
       key: "paymentType",
-      width: 140,
-      render: (type: string) => (
-        <Tag color={PAYMENT_TYPE_COLORS[type] || "default"}>
-          {type.replace(/_/g, " ").toUpperCase()}
-        </Tag>
+      width: 180,
+      render: (_: unknown, record: OfficeRow) => (
+        <Space size={[0, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={PAYMENT_TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
       title: "Amount (Office)",
-      dataIndex: "amount",
       key: "amount",
       width: 130,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      render: (_: unknown, record: OfficeRow) => (
+        <div>
+          <strong style={{ color: "#2e7d32" }}>৳{record.amount.toLocaleString()}</strong>
+          {record.dueAmount > 0 && (
+            <div style={{ fontSize: 12, color: "#d32f2f" }}>
+              Due: ৳{record.dueAmount.toLocaleString()}
+            </div>
+          )}
+        </div>
       ),
-    },
-    {
-      title: "Due",
-      key: "dueAmount",
-      width: 110,
-      render: (_: unknown, record: MbcsPayment) =>
-        (record.dueAmount ?? 0) > 0 ? (
-          <Tag icon={<ExclamationCircleOutlined />} color="error">
-            ৳{record.dueAmount!.toLocaleString()}
-          </Tag>
-        ) : (
-          <Tag color="success">No Due</Tag>
-        ),
     },
     {
       title: "Month",
@@ -392,20 +446,27 @@ export default function MbcsPaymentHistory() {
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
     },
     {
-      title: "Action",
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 100,
+      render: (method: string) =>
+        method ? <Tag>{method.toUpperCase()}</Tag> : "-",
+    },
+    {
+      title: "Actions",
       key: "action",
       width: 130,
-      render: (_: unknown, record: MbcsPayment) => (
+      render: (_: unknown, record: OfficeRow) => (
         <Space>
           <Button
             type="link"
             size="small"
-            icon={<FilePdfOutlined />}
-            onClick={() => navigate(`/mbcs/payments/${record.id}/invoice`)}
-          >
-            Invoice
-          </Button>
-          {(record.dueAmount ?? 0) > 0 && (
+            icon={<EyeOutlined />}
+            title="View Invoice"
+            onClick={() => navigate(`/mbcs/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)}
+          />
+          {record.dueAmount > 0 && (
             <Button
               type="primary"
               size="small"
@@ -414,7 +475,7 @@ export default function MbcsPaymentHistory() {
                 navigate(`/mbcs/payments/collect-due?studentId=${record.studentId}`)
               }
             >
-              Collect
+              Collect Due
             </Button>
           )}
         </Space>
@@ -523,10 +584,30 @@ export default function MbcsPaymentHistory() {
     </Space>
   );
 
-  const officePmts = useMemo(
-    () => showDueOnly ? allPayments.filter((p) => (p.dueAmount ?? 0) > 0) : allPayments,
-    [allPayments, showDueOnly],
-  );
+  const officeRows = useMemo((): OfficeRow[] => {
+    const invoiceMap = new Map<string, MbcsPayment[]>();
+    for (const p of allPayments) {
+      const key = p.invoiceNumber;
+      if (!invoiceMap.has(key)) invoiceMap.set(key, []);
+      invoiceMap.get(key)!.push(p);
+    }
+    const rows: OfficeRow[] = Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        id: first.id,
+        studentId: first.studentId,
+        student: first.student,
+        invoiceNumber: first.invoiceNumber,
+        paymentTypes: group.map((p) => p.paymentType),
+        amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((sum, p) => sum + p.amount, 0),
+        dueAmount: first.dueAmount ?? 0,
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+    return showDueOnly ? rows.filter((r) => r.dueAmount > 0) : rows;
+  }, [allPayments, showDueOnly]);
 
   if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
@@ -600,21 +681,21 @@ export default function MbcsPaymentHistory() {
           },
           {
             key: "guardian-records",
-            label: `Guardian Records (${allPayments.length})`,
+            label: `Guardian Records (${guardianRows.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
-                dataSource={allPayments}
+                dataSource={guardianRows}
                 rowKey="id"
                 loading={loadingPayments}
                 pagination={{
                   pageSize: 15,
                   showSizeChanger: true,
-                  showTotal: (total) => `${total} records`,
+                  showTotal: (total) => `Total ${total} payments`,
                 }}
                 summary={(pageData) => {
                   const total = pageData.reduce(
-                    (sum, row) => sum + (row.guardianAmount ?? row.amount),
+                    (sum, row) => sum + row.amount,
                     0,
                   );
                   return (
@@ -627,7 +708,7 @@ export default function MbcsPaymentHistory() {
                           ৳{total.toLocaleString()}
                         </strong>
                       </Table.Summary.Cell>
-                      <Table.Summary.Cell index={4} colSpan={3} />
+                      <Table.Summary.Cell index={4} colSpan={4} />
                     </Table.Summary.Row>
                   );
                 }}
@@ -636,39 +717,43 @@ export default function MbcsPaymentHistory() {
           },
           {
             key: "office-records",
-            label: `Office Records (${officePmts.length})`,
+            label: `Office Records (${officeRows.length})`,
             children: (
               <div>
                 <Space style={{ marginBottom: 12 }}>
                   <span style={{ fontWeight: 500 }}>Show Due Only:</span>
                   <Switch checked={showDueOnly} onChange={setShowDueOnly} />
-                  {showDueOnly && <Tag color="error">{officePmts.length} with due</Tag>}
+                  {showDueOnly && <Tag color="error">{officeRows.length} with due</Tag>}
                 </Space>
                 <Table
                   columns={officeColumns}
-                  dataSource={officePmts}
+                  dataSource={officeRows}
                   rowKey="id"
                   loading={loadingPayments}
                   pagination={{
                     pageSize: 15,
                     showSizeChanger: true,
-                    showTotal: (total) => `${total} records`,
+                    showTotal: (total) => `Total ${total} payments`,
                   }}
                   summary={(pageData) => {
                     const total = pageData.reduce((sum, row) => sum + row.amount, 0);
-                    const totalDue = pageData.reduce((sum, row) => sum + (row.dueAmount ?? 0), 0);
+                    const totalDue = pageData.reduce((sum, row) => sum + row.dueAmount, 0);
                     return (
                       <Table.Summary.Row>
                         <Table.Summary.Cell index={0} colSpan={3}>
                           <strong>Page Total</strong>
                         </Table.Summary.Cell>
                         <Table.Summary.Cell index={3}>
-                          <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                          <div>
+                            <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                            {totalDue > 0 && (
+                              <div style={{ fontSize: 12, color: "#d32f2f" }}>
+                                Due: ৳{totalDue.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
                         </Table.Summary.Cell>
-                        <Table.Summary.Cell index={4}>
-                          <strong style={{ color: "#ff4d4f" }}>৳{totalDue.toLocaleString()}</strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={5} colSpan={3} />
+                        <Table.Summary.Cell index={4} colSpan={4} />
                       </Table.Summary.Row>
                     );
                   }}

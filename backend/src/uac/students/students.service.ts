@@ -25,6 +25,22 @@ export class StudentsService {
     });
   }
 
+  async importBulk(students: CreateStudentDto[]) {
+    return this.prisma.$transaction(
+      students.map((dto) =>
+        this.prisma.uacStudent.create({
+          data: {
+            ...dto,
+            dateOfBirth: new Date(dto.dateOfBirth),
+            admissionDate: dto.admissionDate
+              ? new Date(dto.admissionDate)
+              : undefined,
+          },
+        }),
+      ),
+    );
+  }
+
   async findAll(filters?: FilterStudentDto, pagination?: PaginationDto) {
     const where: Prisma.UacStudentWhereInput = {
       isActive: true,

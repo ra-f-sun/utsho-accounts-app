@@ -51,7 +51,7 @@ export default function AddMecStudent() {
         }
       });
     });
-  }, []);
+  }, [form, isEditMode]);
 
   const { data: existingData } = useQuery({
     queryKey: ["mec-student", id],
@@ -96,7 +96,10 @@ export default function AddMecStudent() {
     onError: () => message.error("Failed to update student"),
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: Omit<CreateMecStudentDto, 'dateOfBirth' | 'admissionDate'> & {
+    dateOfBirth?: ReturnType<typeof dayjs>;
+    admissionDate?: ReturnType<typeof dayjs>;
+  }) => {
     const data = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),

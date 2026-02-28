@@ -108,7 +108,7 @@ export default function StudentsList() {
       title: "Actions",
       key: "actions",
       width: 120,
-      render: (_: any, record: Student) => (
+      render: (_: unknown, record: Student) => (
         <Space>
           <Button
             type="link"

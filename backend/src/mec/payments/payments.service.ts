@@ -80,25 +80,46 @@ export class MecPaymentsService {
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    // Paginate by unique invoiceNumbers so grouped invoices stay intact
+    const [invoicePage, allInvoices] = await Promise.all([
       this.prisma.mecPayment.findMany({
         where,
-        include: {
-          student: {
-            select: {
-              id: true,
-              name: true,
-              class: true,
-              contactNumber: true,
-            },
-          },
-        },
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
         orderBy: { paymentDate: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.mecPayment.count({ where }),
+      this.prisma.mecPayment.findMany({
+        where,
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
+      }),
     ]);
+
+    const invoiceNumbers = invoicePage.map((p) => p.invoiceNumber);
+    const total = allInvoices.length;
+
+    const data =
+      invoiceNumbers.length > 0
+        ? await this.prisma.mecPayment.findMany({
+            where: {
+              invoiceNumber: { in: invoiceNumbers },
+              isActive: true,
+            },
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  name: true,
+                  class: true,
+                  contactNumber: true,
+                },
+              },
+            },
+            orderBy: { paymentDate: 'desc' },
+          })
+        : [];
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -201,6 +222,13 @@ export class MecPaymentsService {
     );
     const officeGrandTotal = officeSubTotal - additionalDiscount;
     const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+
+    if (dueAmount > officeGrandTotal) {
+      throw new BadRequestException(
+        `dueAmount (${dueAmount}) cannot exceed the total payable amount (${officeGrandTotal})`,
+      );
+    }
+
     const officePaid = officeGrandTotal - dueAmount;
     const guardianPaid = guardianGrandTotal - dueAmount;
 
@@ -499,7 +527,7 @@ export class MecPaymentsService {
 
   async getStudentPaymentSummary(studentId: string) {
     const payments = await this.prisma.mecPayment.findMany({
-      where: { studentId },
+      where: { studentId, isActive: true },
       orderBy: { paymentDate: 'desc' },
     });
 

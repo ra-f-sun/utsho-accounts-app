@@ -55,6 +55,9 @@ export class PayrollService {
       await this.invoiceService.generateInvoiceNumber('mbcs');
 
     return this.prisma.$transaction(async (tx) => {
+      const paidAmount = createPayrollDto.paidAmount ?? createPayrollDto.amount;
+      const dueAmount = Math.max(0, createPayrollDto.amount - paidAmount);
+
       return tx.mbcsPayroll.create({
         data: {
           ...createPayrollDto,
@@ -62,6 +65,8 @@ export class PayrollService {
           paymentDate: new Date(createPayrollDto.paymentDate),
           invoiceNumber,
           createdBy,
+          paidAmount,
+          dueAmount,
         },
       });
     });
@@ -247,6 +252,7 @@ export class PayrollService {
         payableId,
         paymentMonth: new Date(paymentMonth),
         isActive: true,
+        isDueCollection: false,
       },
     });
 

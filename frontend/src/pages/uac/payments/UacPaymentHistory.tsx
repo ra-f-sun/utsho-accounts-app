@@ -16,10 +16,9 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  FilePdfOutlined,
+  EyeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { paymentsService } from "../../../services/paymentsService";
@@ -73,7 +72,7 @@ export default function UacPaymentHistory() {
     queryKey: ["students"],
     queryFn: () => studentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: Student[] = studentsData?.data?.data || [];
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Fetch all payments (with any active filters for the records tab)
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
@@ -85,7 +84,7 @@ export default function UacPaymentHistory() {
         paymentMonth: filters.paymentMonth,
       }),
   });
-  const allPayments: Payment[] = paymentsData?.data?.data || [];
+  const allPayments: Payment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
 
   // --- Tuition Status tab: cross-reference students × payments for selected month ---
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -206,13 +205,12 @@ export default function UacPaymentHistory() {
           <Button
             type="link"
             size="small"
-            icon={<FilePdfOutlined />}
+            icon={<EyeOutlined />}
+            title="View Invoice"
             onClick={() =>
-              navigate(`/uac/payments/${record.payment!.id}/invoice`)
+              navigate(`/uac/payments/invoice/${encodeURIComponent(record.payment!.invoiceNumber)}`)
             }
-          >
-            View
-          </Button>
+          />
         ) : null,
     },
     {
@@ -245,10 +243,46 @@ export default function UacPaymentHistory() {
   ];
 
   // --- All payments columns ---
+  // Guardian row: grouped by invoiceNumber
+  interface GuardianRow {
+    id: string;
+    studentId: string;
+    student?: Payment["student"];
+    invoiceNumber: string;
+    paymentTypes: string[];
+    amount: number;
+    paymentMonth?: string;
+    paymentDate?: string;
+    paymentMethod?: string;
+  }
+
+  const guardianRows = useMemo((): GuardianRow[] => {
+    const invoiceMap = new Map<string, Payment[]>();
+    for (const p of allPayments) {
+      const key = p.invoiceNumber;
+      if (!invoiceMap.has(key)) invoiceMap.set(key, []);
+      invoiceMap.get(key)!.push(p);
+    }
+    return Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        id: first.id,
+        studentId: first.studentId,
+        student: first.student,
+        invoiceNumber: first.invoiceNumber,
+        paymentTypes: group.map((p) => p.paymentType),
+        amount: first.guardianPaid ?? first.guardianGrandTotal ?? group.reduce((sum, p) => sum + (p.guardianAmount ?? p.amount), 0),
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+  }, [allPayments]);
+
   // Guardian-facing payments columns (shows guardianAmount)
-  const paymentsColumns: ColumnsType<Payment> = [
+  const paymentsColumns: ColumnsType<GuardianRow> = [
     {
-      title: "Invoice #",
+      title: "Invoice",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
       width: 150,
@@ -257,7 +291,7 @@ export default function UacPaymentHistory() {
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: Payment) => {
+      render: (_: unknown, record: GuardianRow) => {
         const student = record.student;
         return (
           <div>
@@ -272,22 +306,25 @@ export default function UacPaymentHistory() {
     },
     {
       title: "Type",
-      dataIndex: "paymentType",
       key: "paymentType",
-      width: 140,
-      render: (type: string) => (
-        <Tag color={PAYMENT_TYPE_COLORS[type] || "default"}>
-          {type.replace(/_/g, " ").toUpperCase()}
-        </Tag>
+      width: 180,
+      render: (_: unknown, record: GuardianRow) => (
+        <Space size={[0, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={PAYMENT_TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
       title: "Amount (Guardian)",
       key: "guardianAmount",
       width: 140,
-      render: (_: unknown, record: Payment) => (
+      render: (_: unknown, record: GuardianRow) => (
         <strong style={{ color: "#2e7d32" }}>
-          ৳{(record.guardianAmount ?? record.amount).toLocaleString()}
+          ৳{record.amount.toLocaleString()}
         </strong>
       ),
     },
@@ -306,35 +343,47 @@ export default function UacPaymentHistory() {
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
     },
     {
-      title: "Invoice",
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 100,
+      render: (method: string) =>
+        method ? <Tag>{method.toUpperCase()}</Tag> : "-",
+    },
+    {
+      title: "Actions",
       key: "invoice",
       width: 80,
-      render: (_: unknown, record: Payment) => (
+      render: (_: unknown, record: GuardianRow) => (
         <Button
           type="link"
           size="small"
-          icon={<FilePdfOutlined />}
-          onClick={() => navigate(`/uac/payments/${record.id}/invoice`)}
-        >
-          View
-        </Button>
+          icon={<EyeOutlined />}
+          title="View Invoice"
+          onClick={() => navigate(`/uac/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)}
+        />
       ),
     },
   ];
 
   // Office-facing payments columns (shows actual/office amounts + due)
-  const officeColumns: ColumnsType<Payment> = [
+  const officeColumns: ColumnsType<OfficeRow> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
       key: "invoiceNumber",
       width: 150,
-      render: (text: string) => <strong>{text}</strong>,
+      render: (text: string, record: OfficeRow) =>
+        record.isVirtual ? (
+          <Tag color="warning">Unpaid</Tag>
+        ) : (
+          <strong>{text}</strong>
+        ),
     },
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: Payment) => {
+      render: (_: unknown, record: OfficeRow) => {
         const student = record.student;
         return (
           <div>
@@ -349,13 +398,16 @@ export default function UacPaymentHistory() {
     },
     {
       title: "Type",
-      dataIndex: "paymentType",
       key: "paymentType",
-      width: 140,
-      render: (type: string) => (
-        <Tag color={PAYMENT_TYPE_COLORS[type] || "default"}>
-          {type.replace(/_/g, " ").toUpperCase()}
-        </Tag>
+      width: 180,
+      render: (_: unknown, record: OfficeRow) => (
+        <Space size={[0, 4]} wrap>
+          {record.paymentTypes.map((type, i) => (
+            <Tag key={i} color={PAYMENT_TYPE_COLORS[type] || "default"}>
+              {type.replace(/_/g, " ").toUpperCase()}
+            </Tag>
+          ))}
+        </Space>
       ),
     },
     {
@@ -363,21 +415,18 @@ export default function UacPaymentHistory() {
       dataIndex: "amount",
       key: "amount",
       width: 130,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
-      ),
-    },
-    {
-      title: "Due",
-      key: "dueAmount",
-      width: 110,
-      render: (_: unknown, record: Payment) =>
-        (record.dueAmount ?? 0) > 0 ? (
-          <Tag icon={<ExclamationCircleOutlined />} color="error">
-            ৳{record.dueAmount!.toLocaleString()}
-          </Tag>
+      render: (amount: number, record: OfficeRow) =>
+        record.isVirtual ? (
+          <span style={{ color: "#aaa" }}>—</span>
         ) : (
-          <Tag color="success">No Due</Tag>
+          <div>
+            <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+            {(record.dueAmount ?? 0) > 0 && (
+              <div style={{ fontSize: 12, color: "#d32f2f" }}>
+                Due: ৳{record.dueAmount.toLocaleString()}
+              </div>
+            )}
+          </div>
         ),
     },
     {
@@ -395,29 +444,46 @@ export default function UacPaymentHistory() {
       render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
     },
     {
-      title: "Action",
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 100,
+      render: (method: string) =>
+        method ? (
+          <Tag>{method.toUpperCase()}</Tag>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Actions",
       key: "action",
       width: 130,
-      render: (_: unknown, record: Payment) => (
+      render: (_: unknown, record: OfficeRow) => (
         <Space>
-          <Button
-            type="link"
-            size="small"
-            icon={<FilePdfOutlined />}
-            onClick={() => navigate(`/uac/payments/${record.id}/invoice`)}
-          >
-            Invoice
-          </Button>
-          {(record.dueAmount ?? 0) > 0 && (
+          {!record.isVirtual && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              title="View Invoice"
+              onClick={() => navigate(`/uac/payments/invoice/${encodeURIComponent(record.invoiceNumber!)}`)}
+            />
+          )}
+          {record.dueAmount > 0 && (
             <Button
               type="primary"
               size="small"
               danger
               onClick={() =>
-                navigate(`/uac/payments/collect-due?studentId=${record.studentId}`)
+                navigate(
+                  record.isVirtual
+                    ? `/uac/payments/record?studentId=${record.studentId}`
+                    : `/uac/payments/collect-due?studentId=${record.studentId}`,
+                )
               }
             >
-              Collect
+              {record.isVirtual ? "Collect" : "Collect Due"}
             </Button>
           )}
         </Space>
@@ -531,10 +597,90 @@ export default function UacPaymentHistory() {
     </Space>
   );
 
-  const officePmts = useMemo(
-    () => showDueOnly ? allPayments.filter((p) => (p.dueAmount ?? 0) > 0) : allPayments,
-    [allPayments, showDueOnly],
-  );
+  // Office records: grouped by invoiceNumber + virtual rows for fully-unpaid students (when showDueOnly)
+  interface OfficeRow {
+    id: string;
+    studentId: string;
+    student?: Student;
+    invoiceNumber?: string;
+    paymentTypes: string[];
+    amount: number;
+    dueAmount: number;
+    paymentMonth?: string;
+    paymentDate?: string;
+    paymentMethod?: string;
+    isVirtual?: boolean;
+  }
+
+  const officeRows = useMemo((): OfficeRow[] => {
+    // Group payments by invoiceNumber to show one row per invoice (office copy)
+    const invoiceMap = new Map<string, Payment[]>();
+    for (const p of allPayments) {
+      const key = p.invoiceNumber;
+      if (!invoiceMap.has(key)) invoiceMap.set(key, []);
+      invoiceMap.get(key)!.push(p);
+    }
+
+    const paymentRows: OfficeRow[] = Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        id: first.id,
+        studentId: first.studentId,
+        student: first.student as Student | undefined,
+        invoiceNumber: first.invoiceNumber,
+        paymentTypes: group.map((p) => p.paymentType),
+        amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((sum, p) => sum + p.amount, 0),
+        dueAmount: first.dueAmount ?? 0,
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+        isVirtual: false,
+      };
+    });
+
+    if (!showDueOnly) return paymentRows;
+
+    const monthStr = filters.paymentMonth
+      ? dayjs(filters.paymentMonth).format("YYYY-MM")
+      : dayjs().format("YYYY-MM");
+
+    // Students who already have a tuition record for this month
+    const paidStudentIds = new Set(
+      allPayments
+        .filter((p) => p.paymentType === "tuition" && dayjs(p.paymentMonth).format("YYYY-MM") === monthStr)
+        .map((p) => p.studentId),
+    );
+
+    // Virtual rows for fully-unpaid students
+    const virtualRows: OfficeRow[] = allStudents
+      .filter((s) => {
+        if (paidStudentIds.has(s.id)) return false;
+        if ((s.monthlyTuitionFee ?? 0) <= 0) return false;
+        // Respect class/group filters
+        if (filters.classFilter && s.class !== filters.classFilter) return false;
+        if (filters.groupFilter && s.group !== filters.groupFilter) return false;
+        // Not yet enrolled
+        const admMonth = s.admissionDate ? dayjs(s.admissionDate).format("YYYY-MM") : null;
+        if (admMonth && admMonth > monthStr) return false;
+        return true;
+      })
+      .map((s) => ({
+        id: `virtual-${s.id}`,
+        studentId: s.id,
+        student: s,
+        invoiceNumber: undefined,
+        paymentTypes: ["tuition"],
+        amount: 0,
+        dueAmount: Math.max(0, (s.monthlyTuitionFee ?? 0) - (s.discountTuition ?? 0)),
+        paymentMonth: dayjs(monthStr, "YYYY-MM").toISOString(),
+        paymentDate: undefined,
+        paymentMethod: undefined,
+        isVirtual: true,
+      }));
+
+    const withDue = paymentRows.filter((r) => r.dueAmount > 0);
+    return [...withDue, ...virtualRows];
+  }, [allPayments, allStudents, showDueOnly, filters]);
 
   if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
@@ -610,21 +756,21 @@ export default function UacPaymentHistory() {
           },
           {
             key: "guardian-records",
-            label: `Guardian Records (${allPayments.length})`,
+            label: `Guardian Records (${guardianRows.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
-                dataSource={allPayments}
+                dataSource={guardianRows}
                 rowKey="id"
                 loading={loadingPayments}
                 pagination={{
                   pageSize: 15,
                   showSizeChanger: true,
-                  showTotal: (total) => `${total} records`,
+                  showTotal: (total) => `${total} payments`,
                 }}
                 summary={(pageData) => {
                   const total = pageData.reduce(
-                    (sum, row) => sum + (row.guardianAmount ?? row.amount),
+                    (sum, row) => sum + row.amount,
                     0,
                   );
                   return (
@@ -637,7 +783,7 @@ export default function UacPaymentHistory() {
                           ৳{total.toLocaleString()}
                         </strong>
                       </Table.Summary.Cell>
-                      <Table.Summary.Cell index={4} colSpan={3} />
+                      <Table.Summary.Cell index={4} colSpan={4} />
                     </Table.Summary.Row>
                   );
                 }}
@@ -646,39 +792,45 @@ export default function UacPaymentHistory() {
           },
           {
             key: "office-records",
-            label: `Office Records (${officePmts.length})`,
+            label: `Office Records (${officeRows.length})`,
             children: (
               <div>
                 <Space style={{ marginBottom: 12 }}>
                   <span style={{ fontWeight: 500 }}>Show Due Only:</span>
                   <Switch checked={showDueOnly} onChange={setShowDueOnly} />
-                  {showDueOnly && <Tag color="error">{officePmts.length} with due</Tag>}
+                  {showDueOnly && (
+                    <Tag color="error">{officeRows.length} with due</Tag>
+                  )}
                 </Space>
                 <Table
                   columns={officeColumns}
-                  dataSource={officePmts}
+                  dataSource={officeRows}
                   rowKey="id"
                   loading={loadingPayments}
                   pagination={{
                     pageSize: 15,
                     showSizeChanger: true,
-                    showTotal: (total) => `${total} records`,
+                    showTotal: (total) => `Total ${total} payments`,
                   }}
                   summary={(pageData) => {
                     const total = pageData.reduce((sum, row) => sum + row.amount, 0);
-                    const totalDue = pageData.reduce((sum, row) => sum + (row.dueAmount ?? 0), 0);
+                    const totalDue = pageData.reduce((sum, row) => sum + row.dueAmount, 0);
                     return (
                       <Table.Summary.Row>
                         <Table.Summary.Cell index={0} colSpan={3}>
                           <strong>Page Total</strong>
                         </Table.Summary.Cell>
                         <Table.Summary.Cell index={3}>
-                          <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                          <div>
+                            <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                            {totalDue > 0 && (
+                              <div style={{ fontSize: 12, color: "#d32f2f" }}>
+                                Due: ৳{totalDue.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
                         </Table.Summary.Cell>
-                        <Table.Summary.Cell index={4}>
-                          <strong style={{ color: "#ff4d4f" }}>৳{totalDue.toLocaleString()}</strong>
-                        </Table.Summary.Cell>
-                        <Table.Summary.Cell index={5} colSpan={3} />
+                        <Table.Summary.Cell index={4} colSpan={4} />
                       </Table.Summary.Row>
                     );
                   }}

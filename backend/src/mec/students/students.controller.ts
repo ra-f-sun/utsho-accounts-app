@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { MecStudentsService } from './students.service';
 import { CreateMecStudentDto } from './dto/create-student.dto';
+import { ImportMecStudentsDto } from './dto/import-students.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
 import { FilterMecStudentDto } from './dto/filter-student.dto';
 import { PromoteMecBulkDto, PromoteMecStudentDto } from './dto/promote-student.dto';
@@ -39,6 +40,12 @@ export class MecStudentsController {
   @Roles(Role.SUPER_ADMIN, Role.DIRECTOR)
   promoteBulk(@Body() dto: PromoteMecBulkDto, @CurrentUser() user: JwtUser) {
     return this.studentsService.promoteBulk(dto, user.id);
+  }
+
+  @Post('import')
+  @Roles(Role.SUPER_ADMIN, Role.DIRECTOR)
+  importStudents(@Body() dto: ImportMecStudentsDto) {
+    return this.studentsService.importBulk(dto.students);
   }
 
   @Post()

@@ -2,18 +2,17 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, InputNumber, DatePicker, Select, Form, Input } from "antd";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, InputNumber, DatePicker, Select, Form, Input, Space } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
   EyeOutlined,
+  DollarOutlined,
   UserDeleteOutlined,
   UserAddOutlined,
-  DollarOutlined,
 } from "@ant-design/icons";
-import { Space } from "antd";
-import { payrollService } from "../../../services/payrollService";
-import { teachersService } from "../../../services/teachersService";
+import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
+import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
@@ -27,53 +26,52 @@ interface PayrollRecord {
   paidAmount?: number;
   dueAmount?: number;
   isDueCollection?: boolean;
-  totalLectures?: number;
   paymentDate: string;
   paymentMethod: string;
   invoiceNumber: string;
   notes?: string;
 }
 
-export default function TeacherPayrollHistory() {
+export default function MbcsStaffPayrollHistory() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => teachersService.disassociate(id!),
+    mutationFn: () => mbcsStaffService.disassociate(id!),
     onSuccess: () => {
-      message.success("Teacher marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      message.success("Staff marked as no longer associated");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
     },
-    onError: () => message.error("Failed to disassociate teacher"),
+    onError: () => message.error("Failed to disassociate staff"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => teachersService.reassociate(id!),
+    mutationFn: () => mbcsStaffService.reassociate(id!),
     onSuccess: () => {
-      message.success("Teacher re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      message.success("Staff re-associated successfully");
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
     },
-    onError: () => message.error("Failed to re-associate teacher"),
+    onError: () => message.error("Failed to re-associate staff"),
   });
 
-  const { data: teacherData, isLoading: loadingTeacher } = useQuery({
-    queryKey: ["teacher", id],
-    queryFn: () => teachersService.getOne(id!),
+  const { data: staffData, isLoading: loadingStaff } = useQuery({
+    queryKey: ["mbcs-staff-detail", id],
+    queryFn: () => mbcsStaffService.getOne(id!),
     enabled: !!id,
   });
 
-  const teacher = teacherData?.data;
+  const staff = staffData?.data;
 
   const { data: payrollData, isLoading: loadingPayroll, isError: payrollIsError, error: payrollError, refetch: refetchPayroll } = useQuery({
-    queryKey: ["payroll", { payableId: id, payableType: "teacher" }],
+    queryKey: ["mbcs-payroll", { payableId: id, payableType: "staff" }],
     queryFn: () =>
-      payrollService.getAll({
+      mbcsPayrollService.getAll({
         payableId: id,
-        payableType: "teacher",
+        payableType: "staff",
       }, 1, 1000),
     enabled: !!id,
   });
@@ -91,7 +89,7 @@ export default function TeacherPayrollHistory() {
     try {
       const values = await collectDueForm.validateFields();
       setCollectingDue(true);
-      await payrollService.collectDue(collectDueRecord!.id, {
+      await mbcsPayrollService.collectDue(collectDueRecord!.id, {
         paidAmount: values.paidAmount,
         paymentDate: values.paymentDate.toISOString(),
         paymentMethod: values.paymentMethod,
@@ -100,7 +98,7 @@ export default function TeacherPayrollHistory() {
       message.success("Due collected successfully!");
       setCollectDueRecord(null);
       collectDueForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs-payroll"] });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data?.message) message.error(err.response.data.message);
     } finally {
@@ -154,14 +152,6 @@ export default function TeacherPayrollHistory() {
         ),
     },
     {
-      title: "Lectures",
-      dataIndex: "totalLectures",
-      key: "totalLectures",
-      width: 80,
-      render: (count: number | null) =>
-        count != null ? <Tag color="blue">{count}</Tag> : "-",
-    },
-    {
       title: "Date",
       dataIndex: "paymentDate",
       key: "paymentDate",
@@ -186,7 +176,7 @@ export default function TeacherPayrollHistory() {
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/uac/payroll/${record.id}/invoice`)}
+            onClick={() => navigate(`/mbcs/payroll/${record.id}/invoice`)}
             title="View Invoice"
           />
           {(record.dueAmount ?? 0) > 0 && !record.isDueCollection && (
@@ -210,7 +200,7 @@ export default function TeacherPayrollHistory() {
 
   if (payrollIsError) return <QueryError error={payrollError as Error} onRetry={refetchPayroll} />;
 
-  if (loadingTeacher) {
+  if (loadingStaff) {
     return (
       <div style={{ textAlign: "center", padding: 60 }}>
         <Spin size="large" />
@@ -229,18 +219,18 @@ export default function TeacherPayrollHistory() {
       >
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate("/uac/teachers")}
+          onClick={() => navigate("/mbcs/staff")}
         >
-          Back to Teachers
+          Back to Staff
         </Button>
         <div style={{ display: "flex", gap: 8 }}>
-          {teacher?.associationEndDate ? (
+          {staff?.associationEndDate ? (
             <Button
               icon={<UserAddOutlined />}
               onClick={() =>
                 Modal.confirm({
-                  title: "Re-associate Teacher",
-                  content: `Re-associate ${teacher?.name} to the organization?`,
+                  title: "Re-associate Staff",
+                  content: `Re-associate ${staff?.name} to the organization?`,
                   onOk: () => reassociateMutation.mutateAsync(),
                 })
               }
@@ -255,7 +245,7 @@ export default function TeacherPayrollHistory() {
               onClick={() =>
                 Modal.confirm({
                   title: "Mark as No Longer Associated",
-                  content: `Mark ${teacher?.name} as no longer associated? They will be removed from active lists.`,
+                  content: `Mark ${staff?.name} as no longer associated? They will be removed from active lists.`,
                   okText: "Confirm",
                   okButtonProps: { danger: true },
                   onOk: () => disassociateMutation.mutateAsync(),
@@ -269,26 +259,24 @@ export default function TeacherPayrollHistory() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate(`/uac/payroll/create?teacherId=${id}`)}
+            onClick={() => navigate(`/mbcs/payroll/create`)}
           >
             Create Payroll
           </Button>
         </div>
       </div>
 
-      {/* Teacher Info */}
+      {/* Staff Info */}
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={24}>
           <Col span={8}>
             <Statistic
-              title="Teacher"
-              value={teacher?.name || "Loading..."}
+              title="Staff"
+              value={staff?.name || "Loading..."}
               styles={{ content: { fontSize: 18 } }}
             />
             <div style={{ color: "#888", fontSize: 13 }}>
-              {teacher?.paymentType === "lecture_based"
-                ? `Lecture Based — ৳${teacher?.perLectureRate}/lecture`
-                : `Fixed — ৳${teacher?.monthlySalary}/month`}
+              {staff?.designation || "Staff"} — ৳{staff?.monthlySalary?.toLocaleString()}/month
             </div>
           </Col>
           <Col span={6}>

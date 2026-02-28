@@ -1,0 +1,200 @@
+﻿
+F:\workPlace\utsho-account\frontend\src\components\ProtectedRoute.tsx
+  22:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\components\ProtectedRoute.tsx:22:7
+  20 |     // If already hydrated (e.g., not the first render)
+  21 |     if (useAuthStore.persist.hasHydrated()) {
+> 22 |       setHydrated(true);
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  23 |     }
+  24 |
+  25 |     return () => {  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\layouts\DashboardLayout.tsx
+  77:5  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\layouts\DashboardLayout.tsx:77:5
+  75 |
+  76 |   useEffect(() => {
+> 77 |     setCurrentOpenKeys(openKeys);
+     |     ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  78 |   }, [pathname]);
+  79 |
+  80 |   const handleLogout = () => {  react-hooks/set-state-in-effect
+  78:6  warning  React Hook useEffect has a missing dependency: 'openKeys'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+
+F:\workPlace\utsho-account\frontend\src\pages\DashboardPage.tsx
+  134:9  warning  The 'revenueStats' logical expression could make the dependencies of useMemo Hook (at line 162) change on every render. To fix this, wrap the initialization of 'revenueStats' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  137:9  error    '_expenses' is assigned a value but never used                                                                                                                                                            @typescript-eslint/no-unused-vars
+  138:9  warning  The 'dueSummaries' logical expression could make the dependencies of useMemo Hook (at line 167) change on every render. To fix this, wrap the initialization of 'dueSummaries' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  138:9  warning  The 'dueSummaries' logical expression could make the dependencies of useMemo Hook (at line 171) change on every render. To fix this, wrap the initialization of 'dueSummaries' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\payments\MbcsPaymentHistory.tsx
+  78:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 126) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  88:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 126) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+  88:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 528) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\payments\MbcsRecordPayment.tsx
+   91:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 96) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+   91:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 106) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+   91:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 114) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+   91:9  warning  The 'allStudents' logical expression could make the dependencies of useEffect Hook (at line 130) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  124:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\payments\MbcsRecordPayment.tsx:124:9
+  122 |       if (student) {
+  123 |         initialStudentApplied.current = true;
+> 124 |         setSelectedClass(student.class);
+      |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  125 |         setSelectedShift(student.shift);
+  126 |         setSelectedStudentId(studentId);
+  127 |         form.setFieldsValue({ studentId });  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\payroll\MbcsCreatePayroll.tsx
+  82:9  warning  The 'teachers' logical expression could make the dependencies of useEffect Hook (at line 103) change on every render. To fix this, wrap the initialization of 'teachers' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  95:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\payroll\MbcsCreatePayroll.tsx:95:9
+  93 |       if (teacher) {
+  94 |         initialTeacherApplied.current = true;
+> 95 |         setSelectedTeacher(teacher);
+     |         ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  96 |         form.setFieldsValue({ teacherId, payableType: "teacher" });
+  97 |         setPayableType("teacher");
+  98 |         if (teacher.paymentType === "fixed" && teacher.monthlySalary) {  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\teachers\AddMbcsTeacher.tsx
+  45:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\mbcs\teachers\AddMbcsTeacher.tsx:45:9
+  43 |         existingDataApplied.current = true;
+  44 |         form.setFieldsValue(teacher);
+> 45 |         setPaymentType(teacher.paymentType || "fixed");
+     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  46 |       }
+  47 |     }
+  48 |   }, [existingData, form]);  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\mec\payments\MecPaymentHistory.tsx
+  72:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 138) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  83:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 104) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+  83:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 138) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+  83:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 525) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook                                         react-hooks/exhaustive-deps
+
+F:\workPlace\utsho-account\frontend\src\pages\mec\payments\MecRecordPayment.tsx
+  66:9  warning  The 'allStudents' logical expression could make the dependencies of useEffect Hook (at line 91) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+  84:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\mec\payments\MecRecordPayment.tsx:84:9
+  82 |       if (student) {
+  83 |         initialStudentApplied.current = true;
+> 84 |         setSelectedStudentId(studentId);
+     |         ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  85 |         form.setFieldsValue({
+  86 |           studentId,
+  87 |           amount: (student.monthlyTuitionFee ?? 0) - (student.discountTuition ?? 0),  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\payments\RecordPayment.tsx
+   74:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 79) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+   74:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 89) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+   74:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 97) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+   74:9  warning  The 'allStudents' logical expression could make the dependencies of useEffect Hook (at line 113) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+  107:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\payments\RecordPayment.tsx:107:9
+  105 |       if (student) {
+  106 |         initialStudentApplied.current = true;
+> 107 |         setSelectedClass(student.class);
+      |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  108 |         setSelectedGroup(student.group);
+  109 |         setSelectedStudentId(studentId);
+  110 |         form.setFieldsValue({ studentId });  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\payments\UacPaymentHistory.tsx
+  76:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 127) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  76:9  warning  The 'allStudents' logical expression could make the dependencies of useMemo Hook (at line 620) change on every render. To fix this, wrap the initialization of 'allStudents' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  88:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 127) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  88:9  warning  The 'allPayments' logical expression could make the dependencies of useMemo Hook (at line 620) change on every render. To fix this, wrap the initialization of 'allPayments' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\payroll\CreatePayroll.tsx
+  82:9  warning  The 'teachers' logical expression could make the dependencies of useEffect Hook (at line 102) change on every render. To fix this, wrap the initialization of 'teachers' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+  94:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\payroll\CreatePayroll.tsx:94:9
+  92 |       if (teacher) {
+  93 |         initialTeacherApplied.current = true;
+> 94 |         setSelectedTeacher(teacher);
+     |         ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  95 |         form.setFieldsValue({ teacherId, payableType: "teacher" });
+  96 |         setPayableType("teacher");
+  97 |         if (teacher.paymentType === "fixed" && teacher.monthlySalary) {  react-hooks/set-state-in-effect
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\teachers\AddTeacher.tsx
+  46:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+F:\workPlace\utsho-account\frontend\src\pages\uac\teachers\AddTeacher.tsx:46:9
+  44 |         existingDataApplied.current = true;
+  45 |         form.setFieldsValue(teacher);
+> 46 |         setPaymentType(teacher.paymentType || "fixed");
+     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  47 |       }
+  48 |     }
+  49 |   }, [existingData, form]);  react-hooks/set-state-in-effect
+
+Γ£û 36 problems (10 errors, 26 warnings)
+

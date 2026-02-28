@@ -21,7 +21,7 @@ import { SearchOutlined, DollarOutlined, CheckCircleOutlined } from "@ant-design
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import type { MecDueProfile, MecCollectDueDto } from "../../../services/mecPaymentsService";
+import type { MecDueProfile, MecCollectDueDto, MecDueSummary } from "../../../services/mecPaymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import dayjs from "dayjs";
@@ -65,6 +65,14 @@ export default function MecCollectDue() {
     enabled: !!selectedStudentId,
   });
   const dueProfiles: MecDueProfile[] = dueProfileData?.data?.profiles ?? [];
+
+  // Also fetch due summary (includes unpaid months with no invoices)
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["due-summary", "mec", selectedStudentId],
+    queryFn: () => mecPaymentsService.getDueSummary(selectedStudentId!),
+    enabled: !!selectedStudentId,
+  });
+  const dueSummary = dueSummaryData?.data as MecDueSummary | undefined;
 
   useEffect(() => {
     if (selectedInvoice) {
@@ -158,7 +166,7 @@ export default function MecCollectDue() {
     return (
       <Card>
         <Space orientation="vertical" size="large" style={{ width: "100%" }}>
-          <Alert type="success" icon={<CheckCircleOutlined />} message="Due Collection Recorded"
+          <Alert type="success" icon={<CheckCircleOutlined />} title="Due Collection Recorded"
             description={`New invoice number: ${successInvoice}`} showIcon />
           <Space>
             <Button type="primary" onClick={() => navigate(`/mec/payments/invoice/${successInvoice}`)}>View Invoice</Button>
@@ -179,9 +187,10 @@ export default function MecCollectDue() {
           <Col xs={24} sm={24}>
             <Form.Item label="Student" required>
               <Select
-                showSearch={{ filterOption: (input, option) =>
+                showSearch
+                filterOption={(input, option) =>
                   String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }}
+                }
                 placeholder="Search student..."
                 value={selectedStudentId}
                 onChange={(v) => {
@@ -207,7 +216,19 @@ export default function MecCollectDue() {
           {dueLoading ? (
             <Text>Loading due profile...</Text>
           ) : dueProfiles.length === 0 ? (
-            <Alert type="info" message="No outstanding dues found for this student." />
+            <>
+              {dueSummary && dueSummary.totalDue > 0 ? (
+                <Alert
+                  type="warning"
+                  title={`This student has ৳${dueSummary.totalDue.toLocaleString()} in outstanding dues`}
+                  description="However, there are no invoices to collect from. Use 'Record Payment' to create payment records first, then collect any remaining dues here."
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                />
+              ) : (
+                <Alert type="info" title="No outstanding dues found for this student." />
+              )}
+            </>
           ) : (
             <Table dataSource={dueProfiles} columns={invoiceColumns} rowKey="invoiceNumber" pagination={false} size="small" />
           )}

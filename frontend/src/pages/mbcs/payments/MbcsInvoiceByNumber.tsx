@@ -16,6 +16,20 @@ export default function MbcsInvoiceByNumber() {
   const { invoiceNumber } = useParams<{ invoiceNumber: string }>();
   const navigate = useNavigate();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const officeRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`<html><head><title>Invoice ${invoiceNumber}</title>`);
+    printWindow.document.write("<style>body{font-family:Arial,sans-serif;padding:20px}@media print{body{padding:0}}</style>");
+    printWindow.document.write("</head><body>");
+    printWindow.document.write(ref.current.innerHTML);
+    printWindow.document.write("</body></html>");
+    printWindow.document.close();
+    printWindow.onload = () => { printWindow.print(); };
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["mbcs-invoice", invoiceNumber],
@@ -24,34 +38,6 @@ export default function MbcsInvoiceByNumber() {
   });
 
   const payments: MbcsPayment[] = data?.data || [];
-
-  const handlePrint = () => {
-    const content = invoiceRef.current;
-    if (!content) return;
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Invoice ${invoiceNumber || ""}</title>
-          <style>
-            body { margin: 0; padding: 20px; font-family: 'Segoe UI', sans-serif; }
-            @media print {
-              body { padding: 0; }
-              @page { margin: 15mm; }
-            }
-          </style>
-        </head>
-        <body>${content.innerHTML}</body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
-  };
 
   if (isLoading) {
     return (
@@ -66,7 +52,6 @@ export default function MbcsInvoiceByNumber() {
   }
 
   const first = payments[0];
-  const totalAmount = payments.reduce((sum: number, p: MbcsPayment) => sum + p.amount, 0);
 
   const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: first.invoiceNumber,
@@ -119,7 +104,7 @@ export default function MbcsInvoiceByNumber() {
             children: (
               <div>
                 <Space style={{ marginBottom: 12 }}>
-                  <Button icon={<PrinterOutlined />} onClick={() => printRef(invoiceRef)}>
+                  <Button icon={<PrinterOutlined />} onClick={() => handlePrint(invoiceRef)}>
                     Print Guardian Copy
                   </Button>
                 </Space>
@@ -133,7 +118,7 @@ export default function MbcsInvoiceByNumber() {
             children: (
               <div>
                 <Space style={{ marginBottom: 12 }}>
-                  <Button icon={<PrinterOutlined />} onClick={() => printRef(officeRef)}>
+                  <Button icon={<PrinterOutlined />} onClick={() => handlePrint(officeRef)}>
                     Print Office Copy
                   </Button>
                 </Space>

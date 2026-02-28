@@ -78,6 +78,22 @@ export class AnalyticsController {
     return this.analyticsService.getExpenseBreakdown(filters);
   }
 
+  @Get('due-summary')
+  @Roles(
+    Role.SUPER_ADMIN,
+    Role.DIRECTOR,
+    Role.ACCOUNTANT_UAC,
+    Role.ACCOUNTANT_MBCS,
+    Role.ACCOUNTANT_MEC,
+  )
+  async getOutstandingDueSummary(
+    @Query() query: AnalyticsQueryDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const filters = this.applyRoleBasedFilter(query, user);
+    return this.analyticsService.getOutstandingDueSummary(filters);
+  }
+
   /**
    * Apply organization filter based on user role
    * - SUPER_ADMIN & DIRECTOR: Can see all orgs or filter by org

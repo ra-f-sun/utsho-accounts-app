@@ -13,7 +13,8 @@ export interface Payroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
-  // Due collection fields (Feature 6B)
+  // Due fields (Feature 6F)
+  paidAmount?: number;
   dueAmount?: number;
   isDueCollection?: boolean;
   parentPayrollId?: string;
@@ -24,6 +25,7 @@ export interface CreatePayrollDto {
   payableId: string;
   paymentMonth: string; // ISO DateString (e.g., 2024-01-01T00:00:00.000Z)
   amount: number;
+  paidAmount?: number; // If not set, defaults to amount (full payment)
   totalLectures?: number;
   paymentDate: string; // ISO DateString
   paymentMethod: string; // 'cash' | 'bkash' | 'nagad' | 'bank_transfer'

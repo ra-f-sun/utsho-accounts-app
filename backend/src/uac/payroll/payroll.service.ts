@@ -58,6 +58,9 @@ export class PayrollService {
 
     // Create payroll with transaction
     return this.prisma.$transaction(async (tx) => {
+      const paidAmount = createPayrollDto.paidAmount ?? createPayrollDto.amount;
+      const dueAmount = Math.max(0, createPayrollDto.amount - paidAmount);
+
       const payroll = await tx.uacPayroll.create({
         data: {
           ...createPayrollDto,
@@ -65,6 +68,8 @@ export class PayrollService {
           paymentDate: new Date(createPayrollDto.paymentDate),
           invoiceNumber,
           createdBy,
+          paidAmount,
+          dueAmount,
         },
       });
 
@@ -274,6 +279,7 @@ export class PayrollService {
         payableId,
         paymentMonth: new Date(paymentMonth),
         isActive: true,
+        isDueCollection: false,
       },
     });
 

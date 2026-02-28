@@ -16,6 +16,19 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
 import type { CreateAttendanceDto } from "../../../services/teacherAttendanceService";
 import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
+import axios from "axios";
+import dayjs from "dayjs";
+
+interface AttendanceFormValues {
+  teacherId: string;
+  month?: ReturnType<typeof dayjs>;
+  totalLectures?: number;
+  attendanceDate?: ReturnType<typeof dayjs>;
+  lecturesTaken?: number;
+  class?: number;
+  subject?: string;
+}
 
 export default function AddTeacherAttendance() {
   const [form] = Form.useForm();
@@ -29,9 +42,9 @@ export default function AddTeacherAttendance() {
     queryFn: () => teachersService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = teachersData?.data?.data || [];
+  const teachers: Teacher[] = teachersData?.data?.data || [];
   const lectureBased = teachers.filter(
-    (t: any) => t.paymentType === "lecture_based",
+    (t) => t.paymentType === "lecture_based",
   );
 
   const createMutation = useMutation({
@@ -42,10 +55,14 @@ export default function AddTeacherAttendance() {
       queryClient.invalidateQueries({ queryKey: ["teacher-attendance"] });
       form.resetFields();
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to record attendance",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(
+          error.response?.data?.message || "Failed to record attendance",
+        );
+      } else {
+        message.error("Failed to record attendance");
+      }
     },
   });
 
@@ -60,14 +77,18 @@ export default function AddTeacherAttendance() {
       queryClient.invalidateQueries({ queryKey: ["teacher-attendance"] });
       form.resetFields();
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to record attendance",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(
+          error.response?.data?.message || "Failed to record attendance",
+        );
+      } else {
+        message.error("Failed to record attendance");
+      }
     },
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: AttendanceFormValues) => {
     if (mode === "simplified") {
       summaryMutation.mutate({
         teacherId: values.teacherId,
@@ -115,7 +136,7 @@ export default function AddTeacherAttendance() {
                 <Select
                   placeholder="Search teacher"
                   showSearch
-                  options={lectureBased.map((t: any) => ({
+                  options={lectureBased.map((t) => ({
                     value: t.id,
                     label: `${t.name} (Lecture Based — ৳${t.perLectureRate}/lecture)`,
                   }))}

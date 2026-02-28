@@ -16,6 +16,19 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { mbcsTeacherAttendanceService } from "../../../services/mbcsTeacherAttendanceService";
 import type { CreateMbcsAttendanceDto } from "../../../services/mbcsTeacherAttendanceService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
+import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
+import axios from "axios";
+import dayjs from "dayjs";
+
+interface MbcsAttendanceFormValues {
+  teacherId: string;
+  month?: ReturnType<typeof dayjs>;
+  totalLectures?: number;
+  attendanceDate?: ReturnType<typeof dayjs>;
+  lecturesTaken?: number;
+  class?: number;
+  subject?: string;
+}
 
 export default function AddMbcsTeacherAttendance() {
   const [form] = Form.useForm();
@@ -29,9 +42,9 @@ export default function AddMbcsTeacherAttendance() {
     queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
-  const teachers = teachersData?.data?.data || [];
+  const teachers: MbcsTeacher[] = teachersData?.data?.data || [];
   const lectureBased = teachers.filter(
-    (t: any) => t.paymentType === "lecture_based",
+    (t) => t.paymentType === "lecture_based",
   );
 
   const createMutation = useMutation({
@@ -44,10 +57,14 @@ export default function AddMbcsTeacherAttendance() {
       });
       form.resetFields();
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to record attendance",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(
+          error.response?.data?.message || "Failed to record attendance",
+        );
+      } else {
+        message.error("Failed to record attendance");
+      }
     },
   });
 
@@ -64,14 +81,18 @@ export default function AddMbcsTeacherAttendance() {
       });
       form.resetFields();
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to record attendance",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(
+          error.response?.data?.message || "Failed to record attendance",
+        );
+      } else {
+        message.error("Failed to record attendance");
+      }
     },
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: MbcsAttendanceFormValues) => {
     if (mode === "simplified") {
       summaryMutation.mutate({
         teacherId: values.teacherId,
@@ -119,7 +140,7 @@ export default function AddMbcsTeacherAttendance() {
                 <Select
                   placeholder="Search teacher"
                   showSearch
-                  options={lectureBased.map((t: any) => ({
+                  options={lectureBased.map((t) => ({
                     value: t.id,
                     label: `${t.name} (Lecture Based — ৳${t.perLectureRate}/lecture)`,
                   }))}

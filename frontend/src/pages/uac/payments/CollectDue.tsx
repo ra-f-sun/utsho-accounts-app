@@ -28,7 +28,7 @@ import {
   paymentsService,
   UAC_PAYMENT_TYPES,
 } from "../../../services/paymentsService";
-import type { DueProfile, CollectDueDto } from "../../../services/paymentsService";
+import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
 import dayjs from "dayjs";
@@ -93,6 +93,14 @@ export default function CollectDue() {
     enabled: !!selectedStudentId,
   });
   const dueProfiles: DueProfile[] = dueProfileData?.data?.profiles ?? [];
+
+  // Also fetch due summary (includes unpaid months with no invoices)
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["due-summary", "uac", selectedStudentId],
+    queryFn: () => paymentsService.getDueSummary(selectedStudentId!),
+    enabled: !!selectedStudentId,
+  });
+  const dueSummary = dueSummaryData?.data as DueSummary | undefined;
 
   // Recalculate paidAmount default when invoice selected
   useEffect(() => {
@@ -213,7 +221,7 @@ export default function CollectDue() {
           <Alert
             type="success"
             icon={<CheckCircleOutlined />}
-            message="Due Collection Recorded"
+            title="Due Collection Recorded"
             description={`New invoice number: ${successInvoice}`}
             showIcon
           />
@@ -294,9 +302,10 @@ export default function CollectDue() {
                   setSuccessInvoice(null);
                   form.resetFields(["parentInvoiceNumber", "paidAmount", "paymentMethod", "paymentDate", "notes"]);
                 }}
-                showSearch={{ filterOption: (input, option) =>
+                showSearch
+                filterOption={(input, option) =>
                   String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }}
+                }
                 suffixIcon={<SearchOutlined />}
                 options={filteredStudents.map((s) => ({
                   value: s.id,
@@ -314,7 +323,19 @@ export default function CollectDue() {
           {dueLoading ? (
             <Text>Loading due profile...</Text>
           ) : dueProfiles.length === 0 ? (
-            <Alert type="info" message="No outstanding dues found for this student." />
+            <>
+              {dueSummary && dueSummary.totalDue > 0 ? (
+                <Alert
+                  type="warning"
+                  title={`This student has ৳${dueSummary.totalDue.toLocaleString()} in outstanding dues`}
+                  description="However, there are no invoices to collect from. Use 'Record Payment' to create payment records first, then collect any remaining dues here."
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                />
+              ) : (
+                <Alert type="info" title="No outstanding dues found for this student." />
+              )}
+            </>
           ) : (
             <Table
               dataSource={dueProfiles}

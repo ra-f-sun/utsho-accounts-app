@@ -81,6 +81,24 @@ function allocatePaid(
       }
     }
   }
+
+  // Handle items not matched by any priority group (catch-all)
+  const matchedTypes = new Set(result.map((r) => r.paymentType));
+  const unmatched = lineItems.filter((i) => !matchedTypes.has(i.paymentType));
+  for (const item of unmatched) {
+    if (remaining >= item.amount) {
+      result.push({ ...item, paidAmount: item.amount, dueAmount: 0 });
+      remaining -= item.amount;
+    } else {
+      result.push({
+        ...item,
+        paidAmount: remaining,
+        dueAmount: item.amount - remaining,
+      });
+      remaining = 0;
+    }
+  }
+
   return result;
 }
 
@@ -154,26 +172,47 @@ export class PaymentsService {
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    // Paginate by unique invoiceNumbers so grouped invoices stay intact
+    const [invoicePage, allInvoices] = await Promise.all([
       this.prisma.uacPayment.findMany({
         where,
-        include: {
-          student: {
-            select: {
-              id: true,
-              name: true,
-              class: true,
-              group: true,
-              contactNumber: true,
-            },
-          },
-        },
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
         orderBy: { paymentDate: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.uacPayment.count({ where }),
+      this.prisma.uacPayment.findMany({
+        where,
+        select: { invoiceNumber: true },
+        distinct: ['invoiceNumber'],
+      }),
     ]);
+
+    const invoiceNumbers = invoicePage.map((p) => p.invoiceNumber);
+    const total = allInvoices.length;
+
+    const data =
+      invoiceNumbers.length > 0
+        ? await this.prisma.uacPayment.findMany({
+            where: {
+              invoiceNumber: { in: invoiceNumbers },
+              isActive: true,
+            },
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  name: true,
+                  class: true,
+                  group: true,
+                  contactNumber: true,
+                },
+              },
+            },
+            orderBy: { paymentDate: 'desc' },
+          })
+        : [];
 
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -289,6 +328,13 @@ export class PaymentsService {
     );
     const officeGrandTotal = officeSubTotal - additionalDiscount;
     const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+
+    if (dueAmount > officeGrandTotal) {
+      throw new BadRequestException(
+        `dueAmount (${dueAmount}) cannot exceed the total payable amount (${officeGrandTotal})`,
+      );
+    }
+
     const officePaid = officeGrandTotal - dueAmount;
     const guardianPaid = guardianGrandTotal - dueAmount;
 
@@ -685,9 +731,96 @@ export class PaymentsService {
 
     const typeDue = (type: string) => dues[type] ?? 0;
     const othersDue = OTHERS_TYPES.reduce((sum, t) => sum + (dues[t] ?? 0), 0);
-    const tuitionDue = typeDue('tuition');
-    const admissionDue = typeDue('admission');
-    const readmissionDue = typeDue('readmission');
+    let tuitionDue = typeDue('tuition');
+    let admissionDue = typeDue('admission');
+    let readmissionDue = typeDue('readmission');
+
+    // Enhance dues with fully-unpaid months/fees from the student's stored fee fields
+    const student = await this.prisma.uacStudent.findUnique({
+      where: { id: studentId },
+      select: {
+        monthlyTuitionFee: true,
+        admissionFee: true,
+        readmissionFee: true,
+        discountTuition: true,
+        discountAdmission: true,
+        discountReadmission: true,
+        admissionDate: true,
+        associationEndDate: true,
+      },
+    });
+
+    if (student) {
+      // Unpaid tuition months: From the student's effective start month in the current
+      // year up to and including the current month, count months with no payment record.
+      // If the student has departed (associationEndDate is set), stop at that month.
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1-based
+
+      // Determine the end month for due calculation
+      let endMonth = currentMonth;
+      if (student.associationEndDate) {
+        const endDate = new Date(student.associationEndDate);
+        const endYear = endDate.getFullYear();
+        const endMo = endDate.getMonth() + 1;
+        if (endYear < currentYear) {
+          endMonth = 0; // departed in a previous year — no dues this year
+        } else if (endYear === currentYear) {
+          endMonth = Math.min(endMo, currentMonth);
+        }
+      }
+
+      let startMonth = 1;
+      if (student.admissionDate) {
+        const admYear = student.admissionDate.getFullYear();
+        const admMonth = student.admissionDate.getMonth() + 1;
+        if (admYear > currentYear) {
+          startMonth = currentMonth + 1; // admitted in a future year — no dues
+        } else if (admYear === currentYear) {
+          startMonth = admMonth;
+        } else {
+          startMonth = 1; // admitted before current year — start from Jan
+        }
+      }
+
+      const paidTuitionMonthKeys = new Set(
+        payments
+          .filter((p) => p.paymentType === 'tuition')
+          .map((p) => {
+            const d = new Date(p.paymentMonth);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          }),
+      );
+
+      let unpaidMonthCount = 0;
+      for (let m = startMonth; m <= endMonth; m++) {
+        const key = `${currentYear}-${String(m).padStart(2, '0')}`;
+        if (!paidTuitionMonthKeys.has(key)) unpaidMonthCount++;
+      }
+      tuitionDue +=
+        unpaidMonthCount *
+        Math.max(
+          0,
+          (student.monthlyTuitionFee ?? 0) - (student.discountTuition ?? 0),
+        );
+
+      // Unpaid admission fee: fee is configured on the student but no payment record exists
+      if (!hasType('admission') && (student.admissionFee ?? 0) > 0) {
+        admissionDue += Math.max(
+          0,
+          student.admissionFee! - (student.discountAdmission ?? 0),
+        );
+      }
+
+      // Unpaid readmission fee: fee is configured but no payment record exists
+      if (!hasType('readmission') && (student.readmissionFee ?? 0) > 0) {
+        readmissionDue += Math.max(
+          0,
+          student.readmissionFee! - (student.discountReadmission ?? 0),
+        );
+      }
+    }
 
     return {
       studentId,

@@ -131,7 +131,10 @@ export default function AddStudent() {
     },
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: Omit<CreateStudentDto, 'dateOfBirth' | 'admissionDate'> & {
+    dateOfBirth?: ReturnType<typeof dayjs>;
+    admissionDate?: ReturnType<typeof dayjs>;
+  }) => {
     const data = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),

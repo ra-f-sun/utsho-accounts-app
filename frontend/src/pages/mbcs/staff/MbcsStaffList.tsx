@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Table, Button, Space, App, Popconfirm } from "antd";
-import { PlusOutlined, EditOutlined, DeleteOutlined, UserDeleteOutlined, UserAddOutlined } from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined, UserDeleteOutlined, UserAddOutlined, HistoryOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { MbcsStaff } from "../../../services/mbcsStaffService";
@@ -79,9 +79,15 @@ export default function MbcsStaffList() {
     {
       title: "Actions",
       key: "actions",
-      width: 160,
+      width: 180,
       render: (_: unknown, record: MbcsStaff) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => navigate(`/mbcs/staff/${record.id}/payroll`)}
+            title="View Payroll History"
+          />
           <Button
             type="link"
             icon={<EditOutlined />}

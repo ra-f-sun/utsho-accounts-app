@@ -60,25 +60,24 @@ export default function MbcsPaymentsList() {
 
   const groupedPayments = useMemo((): GroupedMbcsPayment[] => {
     const payments: MbcsPayment[] = data?.data?.data || [];
-    const groups: Record<string, GroupedMbcsPayment> = {};
-    payments.forEach((p: MbcsPayment) => {
-      if (!groups[p.invoiceNumber]) {
-        groups[p.invoiceNumber] = {
-          invoiceNumber: p.invoiceNumber,
-          student: p.student,
-          paymentTypes: [],
-          totalAmount: 0,
-          paymentMethod: p.paymentMethod,
-          paymentMonth: p.paymentMonth,
-          paymentDate: p.paymentDate,
-          ids: [],
-        };
-      }
-      groups[p.invoiceNumber].paymentTypes.push(p.paymentType);
-      groups[p.invoiceNumber].totalAmount += p.amount;
-      groups[p.invoiceNumber].ids.push(p.id);
+    const invoiceMap = new Map<string, MbcsPayment[]>();
+    for (const p of payments) {
+      if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
+      invoiceMap.get(p.invoiceNumber)!.push(p);
+    }
+    return Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        invoiceNumber: first.invoiceNumber,
+        student: first.student,
+        paymentTypes: group.map((p) => p.paymentType),
+        totalAmount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((s, p) => s + p.amount, 0),
+        paymentMethod: first.paymentMethod,
+        paymentMonth: first.paymentMonth,
+        paymentDate: first.paymentDate,
+        ids: group.map((p) => p.id),
+      };
     });
-    return Object.values(groups);
   }, [data]);
 
   const deleteMutation = useMutation({

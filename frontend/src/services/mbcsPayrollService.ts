@@ -13,7 +13,8 @@ export interface MbcsPayroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
-  // Due collection fields (Feature 6B)
+  // Due fields (Feature 6F)
+  paidAmount?: number;
   dueAmount?: number;
   isDueCollection?: boolean;
   parentPayrollId?: string;
@@ -24,6 +25,7 @@ export interface CreateMbcsPayrollDto {
   payableId: string;
   paymentMonth: string;
   amount: number;
+  paidAmount?: number; // If not set, defaults to amount (full payment)
   totalLectures?: number;
   paymentDate: string;
   paymentMethod: string;

@@ -28,7 +28,7 @@ import {
   mbcsPaymentsService,
   MBCS_PAYMENT_TYPES,
 } from "../../../services/mbcsPaymentsService";
-import type { MbcsDueProfile, MbcsCollectDueDto } from "../../../services/mbcsPaymentsService";
+import type { MbcsDueProfile, MbcsCollectDueDto, DueSummary } from "../../../services/mbcsPaymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import dayjs from "dayjs";
@@ -91,6 +91,14 @@ export default function MbcsCollectDue() {
     enabled: !!selectedStudentId,
   });
   const dueProfiles: MbcsDueProfile[] = dueProfileData?.data?.profiles ?? [];
+
+  // Also fetch due summary (includes unpaid months with no invoices)
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["due-summary", "mbcs", selectedStudentId],
+    queryFn: () => mbcsPaymentsService.getDueSummary(selectedStudentId!),
+    enabled: !!selectedStudentId,
+  });
+  const dueSummary = dueSummaryData?.data as DueSummary | undefined;
 
   useEffect(() => {
     if (selectedInvoice) {
@@ -207,7 +215,7 @@ export default function MbcsCollectDue() {
           <Alert
             type="success"
             icon={<CheckCircleOutlined />}
-            message="Due Collection Recorded"
+            title="Due Collection Recorded"
             description={`New invoice number: ${successInvoice}`}
             showIcon
           />
@@ -251,9 +259,10 @@ export default function MbcsCollectDue() {
           <Col xs={24} sm={8}>
             <Form.Item label="Student" required>
               <Select
-                showSearch={{ filterOption: (input, option) =>
+                showSearch
+                filterOption={(input, option) =>
                   String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                }}
+                }
                 placeholder="Search student..."
                 value={selectedStudentId}
                 onChange={(v) => {
@@ -278,7 +287,19 @@ export default function MbcsCollectDue() {
           {dueLoading ? (
             <Text>Loading due profile...</Text>
           ) : dueProfiles.length === 0 ? (
-            <Alert type="info" message="No outstanding dues found for this student." />
+            <>
+              {dueSummary && dueSummary.totalDue > 0 ? (
+                <Alert
+                  type="warning"
+                  title={`This student has ৳${dueSummary.totalDue.toLocaleString()} in outstanding dues`}
+                  description="However, there are no invoices to collect from. Use 'Record Payment' to create payment records first, then collect any remaining dues here."
+                  showIcon
+                  style={{ marginBottom: 12 }}
+                />
+              ) : (
+                <Alert type="info" title="No outstanding dues found for this student." />
+              )}
+            </>
           ) : (
             <Table dataSource={dueProfiles} columns={invoiceColumns} rowKey="invoiceNumber" pagination={false} size="small" />
           )}

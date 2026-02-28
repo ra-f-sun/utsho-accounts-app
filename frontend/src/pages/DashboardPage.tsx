@@ -42,7 +42,7 @@ import type {
   RevenueStats,
   MonthlyRevenue,
   OutstandingPayment,
-  ExpenseBreakdown,
+  OutstandingDueSummary,
 } from "../services/analyticsService";
 import dayjs from "dayjs";
 import { Button, App, Dropdown } from "antd";
@@ -113,7 +113,7 @@ export default function DashboardPage() {
   });
 
   // Fetch expense breakdown
-  const { data: expenseData, isLoading: loadingExpense } = useQuery({
+  const { isLoading: loadingExpense } = useQuery({
     queryKey: ["analytics-expenses", orgFilter, dateRange],
     queryFn: () =>
       analyticsService.getExpenseBreakdown({
@@ -123,10 +123,17 @@ export default function DashboardPage() {
       }),
   });
 
-  const revenueStats: RevenueStats | RevenueStats[] = revenueData?.data || [];
-  const monthlyTrend: MonthlyRevenue[] = trendData?.data || [];
-  const outstanding: OutstandingPayment[] = outstandingData?.data || [];
-  const expenses: ExpenseBreakdown[] = expenseData?.data || [];
+  // Fetch outstanding due summary (office-perspective partial-payment dues)
+  const { data: dueSummaryData, isLoading: loadingDueSummary } = useQuery({
+    queryKey: ["analytics-due-summary", orgFilter],
+    queryFn: () =>
+      analyticsService.getOutstandingDueSummary({ organization: orgFilter }),
+  });
+
+  const revenueStats: RevenueStats | RevenueStats[] = useMemo(() => revenueData?.data || [], [revenueData]);
+  const monthlyTrend: MonthlyRevenue[] = useMemo(() => trendData?.data || [], [trendData]);
+  const outstanding: OutstandingPayment[] = useMemo(() => outstandingData?.data || [], [outstandingData]);
+  const dueSummaries: OutstandingDueSummary[] = useMemo(() => dueSummaryData?.data || [], [dueSummaryData]);
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -152,6 +159,16 @@ export default function DashboardPage() {
     }
   }, [revenueStats]);
 
+  // Total net outstanding due from partial payments (office data only)
+  const totalNetDue = useMemo(
+    () => dueSummaries.reduce((sum, s) => sum + s.netOutstandingDue, 0),
+    [dueSummaries],
+  );
+  const totalStudentsWithDue = useMemo(
+    () => dueSummaries.reduce((sum, s) => sum + s.studentsWithDue, 0),
+    [dueSummaries],
+  );
+
   // Pie chart data for revenue distribution
   const pieData = Array.isArray(revenueStats)
     ? revenueStats.map((stat) => ({
@@ -160,7 +177,7 @@ export default function DashboardPage() {
       }))
     : [{ name: orgFilter?.toUpperCase() || "Total", value: totals.studentPayments }];
 
-  const loading = loadingRevenue || loadingTrend || loadingOutstanding || loadingExpense;
+  const loading = loadingRevenue || loadingTrend || loadingOutstanding || loadingExpense || loadingDueSummary;
 
   if (revenueIsError) return <QueryError error={revenueError as Error} onRetry={refetchRevenue} />;
 
@@ -226,7 +243,7 @@ export default function DashboardPage() {
         filename,
       );
       message.success("Report exported to Excel successfully!");
-    } catch (error) {
+    } catch {
       message.error("Failed to export report");
     }
   };
@@ -234,7 +251,7 @@ export default function DashboardPage() {
   const handleExportPDF = () => {
     try {
       exportDashboardToPDF();
-    } catch (error) {
+    } catch {
       message.error("Failed to export to PDF");
     }
   };
@@ -313,7 +330,7 @@ export default function DashboardPage() {
             <Col span={6}>
               <Card>
                 <Statistic
-                  title="Total Revenue (Student Payments)"
+                  title="Total Revenue (Office)"
                   value={totals.studentPayments}
                   prefix="৳"
                   styles={{ content: { color: COLORS.revenue } }}
@@ -355,6 +372,34 @@ export default function DashboardPage() {
               </Card>
             </Col>
           </Row>
+
+          {/* Outstanding Due Card (office-only, from partial payments) */}
+          {totalNetDue > 0 && (
+            <Row gutter={16} style={{ marginBottom: 24 }}>
+              <Col span={8}>
+                <Card
+                  style={{ borderColor: "#ff4d4f", borderWidth: 1 }}
+                  styles={{ header: { color: "#ff4d4f" } }}
+                  title={<span style={{ color: "#ff4d4f" }}><WarningOutlined /> Outstanding Dues (Office)</span>}
+                  size="small"
+                >
+                  <Statistic
+                    value={totalNetDue}
+                    prefix="৳"
+                    styles={{ content: { color: "#ff4d4f", fontSize: 22 } }}
+                    suffix={
+                      <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
+                        from {totalStudentsWithDue} student{totalStudentsWithDue !== 1 ? "s" : ""}
+                      </span>
+                    }
+                  />
+                  <div style={{ marginTop: 8, fontSize: 12, color: "#888" }}>
+                    Partial payments with collected amounts deducted
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+          )}
 
           {/* Charts Row */}
           <Row gutter={16} style={{ marginBottom: 24 }}>
