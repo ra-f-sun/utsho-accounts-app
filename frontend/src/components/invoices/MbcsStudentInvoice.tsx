@@ -48,6 +48,22 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
           <p style={{ margin: 0, fontSize: 15, color: "#fff", fontWeight: 700, textTransform: "uppercase", letterSpacing: 2 }}>
             Payment Receipt
           </p>
+          <span
+            style={{
+              display: "inline-block",
+              background: "rgba(255,255,255,0.25)",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+              padding: "2px 10px",
+              borderRadius: 12,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              marginTop: 4,
+            }}
+          >
+            Guardian&#39;s Copy
+          </span>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: 500 }}>
             {data.invoiceNumber}
           </p>
@@ -170,7 +186,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
                       {dayjs(item.paymentMonth).format("MMM YYYY")}
                     </td>
                     <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                      ৳{item.amount.toLocaleString()}
+                      ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
                     </td>
                   </tr>
                 ))}
@@ -195,7 +211,7 @@ const MbcsStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvo
             Total Amount Paid
           </span>
           <span style={{ fontSize: 34, fontWeight: 800, color: "#fff" }}>
-            ৳{data.amount.toLocaleString()}
+            ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
           </span>
         </div>
 

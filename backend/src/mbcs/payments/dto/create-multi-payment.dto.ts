@@ -53,4 +53,14 @@ export class CreateMbcsMultiPaymentDto {
   @ValidateNested({ each: true })
   @Type(() => MbcsPaymentLineItemDto)
   lineItems: MbcsPaymentLineItemDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  additionalDiscount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  dueAmount?: number;
 }

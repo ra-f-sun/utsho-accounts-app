@@ -23,6 +23,22 @@ export class MecStudentsService {
     return this.prisma.mecStudent.create({ data });
   }
 
+  async importBulk(students: CreateMecStudentDto[]) {
+    return this.prisma.$transaction(
+      students.map((dto) =>
+        this.prisma.mecStudent.create({
+          data: {
+            ...dto,
+            dateOfBirth: new Date(dto.dateOfBirth),
+            admissionDate: dto.admissionDate
+              ? new Date(dto.admissionDate)
+              : undefined,
+          },
+        }),
+      ),
+    );
+  }
+
   async findAll(filters?: FilterMecStudentDto, pagination?: PaginationDto) {
     const where: Prisma.MecStudentWhereInput = {
       isActive: true,

@@ -20,6 +20,19 @@ export interface MbcsPayment {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Dual invoice fields (Feature 6A)
+  guardianAmount?: number;
+  officeSubTotal?: number;
+  guardianSubTotal?: number;
+  additionalDiscount?: number;
+  officeGrandTotal?: number;
+  guardianGrandTotal?: number;
+  officePaid?: number;
+  guardianPaid?: number;
+  dueAmount?: number;
+  // Due collection fields (Feature 6B)
+  isDueCollection?: boolean;
+  parentInvoiceNumber?: string;
 }
 
 export interface CreateMbcsPaymentDto {
@@ -44,6 +57,8 @@ export interface CreateMbcsMultiPaymentDto {
   paymentDate: string;
   paymentMethod: string;
   lineItems: MbcsPaymentLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
 }
 
 export interface FilterMbcsPaymentDto {
@@ -92,4 +107,55 @@ export const mbcsPaymentsService = {
   update: (id: string, data: Partial<CreateMbcsPaymentDto>) =>
     apiPatch<MbcsPayment>(`/mbcs/payments/${id}`, data),
   delete: (id: string) => apiDelete<MbcsPayment>(`/mbcs/payments/${id}`),
+  getDueProfile: (studentId: string) =>
+    apiGet<{ studentId: string; profiles: MbcsDueProfile[] }>(
+      `/mbcs/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (data: MbcsCollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: MbcsPayment[]; remainingDue: number }>(
+      "/mbcs/payments/collect-due",
+      data,
+    ),
+  getDueSummary: (studentId: string) =>
+    apiGet<DueSummary>(`/mbcs/payments/student/${studentId}/due-summary`),
 };
+
+export interface MbcsDueProfileItem {
+  paymentType: string;
+  originalAmount: number;
+  paidSoFar: number;
+  remainingDue: number;
+}
+
+export interface MbcsDueProfile {
+  invoiceNumber: string;
+  paymentDate: string;
+  originalTotalDue: number;
+  priorCollectedTotal: number;
+  remainingDue: number;
+  perItemDues: MbcsDueProfileItem[];
+}
+
+export interface MbcsCollectDueDto {
+  parentInvoiceNumber: string;
+  paidAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}
+
+export interface DueSummaryItem {
+  due: number;
+  status: 'due' | 'paid' | 'na';
+}
+
+export interface DueSummary {
+  studentId: string;
+  totalDue: number;
+  breakdown: {
+    tuition: DueSummaryItem;
+    admission: DueSummaryItem;
+    readmission: DueSummaryItem;
+    others: DueSummaryItem;
+  };
+}

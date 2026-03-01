@@ -25,6 +25,6 @@ export class FilterPaymentDto extends PaginationDto {
   paymentMonth?: string;
 
   @IsOptional()
-  @IsEnum(['cash', 'bank', 'mobile'])
+  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
   paymentMethod?: string;
 }

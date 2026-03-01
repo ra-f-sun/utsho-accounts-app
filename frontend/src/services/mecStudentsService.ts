@@ -96,4 +96,6 @@ export const mecStudentsService = {
     apiPost<MecStudent>(`/mec/students/${id}/promote`, data),
   promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
     apiPost<{ promoted: number }>('/mec/students/promote-bulk', data),
+  importStudents: (students: CreateMecStudentDto[]) =>
+    apiPost<MecStudent[]>('/mec/students/import', { students }),
 };

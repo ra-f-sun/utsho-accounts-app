@@ -13,6 +13,7 @@ import {
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateMbcsMultiPaymentDto } from './dto/create-multi-payment.dto';
+import { CollectMbcsDueDto } from './dto/collect-due.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { FilterPaymentDto } from './dto/filter-payment.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -45,6 +46,16 @@ export class PaymentsController {
     return this.paymentsService.createMulti(dto, user.id);
   }
 
+  @Get('student/:studentId/due-profile')
+  getDueProfile(@Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.paymentsService.getDueProfile(studentId);
+  }
+
+  @Post('collect-due')
+  collectDue(@Body() dto: CollectMbcsDueDto, @CurrentUser() user: JwtUser) {
+    return this.paymentsService.collectDue(dto, user.id);
+  }
+
   @Get('invoice/:invoiceNumber')
   findByInvoice(@Param('invoiceNumber') invoiceNumber: string) {
     return this.paymentsService.findByInvoice(invoiceNumber);
@@ -59,6 +70,11 @@ export class PaymentsController {
   @Get('student/:studentId/summary')
   getStudentSummary(@Param('studentId', ParseUUIDPipe) studentId: string) {
     return this.paymentsService.getStudentPaymentSummary(studentId);
+  }
+
+  @Get('student/:studentId/due-summary')
+  getDueSummary(@Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.paymentsService.getDueSummary(studentId);
   }
 
   @Get(':id')

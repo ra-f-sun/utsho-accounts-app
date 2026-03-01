@@ -44,6 +44,22 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
         >
           Payment Receipt
         </div>
+        <span
+          style={{
+            display: "inline-block",
+            background: "rgba(255,255,255,0.25)",
+            color: "#fff",
+            fontSize: 10,
+            fontWeight: 700,
+            padding: "2px 10px",
+            borderRadius: 12,
+            letterSpacing: 1,
+            textTransform: "uppercase",
+            marginBottom: 8,
+          }}
+        >
+          Guardian&#39;s Copy
+        </span>
         <h1 style={{ margin: "6px 0 0", fontSize: 24, color: COLOR, fontWeight: 800 }}>
           {ORG_NAME}
         </h1>
@@ -133,7 +149,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                     {dayjs(item.paymentMonth).format("MMMM YYYY")}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                    ৳{item.amount.toLocaleString()}
+                    ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -157,7 +173,7 @@ const MecStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           Amount Paid
         </p>
         <p style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 800, color: COLOR }}>
-          ৳{data.amount.toLocaleString()}
+          ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
         </p>
       </div>
 

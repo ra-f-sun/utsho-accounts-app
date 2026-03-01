@@ -14,11 +14,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   useEffect(() => {
     // Wait for zustand persist to hydrate from localStorage
     const unsub = useAuthStore.persist.onFinishHydration(() => {
+       
       setHydrated(true);
     });
 
     // If already hydrated (e.g., not the first render)
     if (useAuthStore.persist.hasHydrated()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Zustand hydration sync
       setHydrated(true);
     }
 

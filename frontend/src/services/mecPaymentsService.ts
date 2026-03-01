@@ -17,6 +17,19 @@ export interface MecPayment {
   notes?: string;
   createdBy: string;
   createdAt: string;
+  // Dual invoice fields (Feature 6A)
+  guardianAmount?: number;
+  officeSubTotal?: number;
+  guardianSubTotal?: number;
+  additionalDiscount?: number;
+  officeGrandTotal?: number;
+  guardianGrandTotal?: number;
+  officePaid?: number;
+  guardianPaid?: number;
+  dueAmount?: number;
+  // Due collection fields (Feature 6B)
+  isDueCollection?: boolean;
+  parentInvoiceNumber?: string;
 }
 
 export interface CreateMecPaymentDto {
@@ -39,6 +52,8 @@ export interface CreateMecMultiPaymentDto {
   paymentDate: string;
   paymentMethod: string;
   lineItems: MecPaymentLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
 }
 
 export const mecPaymentsService = {
@@ -78,4 +93,52 @@ export const mecPaymentsService = {
     apiPatch<MecPayment>(`/mec/payments/${id}`, data),
 
   remove: (id: string) => apiDelete<MecPayment>(`/mec/payments/${id}`),
+  getDueProfile: (studentId: string) =>
+    apiGet<{ studentId: string; profiles: MecDueProfile[] }>(
+      `/mec/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (data: MecCollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: MecPayment[]; remainingDue: number }>(
+      "/mec/payments/collect-due",
+      data,
+    ),
+  getDueSummary: (studentId: string) =>
+    apiGet<MecDueSummary>(`/mec/payments/student/${studentId}/due-summary`),
 };
+
+export interface MecDueProfileItem {
+  paymentType: string;
+  originalAmount: number;
+  paidSoFar: number;
+  remainingDue: number;
+}
+
+export interface MecDueProfile {
+  invoiceNumber: string;
+  paymentDate: string;
+  originalTotalDue: number;
+  priorCollectedTotal: number;
+  remainingDue: number;
+  perItemDues: MecDueProfileItem[];
+}
+
+export interface MecCollectDueDto {
+  parentInvoiceNumber: string;
+  paidAmount: number;
+  paymentDate: string;
+  paymentMethod: string;
+  notes?: string;
+}
+
+export interface MecDueSummaryItem {
+  due: number;
+  status: 'due' | 'paid';
+}
+
+export interface MecDueSummary {
+  studentId: string;
+  totalDue: number;
+  breakdown: {
+    tuition: MecDueSummaryItem;
+  };
+}

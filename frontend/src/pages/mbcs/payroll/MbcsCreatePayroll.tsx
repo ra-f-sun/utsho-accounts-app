@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Form,
   Input,
@@ -18,7 +18,24 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import type { CreateMbcsPayrollDto } from "../../../services/mbcsPayrollService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
+import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
+import type { MbcsStaff } from "../../../services/mbcsStaffService";
+import axios from "axios";
+import dayjs from "dayjs";
+
+interface MbcsPayrollFormValues {
+  payableType: "teacher" | "staff";
+  teacherId?: string;
+  staffId?: string;
+  paymentMonthPicker?: ReturnType<typeof dayjs>;
+  amount: number;
+  paidAmount?: number;
+  totalLectures?: number;
+  paymentDate?: ReturnType<typeof dayjs>;
+  paymentMethod: string;
+  notes?: string;
+}
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -31,11 +48,26 @@ export default function MbcsCreatePayroll() {
   const [payableType, setPayableType] = useState<"teacher" | "staff">(
     "teacher",
   );
-  const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<MbcsTeacher | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [calculatedData, setCalculatedData] = useState<any>(null);
+  const [calculatedData, setCalculatedData] = useState<{
+    paymentType?: string;
+    totalLectures?: number;
+    amount?: number;
+  } | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [createdPayrollId, setCreatedPayrollId] = useState<string>("");
+
+  // Watch amount to auto-set paidAmount
+  const watchedAmount = Form.useWatch("amount", form);
+  const watchedPaidAmount = Form.useWatch("paidAmount", form);
+  const dueAmount = Math.max(0, (watchedAmount || 0) - (watchedPaidAmount ?? watchedAmount ?? 0));
+
+  useEffect(() => {
+    if (watchedAmount !== undefined && watchedAmount !== null) {
+      form.setFieldValue("paidAmount", watchedAmount);
+    }
+  }, [watchedAmount, form]);
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs-teachers"],
@@ -47,17 +79,23 @@ export default function MbcsCreatePayroll() {
     queryFn: () => mbcsStaffService.getAll(1, 1000),
   });
 
-  const teachers = teachersData?.data?.data || [];
-  const staff = staffData?.data?.data || [];
+  const teachers: MbcsTeacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);
+  const staff: MbcsStaff[] = useMemo(() => staffData?.data?.data || [], [staffData]);
+
+  const initialTeacherApplied = useRef(false);
 
   // Auto-populate from URL params (e.g. navigating from teacher payroll history)
   useEffect(() => {
+    if (initialTeacherApplied.current) return;
     const teacherId = searchParams.get("teacherId");
     if (teacherId && teachers.length > 0) {
-      const teacher = teachers.find((t: any) => t.id === teacherId);
+      const teacher = teachers.find((t: MbcsTeacher) => t.id === teacherId);
       if (teacher) {
+        initialTeacherApplied.current = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param auto-population
         setSelectedTeacher(teacher);
         form.setFieldsValue({ teacherId, payableType: "teacher" });
+         
         setPayableType("teacher");
         if (teacher.paymentType === "fixed" && teacher.monthlySalary) {
           form.setFieldValue("amount", teacher.monthlySalary);
@@ -79,10 +117,12 @@ export default function MbcsCreatePayroll() {
       });
       message.success("Payroll calculated from attendance");
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to calculate payroll",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data?.message || "Failed to calculate payroll");
+      } else {
+        message.error("Failed to calculate payroll");
+      }
     },
   });
 
@@ -99,10 +139,12 @@ export default function MbcsCreatePayroll() {
       form.resetFields();
       setCalculatedData(null);
     },
-    onError: (error: any) => {
-      message.error(
-        error.response?.data?.message || "Failed to create payroll",
-      );
+    onError: (error: unknown) => {
+      if (axios.isAxiosError(error)) {
+        message.error(error.response?.data?.message || "Failed to create payroll");
+      } else {
+        message.error("Failed to create payroll");
+      }
     },
   });
 
@@ -115,7 +157,7 @@ export default function MbcsCreatePayroll() {
     }
   };
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: MbcsPayrollFormValues) => {
     const data: CreateMbcsPayrollDto = {
       payableType: values.payableType,
       payableId:
@@ -124,6 +166,7 @@ export default function MbcsCreatePayroll() {
         ? values.paymentMonthPicker.startOf("month").toISOString()
         : new Date().toISOString(),
       amount: calculatedData?.amount ?? values.amount,
+      paidAmount: values.paidAmount ?? (calculatedData?.amount ?? values.amount),
       totalLectures: calculatedData?.totalLectures,
       paymentDate: values.paymentDate
         ? values.paymentDate.toISOString()
@@ -208,7 +251,7 @@ export default function MbcsCreatePayroll() {
                 placeholder="Search and select teacher"
                 showSearch
                 onChange={(value) => {
-                  const teacher = teachers.find((t: any) => t.id === value);
+                  const teacher = teachers.find((t: MbcsTeacher) => t.id === value);
                   setSelectedTeacher(teacher || null);
                   setCalculatedData(null);
                   // Auto-fill salary for fixed-salary teachers
@@ -221,7 +264,7 @@ export default function MbcsCreatePayroll() {
                     form.setFieldValue("amount", undefined);
                   }
                 }}
-                options={teachers.map((t: any) => ({
+                options={teachers.map((t: MbcsTeacher) => ({
                   value: t.id,
                   label: `${t.name} - ${t.paymentType === "fixed" ? "Fixed Salary" : "Lecture Based"}`,
                 }))}
@@ -241,7 +284,7 @@ export default function MbcsCreatePayroll() {
               <Select
                 placeholder="Search and select staff"
                 showSearch
-                options={staff.map((s: any) => ({
+                options={staff.map((s: MbcsStaff) => ({
                   value: s.id,
                   label: `${s.name}${s.designation ? ` - ${s.designation}` : ""}`,
                 }))}
@@ -320,7 +363,7 @@ export default function MbcsCreatePayroll() {
                   </Button>
                 </Col>
               )}
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="Amount (৳)"
                 name="amount"
@@ -329,8 +372,29 @@ export default function MbcsCreatePayroll() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Auto-filled or enter manually"
-                  disabled={!!calculatedData}
+                  placeholder="Enter amount"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                label="Paid Amount (৳)"
+                name="paidAmount"
+              >
+                <InputNumber
+                  min={0}
+                  max={watchedAmount || undefined}
+                  style={{ width: "100%" }}
+                  placeholder="Defaults to full amount"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Due Amount (৳)">
+                <InputNumber
+                  value={dueAmount}
+                  disabled
+                  style={{ width: "100%", color: dueAmount > 0 ? "#f5222d" : undefined }}
                 />
               </Form.Item>
             </Col>

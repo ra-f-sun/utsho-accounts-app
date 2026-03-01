@@ -36,6 +36,14 @@ export interface ExpenseBreakdown {
   total: number;
 }
 
+export interface OutstandingDueSummary {
+  organization: string;
+  totalOriginalDue: number;
+  totalCollected: number;
+  netOutstandingDue: number;
+  studentsWithDue: number;
+}
+
 export interface AnalyticsFilters {
   organization?: string; // 'uac' | 'mbcs' | 'mec'
   startDate?: string; // YYYY-MM-DD
@@ -54,4 +62,7 @@ export const analyticsService = {
 
   getExpenseBreakdown: (filters?: AnalyticsFilters) =>
     apiGet<ExpenseBreakdown[]>("/analytics/expenses/breakdown", { params: filters }),
+
+  getOutstandingDueSummary: (filters?: AnalyticsFilters) =>
+    apiGet<OutstandingDueSummary[]>("/analytics/due-summary", { params: filters }),
 };

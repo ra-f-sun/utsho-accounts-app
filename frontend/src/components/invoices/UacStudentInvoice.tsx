@@ -71,6 +71,22 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           >
             Payment Receipt
           </h2>
+          <span
+            style={{
+              display: "inline-block",
+              background: "#e6f0ff",
+              color: COLOR,
+              fontSize: 10,
+              fontWeight: 700,
+              padding: "2px 10px",
+              borderRadius: 12,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              marginTop: 4,
+            }}
+          >
+            Guardian&#39;s Copy
+          </span>
           <p style={{ margin: "6px 0 0", fontSize: 14, fontWeight: 600, color: COLOR }}>
             {data.invoiceNumber}
           </p>
@@ -182,7 +198,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                     {dayjs(item.paymentMonth).format("MMM YYYY")}
                   </td>
                   <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>
-                    ৳{item.amount.toLocaleString()}
+                    ৳{(item.guardianAmount ?? item.amount).toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -208,7 +224,7 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
           Total Amount Paid
         </span>
         <span style={{ fontSize: 34, fontWeight: 800, color: COLOR }}>
-          ৳{data.amount.toLocaleString()}
+          ৳{(data.guardianPaid ?? data.amount).toLocaleString()}
         </span>
       </div>
 

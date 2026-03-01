@@ -734,7 +734,7 @@ officePaid   = officeGrandTotal - due
 
 #### Database Changes
 
-- [ ] **6.1** — Add dual-amount fields to payment models in `prisma/schema.prisma`:
+- [x] **6.1** — Add dual-amount fields to payment models in `prisma/schema.prisma`:
   ```prisma
   // Add to UacPayment, MbcsPayment, MecPayment — per-LINE-ITEM fields:
   guardianAmount     Float?    // Display amount for guardian (full fee, pre-discount)
@@ -752,11 +752,11 @@ officePaid   = officeGrandTotal - due
 
   > **Note on `amount` (existing field):** The existing `amount` field on each payment row stores the **actual** (office/post-discount) per-line-item amount. This is the source of truth for financial reports. `guardianAmount` is the display-only counterpart.
 
-- [ ] **6.2** — Run migration: `npx prisma migrate dev --name add_dual_invoice_fields`
+- [x] **6.2** — Run migration: `npx prisma migrate dev --name add_dual_invoice_fields`
 
 #### Tasks
 
-- [ ] **6.3** — Backend: Update `CreateMultiPaymentDto` (UAC):
+- [x] **6.3** — Backend: Update `CreateMultiPaymentDto` (UAC):
   - Add fields: `additionalDiscount?`, `dueAmount?`
   - Backend computes all dual fields from student profile + line items:
     - For each discountable line item: look up student's fee and discount fields
@@ -764,40 +764,34 @@ officePaid   = officeGrandTotal - due
     - Compute both sub-totals, grand-totals, paid amounts
   - Store on all created payment rows (invoice-level fields shared, line-item fields per-row)
 
-- [ ] **6.4** — Frontend: Update `RecordPayment.tsx` (UAC) — redesign summary section:
-  - When a student is selected, load their discount profile
-  - For each line item, compute and display:
-    - **Display Amount** (guardian) = full fee from student profile
-    - **Actual Amount** (office) = fee - discount (shown as helper text or tooltip, NOT on the main form to avoid confusion)
+- [x] **6.4** — Frontend: Update `RecordPayment.tsx` (UAC) — redesign summary section:
+  - **Decision (S8): Option A — Single view with collapsible office summary**
+  - Main form shows **guardian amounts** (what the guardian sees) as the primary view
+  - For each line item:
+    - **Display Amount** (guardian) = full fee from student profile — primary, always visible
+    - **Actual Amount** (office) = fee - discount — shown as helper text or tooltip
   - Summary section below line items:
-    - **Sub Total (Display):** sum of guardian amounts — read-only
-    - **Sub Total (Actual):** sum of office amounts — shown as secondary info or in collapsible "Office View"
+    - **Sub Total:** sum of guardian amounts — read-only
     - **Additional Discount:** editable InputNumber (default 0). Applied equally to both.
-    - **Grand Total (Display):** guardianSubTotal - additionalDiscount — read-only
+    - **Grand Total:** guardianSubTotal - additionalDiscount — read-only
     - **Due:** editable InputNumber (default 0). Same on both copies.
-    - **Paid (Display):** guardianGrandTotal - due — read-only
-    - **Paid (Actual):** officeGrandTotal - due — shown as secondary/tooltip
+    - **Paid:** guardianGrandTotal - due — read-only
+  - **Collapsible "Office Summary" panel** at the bottom:
+    - Shows actual/office amounts: office sub total, office grand total, office paid
+    - Collapsed by default — accountant can expand to verify office figures
+    - This keeps the form simple while giving visibility into actual financials
 
-> **SUGGESTION S8 — Record Payment Form UX:**
->
-> The accountant should NOT see a complex dual-column form. Instead:
-> - **Option A: Single view, office details in tooltip/collapsible** — Main form shows guardian amounts (what the guardian sees). A small collapsible "Office Summary" panel at the bottom shows actual financials. This keeps the form simple.
-> - **Option B: Toggle switch** — A "View: Guardian / Office" toggle that switches the entire summary between the two perspectives. Default is Guardian.
-> - **Option C: Guardian only on form, office computed silently** — The form only shows guardian amounts. Office amounts are computed and stored silently by the backend. The accountant never sees office figures during recording — only in the Office Copy tab of payment history.
->
-> **Recommended: Option C** — Simplest UX. The accountant records payment in guardian terms. Office amounts are derived from student discount profile. No extra cognitive load.
-
-- [ ] **6.5** — Apply same payment form changes to MBCS (`MbcsRecordPayment.tsx`)
-- [ ] **6.6** — Apply same to MEC (`MecRecordPayment.tsx`)
-- [ ] **6.7** — Backend: Update MBCS and MEC payment DTOs and services with same dual-invoice logic
+- [x] **6.5** — Apply same payment form changes to MBCS (`MbcsRecordPayment.tsx`)
+- [x] **6.6** — Apply same to MEC (`MecRecordPayment.tsx`)
+- [x] **6.7** — Backend: Update MBCS and MEC payment DTOs and services with same dual-invoice logic
 
 #### Invoice Generation
 
-- [ ] **6.8** — Frontend: Update existing invoice template to add "Guardian Copy" label
+- [x] **6.8** — Frontend: Update existing invoice template to add "Guardian Copy" label
   - The existing invoice already shows the guardian-facing amounts
   - Add a subtle label: "Guardian's Copy" at the top or bottom
 
-- [ ] **6.9** — Frontend: Create Office Copy invoice template:
+- [x] **6.9** — Frontend: Create Office Copy invoice template:
   - Same layout as guardian copy but:
     - Label: "Office Copy"
     - Shows `amount` (actual/post-discount) per line item instead of `guardianAmount`
@@ -805,6 +799,29 @@ officePaid   = officeGrandTotal - due
     - Shows `dueAmount` if > 0
   - Office copy is generated alongside guardian copy during payment recording
   - Office copy is accessible from the "Office Records" tab in payment history (see 6D)
+
+#### Invoice Mode Toggle (Decision S13: Confirmed)
+
+Orgs can switch between **dual-invoice mode** and **unified-invoice mode**:
+
+- **Dual mode** (default): Guardian copy shows full/undiscounted fees, Office copy shows actual/discounted fees. Used when the org wants to hide discounts from guardians.
+- **Unified mode**: Both copies show the **same** amounts (office/actual amounts). Both still labeled "Guardian's Copy" / "Office Copy" but numbers are identical. Used when the org doesn't need to hide discounts.
+
+**Implementation:** One setting per org: `invoice_mode → "dual" | "unified"`. In payment creation service: if `unified`, set `guardianAmount = amount` for all line items. Everything downstream (due allocation, due collection, analytics) is unaffected.
+
+- [x] **6.9a** — Frontend: Add "Invoice Mode" toggle to each org's settings page:
+  - Toggle: "Dual Invoice (hide discounts from guardian)" / "Unified Invoice (same amounts on both copies)"
+  - Settings key: `invoice_mode` → `"dual"` or `"unified"`
+  - Default: `"dual"` (preserving the designed behavior)
+
+- [x] **6.9b** — Backend: In payment creation service, check `invoice_mode` setting:
+  - If `"dual"`: compute `guardianAmount` from full/undiscounted fee as designed in 6A
+  - If `"unified"`: set `guardianAmount = amount` (office amount) for every line item
+  - All downstream fields (`guardianSubTotal`, `guardianGrandTotal`, `guardianPaid`) are derived from `guardianAmount`, so they auto-match office values in unified mode
+
+- [x] **6.9c** — Frontend: In Record Payment form, conditionally show/hide dual-column summary:
+  - If `"dual"`: show both Guardian and Office columns in summary
+  - If `"unified"`: show single column (or collapse to simpler layout since values are identical)
 
 ---
 
@@ -824,29 +841,13 @@ When a guardian keeps a due (e.g., Tuition ৳3000 paid, Admission ৳4000 due, 
 
 #### The Solution: Separate "Collect Due" Flow
 
-> **SUGGESTION S11 — Due Collection Approach:**
->
-> **Option A: Separate "Collect Due" form** (Recommended)
-> - A dedicated form that loads from the student's/teacher's **due profile**
-> - Auto-fills line items with **remaining due amounts**, not original fees
-> - Generates its own invoices (guardian + office copy) with "Due Collection" label
-> - Links back to the original invoice via `parentInvoiceNumber` field
-> - Bypasses duplicate prevention (it's a continuation, not a duplicate)
-> - Supports partial payment again (nested dues)
->
-> **Option B: Reuse Record Payment form with "Due Mode" toggle**
-> - Add a toggle on the Record Payment form: "New Payment" / "Collect Due"
-> - When in "Collect Due" mode, line items are auto-populated from due profile instead of fee settings
-> - Same form handles both flows
-> - PRO: Fewer new components. CON: Complex dual-mode logic in one form, easy to confuse.
->
-> **Option C: "Collect Due" button on due items only**
-> - No standalone form. Each due row in the student's payment history has a "Collect" button
-> - Clicking opens a small modal: "Collect Due — Admission Fee: ৳4000 due. Amount to collect: [____]"
-> - Single-item collection only — one due type at a time
-> - PRO: Simplest UX. CON: Can't collect multiple due types in one visit.
->
-> **Recommended: Option A** — Most robust. The accountant goes to a clear "Collect Due" page, sees exactly what's outstanding, and processes the collection with proper invoicing. Handles partial re-payment and multi-item collection cleanly.
+**Decision (S11): Separate "Collect Due" form** — A dedicated form that:
+- Loads from the student's/teacher's **due profile**
+- Auto-fills line items with **remaining due amounts**, not original fees
+- Generates its own invoices (guardian + office copy) with "Due Collection" label
+- Links back to the original invoice via `parentInvoiceNumber` field
+- Bypasses duplicate prevention (it's a continuation, not a duplicate)
+- Supports partial payment again (nested dues)
 
 #### Why Due Amount Is the Same on Both Copies
 
@@ -932,14 +933,14 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
 
 #### Database Changes
 
-- [ ] **6.10** — Add due collection fields to payment models in `prisma/schema.prisma`:
+- [x] **6.10** — Add due collection fields to payment models in `prisma/schema.prisma`:
   ```prisma
   // Add to UacPayment, MbcsPayment, MecPayment:
   parentInvoiceNumber  String?   // Links due collection to original invoice
   isDueCollection      Boolean   @default(false)  // Distinguishes from fresh payments
   ```
 
-- [ ] **6.11** — Add due collection fields to payroll models:
+- [x] **6.11** — Add due collection fields to payroll models:
   ```prisma
   // Add to UacPayroll, MbcsPayroll:
   parentPayrollId    String?   // Links due collection to original payroll
@@ -948,7 +949,7 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
 
 #### Tasks — Student Due Collection
 
-- [ ] **6.12** — Backend: Create due collection endpoint:
+- [x] **6.12** — Backend: Create due collection endpoint:
   ```
   POST /api/uac/students/:id/collect-due
   Body: {
@@ -968,21 +969,11 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
   5. Generate new invoice number for this collection
   6. For invoice display: carry over original guardian/office fee amounts as context labels only
 
-> **SUGGESTION S12 — Due State Management:**
->
-> When collecting a due, how do we update the remaining due?
->
-> - **Option A: Immutable — new rows only** — Original payment rows keep their original `dueAmount`. Due collection creates new payment rows with `isDueCollection = true`. To get "current due," sum `dueAmount` from originals minus sum of `amount` from collections with same `parentInvoiceNumber`. Audit-friendly but requires summing queries.
->
-> - **Option B: Mutable — update original rows** — When collecting, reduce `dueAmount` on the original payment rows directly. Current due = just read `dueAmount` from any row. Simpler reads but loses audit trail of original due.
->
-> - **Option C: Hybrid — immutable rows + cached summary** — Keep original rows immutable (Option A), but add a `currentDueAmount` field that gets updated on each collection for fast reads. Best of both worlds.
->
-> **Recommended: Option A (Immutable)** — Financial records should be append-only for audit integrity. The "current due" calculation is a simple query: `original dueAmount - sum(collection amounts for same parent)`. We can optimize with a backend endpoint that returns the computed due profile.
+**Decision (S12): Immutable rows (append-only)** — Original payment rows keep their original `dueAmount` unchanged. Due collection creates new payment rows with `isDueCollection = true`. Current due = `original dueAmount - sum(collection amounts for same parentInvoiceNumber)`. Financial records remain audit-friendly and append-only.
 
-- [ ] **6.13** — Same endpoint for MBCS and MEC
+- [x] **6.13** — Same endpoint for MBCS and MEC
 
-- [ ] **6.14** — Frontend: Create `CollectDue.tsx` (UAC) — dedicated due collection page:
+- [x] **6.14** — Frontend: Create `CollectDue.tsx` (UAC) — dedicated due collection page:
   - Select student (or pre-filled from "Collect" button)
   - Load due profile: single list of outstanding dues per type (one amount column — same for both copies)
   - Checkboxes to select which dues to collect
@@ -992,16 +983,16 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
   - Submit → calls collect-due API
   - Shows success + option to print both invoices
 
-- [ ] **6.15** — Same for MBCS: `MbcsCollectDue.tsx`
-- [ ] **6.16** — Same for MEC: `MecCollectDue.tsx`
+- [x] **6.15** — Same for MBCS: `MbcsCollectDue.tsx`
+- [x] **6.16** — Same for MEC: `MecCollectDue.tsx`
 
-- [ ] **6.17** — Add routes and sidebar link for Collect Due pages:
+- [x] **6.17** — Add routes and sidebar link for Collect Due pages:
   - Under each org: `/uac/collect-due`, `/mbcs/collect-due`, `/mec/collect-due`
   - Or as a sub-option under "Payments" in the sidebar
 
 #### Tasks — Payroll Due Collection
 
-- [ ] **6.18** — Backend: Create payroll due collection endpoint:
+- [x] **6.18** — Backend: Create payroll due collection endpoint:
   ```
   POST /api/uac/payroll/:id/collect-due
   Body: { paidAmount: number, paymentDate: string, notes?: string }
@@ -1012,17 +1003,17 @@ Original: INV-UAC-2026-0001 (Tuition + Admission + Exam, ৳3500 due)
   3. Amount = `paidAmount`, `dueAmount` = remaining
   4. No priority needed (single item)
 
-- [ ] **6.19** — Same for MBCS payroll
+- [x] **6.19** — Same for MBCS payroll
 
-- [ ] **6.20** — Frontend: Add "Collect Due" button on payroll history rows where `dueAmount > 0`:
+- [x] **6.20** — Frontend: Add "Collect Due" button on payroll history rows where `dueAmount > 0`:
   - Opens modal: "Collect Payroll Due — ৳X remaining. Amount: [____]"
   - Submit → calls collect-due API → refresh list
 
-- [ ] **6.21** — Same for MBCS payroll history
+- [x] **6.21** — Same for MBCS payroll history
 
 #### Duplicate Prevention Update
 
-- [ ] **6.22** — Backend: Update duplicate prevention in payment services:
+- [x] **6.22** — Backend: Update duplicate prevention in payment services:
   - **Current:** Blocks duplicate tuition payments for the same month
   - **New:** Skip duplicate check when `isDueCollection = true` (due collections are continuations, not duplicates)
   - Also consider: For fresh payments, check if there's already an unpaid due for the same type and suggest "Collect Due" instead
@@ -1061,28 +1052,21 @@ payment_priority → { "order": ["tuition", "admission", "readmission", "others"
 
 #### Tasks
 
-- [ ] **6.23** — Frontend: Add "Payment Priority" sub-tab to each org's settings page:
+- [x] **6.23** — Frontend: Add "Payment Priority" sub-tab to each org's settings page:
   - Drag-and-drop sortable list of payment types: Tuition, Admission, Readmission, Others
   - Save button → `settingsService.upsert(org, 'payment_priority', { order: [...] })`
   - Default order if not set: `["tuition", "admission", "readmission", "others"]`
 
-- [ ] **6.24** — Backend: Add priority-based due allocation logic to payment service:
+- [x] **6.24** — Backend: Add priority-based due allocation logic to payment service:
   - When `dueAmount > 0` on a multi-line payment:
     - Fetch priority order from settings
     - Allocate `officePaid` amount across line items in priority order
     - Each line item gets: `itemPaidAmount` and `itemDueAmount`
     - Store per-line-item due allocation
 
-> **SUGGESTION S9 — Per-Line-Item Due Storage:**
->
-> To track "what is the due on?" we need per-line-item due amounts, not just invoice-level. Two approaches:
->
-> - **Option A: Store `itemDueAmount` on each payment row** — Each row in the payment table gets its own `dueAmount` computed from priority allocation. The invoice-level `dueAmount` is the sum. This is straightforward and queryable.
-> - **Option B: Separate `DueAllocation` table** — A new table linking `invoiceNumber` + `paymentType` → `dueAmount`. More normalized but adds join complexity.
->
-> **Recommended: Option A** — The existing `dueAmount` field on each payment row already exists (from 6.1). We just need to ensure the priority allocation fills it per-row instead of duplicating the invoice total on every row.
+**Decision (S9): Store `dueAmount` per payment row** — Each row in the payment table gets its own `dueAmount` computed from priority allocation. The invoice-level due is the sum. The existing `dueAmount` field on each payment row (from 6.1) is filled per-row by the priority allocation algorithm.
 
-- [ ] **6.25** — Backend: Implement due allocation algorithm:
+- [x] **6.25** — Backend: Implement due allocation algorithm:
   ```
   function allocateDue(lineItems, totalPaid, priorityOrder):
     remaining = totalPaid
@@ -1140,13 +1124,7 @@ The current payment history has tabs: `[Tuition Status] [All Payments]`
 - **Tab 2: Payment Records (Guardian)** — the existing "All Payments" list showing guardian-facing amounts. Includes invoice download (guardian copy).
 - **Tab 3: Payment Records (Office)** — same payment list but showing office/actual amounts. Includes invoice download (office copy). This is where accountants and directors see real financial data.
 
-> **SUGGESTION S10 — Tab Naming:**
->
-> - **Option A:** "Tuition Status" | "Guardian Records" | "Office Records"
-> - **Option B:** "Tuition Status" | "Invoices (Student Copy)" | "Invoices (Office Copy)"
-> - **Option C:** "Tuition Status" | "All Payments" | "Financial Records"
->
-> **Recommended: Option A** — clear, distinguishes audience. "Office Records" implies internal use.
+**Decision (S10): Tab names** — "Tuition Status" | "Guardian Records" | "Office Records"
 
 ##### Due Filter on Payment History
 
@@ -1158,29 +1136,29 @@ On the "Office Records" tab, add a filter: **"Show Due Only"** — filters to sh
 
 #### Tasks
 
-- [ ] **6.26** — Frontend: Update `StudentPaymentHistory.tsx` (UAC):
+- [x] **6.26** — Frontend: Update `StudentPaymentHistory.tsx` (UAC):
   - Add "Due Summary" card above the payment grid
   - Compute due per category from payment rows using office amounts
   - Use priority-based allocation data
 
-- [ ] **6.27** — Same for MBCS: `MbcsStudentPaymentHistory.tsx`
-- [ ] **6.28** — Same for MEC: `MecStudentPaymentHistory.tsx`
+- [x] **6.27** — Same for MBCS: `MbcsStudentPaymentHistory.tsx`
+- [x] **6.28** — Same for MEC: `MecStudentPaymentHistory.tsx`
 
-- [ ] **6.29** — Frontend: Restructure `UacPaymentHistory.tsx` tabs:
+- [x] **6.29** — Frontend: Restructure `UacPaymentHistory.tsx` tabs:
   - Rename "All Payments" → "Guardian Records" (or per decision on S10)
   - Add new "Office Records" tab showing office copy data
   - Add "Show Due Only" filter on Office Records tab
   - Add "Collect" button on due rows
 
-- [ ] **6.30** — Same for MBCS: `MbcsPaymentHistory.tsx`
-- [ ] **6.31** — Same for MEC: `MecPaymentHistory.tsx`
+- [x] **6.30** — Same for MBCS: `MbcsPaymentHistory.tsx`
+- [x] **6.31** — Same for MEC: `MecPaymentHistory.tsx`
 
-- [ ] **6.32** — Backend: Add endpoint or query param to fetch payments with office vs guardian perspective:
+- [x] **6.32** — Backend: Add endpoint or query param to fetch payments with office vs guardian perspective:
   - `GET /api/uac/payments?view=office` — returns `amount`, `officeSubTotal`, `officePaid`, etc.
   - `GET /api/uac/payments?view=guardian` — returns `guardianAmount`, `guardianSubTotal`, `guardianPaid`, etc.
   - Or simply return all fields and let frontend pick which to display
 
-- [ ] **6.33** — Backend: Add endpoint to fetch due summary for a student:
+- [x] **6.33** — Backend: Add endpoint to fetch due summary for a student:
   ```
   GET /api/uac/students/:id/due-summary
   Response: {
@@ -1205,10 +1183,10 @@ All analytics (dashboard, revenue calculations, outstanding payment counts) must
 
 #### Tasks
 
-- [ ] **6.34** — Backend: Audit `analytics.service.ts` to ensure all queries use `amount` (office amount), NOT `guardianAmount`
+- [x] **6.34** — Backend: Audit `analytics.service.ts` to ensure all queries use `amount` (office amount), NOT `guardianAmount`
   - Since `amount` (the existing field) already stores the actual/office value, and `guardianAmount` is new, this should already be correct — but needs verification
 
-- [ ] **6.35** — Frontend: Ensure dashboard cards and charts use office-perspective data
+- [x] **6.35** — Frontend: Ensure dashboard cards and charts use office-perspective data
 
 ---
 
@@ -1229,18 +1207,18 @@ If due > 0, it should reflect on the teacher's/staff's payment history.
 
 #### Database Changes
 
-- [ ] **6.36** — Add due fields to payroll models:
+- [x] **6.36** — Add due fields to payroll models:
   ```prisma
   // Add to UacPayroll, MbcsPayroll:
   paidAmount Float?   // What was actually paid
   dueAmount  Float?   @default(0)  // amount - paidAmount
   ```
 
-- [ ] **6.37** — Run migration: `npx prisma migrate dev --name add_payroll_due_fields`
+- [x] **6.37** — Run migration: `npx prisma migrate dev --name add_payroll_due_fields`
 
 #### Tasks
 
-- [ ] **6.38** — Frontend: Update `CreatePayroll.tsx` (UAC):
+- [x] **6.38** — Frontend: Update `CreatePayroll.tsx` (UAC):
   - **Fix:** Make the Amount field **always editable** (remove `disabled` when calculated data is present)
   - Add new fields below Amount:
     - **Sub Total:** = Amount (read-only)
@@ -1248,23 +1226,23 @@ If due > 0, it should reflect on the teacher's/staff's payment history.
     - **Paid:** InputNumber, default = GrandTotal, editable
     - **Due:** auto-calculated, read-only = GrandTotal - Paid
 
-- [ ] **6.39** — Backend: Update UAC `CreatePayrollDto`:
+- [x] **6.39** — Backend: Update UAC `CreatePayrollDto`:
   - Add `paidAmount` (optional Float, defaults to `amount`)
   - Backend calculates `dueAmount = amount - paidAmount`
 
-- [ ] **6.40** — Apply same to MBCS payroll (frontend + backend)
+- [x] **6.40** — Apply same to MBCS payroll (frontend + backend)
 
 ### 6G. Teacher/Staff Due in Payment History
 
 #### What Is Needed
 On teacher and staff individual payment history pages, show their due status.
 
-- [ ] **6.41** — Frontend: Update `TeacherPayrollHistory.tsx` (UAC):
+- [x] **6.41** — Frontend: Update `TeacherPayrollHistory.tsx` (UAC):
   - Add "Due" section showing total unpaid amount across all payroll records where `dueAmount > 0`
 
-- [ ] **6.42** — Same for MBCS teacher payroll history
+- [x] **6.42** — Same for MBCS teacher payroll history
 
-- [ ] **6.43** — Staff due: if staff have a payroll history page, add the same due section
+- [x] **6.43** — Staff due: if staff have a payroll history page, add the same due section
 
 ---
 
@@ -1320,7 +1298,7 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 
 ##### 7A-1. Import Template & Download
 
-- [ ] **7.1** — Frontend: Create `frontend/src/pages/import-export/ImportStudents.tsx`:
+- [x] **7.1** — Frontend: Create `frontend/src/pages/import-export/ImportStudents.tsx`:
   - Step 1: Select Organization (UAC/MBCS/MEC)
   - Step 2: Select Class (dropdown of classes for selected org)
   - Step 3: Select Shift/Branch (MBCS only) or Group (UAC, if applicable)
@@ -1329,26 +1307,26 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
   - Step 6: Parse file → show preview table with validation status per row
   - Step 7: "Import" button → POST array of student data to backend
 
-- [ ] **7.2** — Frontend: Template generation utility (`frontend/src/utils/importTemplate.ts`):
+- [x] **7.2** — Frontend: Template generation utility (`frontend/src/utils/importTemplate.ts`):
   - Uses `xlsx` library to generate a blank template with:
     - Column headers (from template format table above)
     - Data validation hints in first row or second sheet
     - Instructions sheet
 
-- [ ] **7.3** — Frontend: File parsing utility (`frontend/src/utils/importParser.ts`):
+- [x] **7.3** — Frontend: File parsing utility (`frontend/src/utils/importParser.ts`):
   - Parse .xlsx using `xlsx` library
   - Parse .csv using simple split logic
   - Map columns to student DTO fields
   - Validate each row (required fields, date format, phone format)
   - Return `{ valid: StudentRow[], invalid: ErrorRow[] }`
 
-- [ ] **7.4** — Frontend: After parsing, apply settings:
+- [x] **7.4** — Frontend: After parsing, apply settings:
   - Fetch tuition fee from settings for the selected class
   - Set `monthlyTuitionFee` from settings
   - Set `admissionFee` from settings (if applicable)
   - Set selected class and shift/branch/group from the dropdowns
 
-- [ ] **7.5** — Backend: Add batch create endpoint:
+- [x] **7.5** — Backend: Add batch create endpoint:
   ```
   POST /api/uac/students/import
   Body: { students: CreateStudentDto[] }
@@ -1357,18 +1335,18 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
   - Create in a `$transaction`
   - Return `{ created: number, errors: Array<{index: number, error: string}> }`
 
-- [ ] **7.6** — Same backend endpoint for MBCS and MEC
+- [x] **7.6** — Same backend endpoint for MBCS and MEC
 
 ##### 7A-2. Export Students
 
-- [ ] **7.7** — Frontend: Create `frontend/src/pages/import-export/ExportStudents.tsx`:
+- [x] **7.7** — Frontend: Create `frontend/src/pages/import-export/ExportStudents.tsx`:
   - Select Organization
   - Select Class (optional — "All Classes" option)
   - Select Shift/Branch (MBCS) or Group (UAC) — optional
   - "Export" button → fetches students via existing API → generates Excel using `xlsx`
   - Downloads the file
 
-- [ ] **7.8** — Frontend: Export utility (`frontend/src/utils/exportStudents.ts`):
+- [x] **7.8** — Frontend: Export utility (`frontend/src/utils/exportStudents.ts`):
   - Takes student array
   - Maps to Excel-friendly columns
   - Generates .xlsx file using `xlsx` library
@@ -1376,13 +1354,13 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 
 ##### 7A-3. Sidebar & Routes
 
-- [ ] **7.9** — Add "Import & Export" menu item to sidebar in `DashboardLayout.tsx`:
+- [x] **7.9** — Add "Import & Export" menu item to sidebar in `DashboardLayout.tsx`:
   - Under each org module OR as a top-level menu:
     - Option A: Under each org (e.g., UAC → Import/Export, MBCS → Import/Export)
     - Option B: Top-level "Import & Export" with org selection inside
   - **Recommended: Top-level "Import & Export" with org selection inside** — cleaner sidebar, single entry point
 
-- [ ] **7.10** — Add routes in `App.tsx`:
+- [x] **7.10** — Add routes in `App.tsx`:
   - `/import-export` → main import/export page (with org tab selection)
   - The page can have tabs: [Import Students] [Export Students]
   - Accessible to `SUPER_ADMIN` and `DIRECTOR` only? Or also accountants for their own org?
@@ -1391,7 +1369,7 @@ import_template_columns → { "columns": ["name", "gender", "dateOfBirth", ...] 
 >
 > All roles can export (read operation). Only `SUPER_ADMIN` and `DIRECTOR` can import (write operation). ✅
 
-- [ ] **7.11** — Add "Import & Export" to sidebar, with proper role-based visibility
+- [x] **7.11** — Add "Import & Export" to sidebar, with proper role-based visibility
 
 ---
 
@@ -1517,7 +1495,7 @@ Execute in this order to minimize dependency conflicts:
 
 ## All Decisions — Status
 
-Confirmed decisions (S1–S7) and new suggestions awaiting decision (S8–S12):
+All decisions confirmed (S1–S13):
 
 | # | Question | Decision | Status |
 |---|----------|----------|--------|
@@ -1528,11 +1506,12 @@ Confirmed decisions (S1–S7) and new suggestions awaiting decision (S8–S12):
 | S5 | Import file format support? | **Option C: Both** — Excel + CSV | ✅ Confirmed |
 | S6 | Who can import/export? | **Option B:** All export, admin import only | ✅ Confirmed |
 | S7 | Import processing location? | **Option A: Frontend parsing** | ✅ Confirmed |
-| S8 | Record Payment form UX for dual amounts? | *Pending — Option C recommended* | ⬜ Awaiting Decision |
-| S9 | Per-line-item due storage approach? | *Pending — Option A recommended* | ⬜ Awaiting Decision |
-| S10 | Payment history tab naming? | *Pending — Option A recommended* | ⬜ Awaiting Decision |
-| S11 | Due collection approach — separate form vs reuse? | *Pending — Option A recommended (Separate "Collect Due" form)* | ⬜ Awaiting Decision |
-| S12 | Due state management — immutable vs mutable rows? | *Pending — Option A recommended (Immutable, append-only)* | ⬜ Awaiting Decision |
+| S8 | Record Payment form UX for dual amounts? | **Option A:** Single view, collapsible office summary | ✅ Confirmed |
+| S9 | Per-line-item due storage approach? | **Option A:** Store `dueAmount` per payment row | ✅ Confirmed |
+| S10 | Payment history tab naming? | **Option A:** "Tuition Status" \| "Guardian Records" \| "Office Records" | ✅ Confirmed |
+| S11 | Due collection approach — separate form vs reuse? | **Option A:** Separate "Collect Due" form | ✅ Confirmed |
+| S12 | Due state management — immutable vs mutable rows? | **Option A:** Immutable, append-only rows | ✅ Confirmed |
+| S13 | Invoice mode toggle — dual vs unified per org? | **Yes:** Add toggle, low cost | ✅ Confirmed |
 
 ---
 
@@ -1549,8 +1528,8 @@ These items from `REFACTOR_CHECKLIST_2.md` were marked as incomplete and may int
 
 ---
 
-*Last Updated: February 27, 2026*  
-*Status: Implementation In Progress — Feature 6 redesigned with Dual Invoice + Priority Due system*
+*Last Updated: February 28, 2026*  
+*Status: Implementation In Progress — Feature 6 all decisions confirmed, ready for implementation*
 
 ### Progress Summary
 - ✅ **Feature 1** — Settings Page Shell: COMPLETE (tasks 1.1–1.11)
@@ -1558,7 +1537,7 @@ These items from `REFACTOR_CHECKLIST_2.md` were marked as incomplete and may int
 - ✅ **Feature 3** — Configure UAC & MEC: COMPLETE (tasks 3.1–3.14)
 - ✅ **Feature 4** — No Longer Associated: COMPLETE (tasks 4.1–4.10; 4.11–4.12 optional/deferred)
 - ✅ **Feature 5** — Student Promotion: COMPLETE (tasks 5.1–5.9)
-- ⬜ **Feature 6** — Dual Invoice + Due Management + Due Collection + Payment Priority: NOT STARTED (tasks 6.1–6.43, 5 suggestions pending: S8, S9, S10, S11, S12)
+- 🔄 **Feature 6** — Dual Invoice + Due Management + Due Collection + Payment Priority: **6A COMPLETE** (tasks 6.1–6.9c done ✅); 6B–6D NOT STARTED (tasks 6.10–6.43)
 - ⬜ **Feature 7** — Export & Import: NOT STARTED
 
 ### Bug Fixes Applied

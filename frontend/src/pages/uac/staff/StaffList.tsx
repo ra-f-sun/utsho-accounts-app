@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Input, Space, App, Popconfirm, Tag } from "antd";
+import { Table, Button, Input, Space, App, Popconfirm } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -8,6 +8,7 @@ import {
   SearchOutlined,
   UserDeleteOutlined,
   UserAddOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { staffService } from "../../../services/staffService";
@@ -91,9 +92,15 @@ export default function StaffList() {
     {
       title: "Actions",
       key: "actions",
-      width: 160,
-      render: (_: any, record: Staff) => (
+      width: 180,
+      render: (_: unknown, record: Staff) => (
         <Space>
+          <Button
+            type="link"
+            icon={<HistoryOutlined />}
+            onClick={() => navigate(`/uac/staff/${record.id}/payroll`)}
+            title="View Payroll History"
+          />
           <Button
             type="link"
             icon={<EditOutlined />}

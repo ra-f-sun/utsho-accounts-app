@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal } from "antd";
+import axios from "axios";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, InputNumber, DatePicker, Select, Form, Input } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
   EyeOutlined,
   UserDeleteOutlined,
   UserAddOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { payrollService } from "../../../services/payrollService";
@@ -21,6 +24,9 @@ interface PayrollRecord {
   payableId: string;
   paymentMonth: string;
   amount: number;
+  paidAmount?: number;
+  dueAmount?: number;
+  isDueCollection?: boolean;
   totalLectures?: number;
   paymentDate: string;
   paymentMethod: string;
@@ -73,7 +79,34 @@ export default function TeacherPayrollHistory() {
   });
 
   const payrolls: PayrollRecord[] = payrollData?.data?.data || [];
-  const totalPaid = payrolls.reduce((sum, p) => sum + p.amount, 0);
+  const totalPaid = payrolls.reduce((sum, p) => sum + (p.paidAmount ?? p.amount), 0);
+  const totalDue = payrolls.reduce((sum, p) => sum + (p.dueAmount || 0), 0);
+
+  // Collect Due modal state
+  const [collectDueRecord, setCollectDueRecord] = useState<PayrollRecord | null>(null);
+  const [collectDueForm] = Form.useForm();
+  const [collectingDue, setCollectingDue] = useState(false);
+
+  const handleCollectDue = async () => {
+    try {
+      const values = await collectDueForm.validateFields();
+      setCollectingDue(true);
+      await payrollService.collectDue(collectDueRecord!.id, {
+        paidAmount: values.paidAmount,
+        paymentDate: values.paymentDate.toISOString(),
+        paymentMethod: values.paymentMethod,
+        notes: values.notes,
+      });
+      message.success("Due collected successfully!");
+      setCollectDueRecord(null);
+      collectDueForm.resetFields();
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.message) message.error(err.response.data.message);
+    } finally {
+      setCollectingDue(false);
+    }
+  };
 
   const columns: ColumnsType<PayrollRecord> = [
     {
@@ -98,6 +131,27 @@ export default function TeacherPayrollHistory() {
       render: (amount: number) => (
         <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
       ),
+    },
+    {
+      title: "Paid",
+      dataIndex: "paidAmount",
+      key: "paidAmount",
+      width: 100,
+      render: (paid: number | undefined, record: PayrollRecord) => (
+        <span>৳{(paid ?? record.amount).toLocaleString()}</span>
+      ),
+    },
+    {
+      title: "Due",
+      dataIndex: "dueAmount",
+      key: "dueAmount",
+      width: 100,
+      render: (due: number) =>
+        due > 0 ? (
+          <strong style={{ color: "#f5222d" }}>৳{due.toLocaleString()}</strong>
+        ) : (
+          <Tag color="green">Paid</Tag>
+        ),
     },
     {
       title: "Lectures",
@@ -126,7 +180,7 @@ export default function TeacherPayrollHistory() {
     {
       title: "Actions",
       key: "actions",
-      width: 80,
+      width: 120,
       render: (_: unknown, record: PayrollRecord) => (
         <Space>
           <Button
@@ -135,6 +189,20 @@ export default function TeacherPayrollHistory() {
             onClick={() => navigate(`/uac/payroll/${record.id}/invoice`)}
             title="View Invoice"
           />
+          {(record.dueAmount ?? 0) > 0 && !record.isDueCollection && (
+            <Button
+              type="link"
+              size="small"
+              icon={<DollarOutlined />}
+              style={{ color: "#f5222d" }}
+              onClick={() => {
+                setCollectDueRecord(record);
+                collectDueForm.setFieldsValue({ paidAmount: record.dueAmount });
+              }}
+            >
+              Collect
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -223,14 +291,21 @@ export default function TeacherPayrollHistory() {
                 : `Fixed — ৳${teacher?.monthlySalary}/month`}
             </div>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Statistic
               title="Total Paid"
               value={`৳${totalPaid.toLocaleString()}`}
               styles={{ content: { color: "#2e7d32" } }}
             />
           </Col>
-          <Col span={8}>
+          <Col span={6}>
+            <Statistic
+              title="Total Due"
+              value={`৳${totalDue.toLocaleString()}`}
+              styles={{ content: { color: totalDue > 0 ? "#f5222d" : "#2e7d32" } }}
+            />
+          </Col>
+          <Col span={4}>
             <Statistic title="Total Payroll Records" value={payrolls.length} />
           </Col>
         </Row>
@@ -249,6 +324,41 @@ export default function TeacherPayrollHistory() {
           }}
         />
       </Card>
+
+      {/* Collect Due Modal */}
+      <Modal
+        title={`Collect Due — ${collectDueRecord?.invoiceNumber || ""}`}
+        open={!!collectDueRecord}
+        onCancel={() => { setCollectDueRecord(null); collectDueForm.resetFields(); }}
+        onOk={handleCollectDue}
+        confirmLoading={collectingDue}
+        okText="Collect Due"
+      >
+        <Form form={collectDueForm} layout="vertical">
+          <Form.Item label="Outstanding Due">
+            <strong style={{ color: "#f5222d", fontSize: 16 }}>
+              ৳{(collectDueRecord?.dueAmount || 0).toLocaleString()}
+            </strong>
+          </Form.Item>
+          <Form.Item label="Amount to Collect (৳)" name="paidAmount" rules={[{ required: true }]}>
+            <InputNumber min={1} max={collectDueRecord?.dueAmount || undefined} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item label="Payment Date" name="paymentDate" rules={[{ required: true }]}>
+            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+          </Form.Item>
+          <Form.Item label="Payment Method" name="paymentMethod" rules={[{ required: true }]}>
+            <Select placeholder="Select method">
+              <Select.Option value="cash">Cash</Select.Option>
+              <Select.Option value="bkash">bKash</Select.Option>
+              <Select.Option value="nagad">Nagad</Select.Option>
+              <Select.Option value="bank_transfer">Bank Transfer</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="Notes" name="notes">
+            <Input.TextArea rows={2} placeholder="Optional notes" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

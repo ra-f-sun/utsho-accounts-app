@@ -13,6 +13,11 @@ export interface MbcsPayroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Due fields (Feature 6F)
+  paidAmount?: number;
+  dueAmount?: number;
+  isDueCollection?: boolean;
+  parentPayrollId?: string;
 }
 
 export interface CreateMbcsPayrollDto {
@@ -20,6 +25,7 @@ export interface CreateMbcsPayrollDto {
   payableId: string;
   paymentMonth: string;
   amount: number;
+  paidAmount?: number; // If not set, defaults to amount (full payment)
   totalLectures?: number;
   paymentDate: string;
   paymentMethod: string;
@@ -51,4 +57,6 @@ export const mbcsPayrollService = {
   update: (id: string, data: Partial<CreateMbcsPayrollDto>) =>
     apiPatch<MbcsPayroll>(`/mbcs/payroll/${id}`, data),
   delete: (id: string) => apiDelete<MbcsPayroll>(`/mbcs/payroll/${id}`),
+  collectDue: (id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
+    apiPost<MbcsPayroll>(`/mbcs/payroll/${id}/collect-due`, data),
 };

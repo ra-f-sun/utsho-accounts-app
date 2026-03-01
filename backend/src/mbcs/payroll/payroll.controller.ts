@@ -13,6 +13,7 @@ import {
 import { PayrollService } from './payroll.service';
 import { CreatePayrollDto } from './dto/create-payroll.dto';
 import { UpdatePayrollDto } from './dto/update-payroll.dto';
+import { CollectPayrollDueDto } from './dto/collect-payroll-due.dto';
 import { FilterMbcsPayrollDto } from './dto/filter-payroll.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
@@ -48,6 +49,15 @@ export class PayrollController {
     @Param('month') month: string, // Format: YYYY-MM
   ) {
     return this.payrollService.calculateTeacherPayroll(teacherId, month);
+  }
+
+  @Post(':id/collect-due')
+  collectDue(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CollectPayrollDueDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.payrollService.collectDue(id, dto, user.id);
   }
 
   @Get(':id')

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Avatar, Dropdown, Typography } from "antd";
 import {
@@ -11,6 +11,7 @@ import {
   WalletOutlined,
   SettingOutlined,
   VerticalAlignTopOutlined,
+  SwapOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -32,6 +33,7 @@ export default function DashboardLayout() {
     "/uac/teachers",
     "/uac/staff",
     "/uac/payments",
+    "/uac/payments/collect-due",
     "/uac/payment-history",
     "/uac/teacher-attendance",
     "/uac/payroll",
@@ -41,14 +43,17 @@ export default function DashboardLayout() {
     "/mbcs/teachers",
     "/mbcs/staff",
     "/mbcs/payments",
+    "/mbcs/payments/collect-due",
     "/mbcs/payment-history",
     "/mbcs/teacher-attendance",
     "/mbcs/payroll",
     "/mbcs/expenses",
     "/mec/students",
     "/mec/payments/record",
+    "/mec/payments/collect-due",
     "/mec/payment-history",
     "/mec/expenses",
+    "/import-export",
     "/settings",
   ];
   const selectedKey =
@@ -57,20 +62,21 @@ export default function DashboardLayout() {
       .sort((a, b) => b.length - a.length)[0] || "/dashboard";
 
   // Auto-open the parent submenu
-  const openKeys = pathname.startsWith("/uac")
+  const openKeys = useMemo(() => pathname.startsWith("/uac")
     ? ["uac"]
     : pathname.startsWith("/mbcs")
       ? ["mbcs"]
       : pathname.startsWith("/mec")
         ? ["mec"]
-        : [];
+        : [], [pathname]);
 
   // Controlled open keys — updates when route changes
   const [currentOpenKeys, setCurrentOpenKeys] = useState<string[]>(openKeys);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync menu state with route
     setCurrentOpenKeys(openKeys);
-  }, [pathname]);
+  }, [pathname, openKeys]);
 
   const handleLogout = () => {
     logout();
@@ -126,6 +132,12 @@ export default function DashboardLayout() {
           icon: <DollarOutlined />,
           label: "Payments",
           onClick: () => navigate("/uac/payments"),
+        },
+        {
+          key: "/uac/payments/collect-due",
+          icon: <DollarOutlined />,
+          label: "Collect Due",
+          onClick: () => navigate("/uac/payments/collect-due"),
         },
         {
           key: "/uac/payment-history",
@@ -192,6 +204,12 @@ export default function DashboardLayout() {
           onClick: () => navigate("/mbcs/payments"),
         },
         {
+          key: "/mbcs/payments/collect-due",
+          icon: <DollarOutlined />,
+          label: "Collect Due",
+          onClick: () => navigate("/mbcs/payments/collect-due"),
+        },
+        {
           key: "/mbcs/payment-history",
           icon: <HistoryOutlined />,
           label: "Payment History",
@@ -236,6 +254,12 @@ export default function DashboardLayout() {
           onClick: () => navigate("/mec/payments/record"),
         },
         {
+          key: "/mec/payments/collect-due",
+          icon: <DollarOutlined />,
+          label: "Collect Due",
+          onClick: () => navigate("/mec/payments/collect-due"),
+        },
+        {
           key: "/mec/payment-history",
           icon: <HistoryOutlined />,
           label: "Payment History",
@@ -256,13 +280,26 @@ export default function DashboardLayout() {
     ...((["SUPER_ADMIN", "DIRECTOR"].includes(user?.role || ""))
       ? [
           {
+            key: "/import-export",
+            icon: <SwapOutlined />,
+            label: "Import & Export",
+            onClick: () => navigate("/import-export"),
+          },
+          {
             key: "/settings",
             icon: <SettingOutlined />,
             label: "Settings",
             onClick: () => navigate("/settings"),
           },
         ]
-      : []),
+      : [
+          {
+            key: "/import-export",
+            icon: <SwapOutlined />,
+            label: "Import & Export",
+            onClick: () => navigate("/import-export"),
+          },
+        ]),
   ];
 
   const userMenuItems = [

@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { mbcsTeacherAttendanceService } from "../../../services/mbcsTeacherAttendanceService";
 import type { MbcsTeacherAttendance } from "../../../services/mbcsTeacherAttendanceService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
+import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -59,7 +60,7 @@ export default function MbcsTeacherAttendanceList() {
     {
       title: "Teacher",
       key: "teacher",
-      render: (_: any, record: MbcsTeacherAttendance) => (
+      render: (_: unknown, record: MbcsTeacherAttendance) => (
         <div>
           <strong>{record.teacher?.name || "Unknown"}</strong>
           <div style={{ fontSize: 12, color: "#888" }}>
@@ -105,7 +106,7 @@ export default function MbcsTeacherAttendanceList() {
       title: "Actions",
       key: "actions",
       width: 80,
-      render: (_: any, record: MbcsTeacherAttendance) => (
+      render: (_: unknown, record: MbcsTeacherAttendance) => (
         <Popconfirm
           title="Delete this attendance record?"
           onConfirm={() => deleteMutation.mutate(record.id)}
@@ -137,7 +138,7 @@ export default function MbcsTeacherAttendanceList() {
             }
             allowClear
             showSearch
-            options={teachers.map((t: any) => ({
+            options={teachers.map((t: MbcsTeacher) => ({
               value: t.id,
               label: t.name,
             }))}

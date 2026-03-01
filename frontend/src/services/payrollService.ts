@@ -13,6 +13,11 @@ export interface Payroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
+  // Due fields (Feature 6F)
+  paidAmount?: number;
+  dueAmount?: number;
+  isDueCollection?: boolean;
+  parentPayrollId?: string;
 }
 
 export interface CreatePayrollDto {
@@ -20,6 +25,7 @@ export interface CreatePayrollDto {
   payableId: string;
   paymentMonth: string; // ISO DateString (e.g., 2024-01-01T00:00:00.000Z)
   amount: number;
+  paidAmount?: number; // If not set, defaults to amount (full payment)
   totalLectures?: number;
   paymentDate: string; // ISO DateString
   paymentMethod: string; // 'cash' | 'bkash' | 'nagad' | 'bank_transfer'
@@ -50,4 +56,6 @@ export const payrollService = {
   update: (id: string, data: Partial<CreatePayrollDto>) =>
     apiPatch<Payroll>(`/uac/payroll/${id}`, data),
   delete: (id: string) => apiDelete<Payroll>(`/uac/payroll/${id}`),
+  collectDue: (id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
+    apiPost<Payroll>(`/uac/payroll/${id}/collect-due`, data),
 };

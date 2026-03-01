@@ -104,4 +104,6 @@ export const studentsService = {
     apiPost<Student>(`/uac/students/${id}/promote`, data),
   promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
     apiPost<{ promoted: number }>('/uac/students/promote-bulk', data),
+  importStudents: (students: CreateStudentDto[]) =>
+    apiPost<Student[]>('/uac/students/import', { students }),
 };

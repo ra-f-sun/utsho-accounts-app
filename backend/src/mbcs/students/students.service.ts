@@ -23,6 +23,22 @@ export class StudentsService {
     return this.prisma.mbcsStudent.create({ data });
   }
 
+  async importBulk(students: CreateStudentDto[]) {
+    return this.prisma.$transaction(
+      students.map((dto) =>
+        this.prisma.mbcsStudent.create({
+          data: {
+            ...dto,
+            dateOfBirth: new Date(dto.dateOfBirth),
+            admissionDate: dto.admissionDate
+              ? new Date(dto.admissionDate)
+              : undefined,
+          },
+        }),
+      ),
+    );
+  }
+
   async findAll(filters?: FilterStudentDto, pagination?: PaginationDto) {
     const where: Prisma.MbcsStudentWhereInput = { isActive: true, associationEndDate: null };
 

@@ -38,4 +38,9 @@ export class CreatePayrollDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  paidAmount?: number; // If not set, defaults to amount (full payment)
 }

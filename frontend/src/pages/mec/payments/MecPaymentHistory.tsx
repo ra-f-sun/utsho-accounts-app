@@ -12,10 +12,11 @@ import {
   Col,
   Card,
   Tabs,
+  Switch,
 } from "antd";
 import {
   PlusOutlined,
-  FilePdfOutlined,
+  EyeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from "@ant-design/icons";
@@ -60,13 +61,14 @@ export default function MecPaymentHistory() {
     paymentMonth: dayjs().startOf("month").toISOString(),
   });
   const [activeTab, setActiveTab] = useState("tuition-status");
+  const [showDueOnly, setShowDueOnly] = useState(false);
 
   // Fetch all active students
   const { data: studentsData } = useQuery({
     queryKey: ["mec-students"],
     queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
   });
-  const allStudents: MecStudent[] = studentsData?.data?.data || [];
+  const allStudents: MecStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Fetch all payments with active filters
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
@@ -77,7 +79,7 @@ export default function MecPaymentHistory() {
         paymentMonth: filters.paymentMonth,
       }),
   });
-  const allPayments: MecPayment[] = paymentsData?.data?.data || [];
+  const allPayments: MecPayment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
 
   const groupedMecPayments = useMemo((): GroupedMecPayment[] => {
     const groups: Record<string, GroupedMecPayment> = {};
@@ -217,13 +219,12 @@ export default function MecPaymentHistory() {
           <Button
             type="link"
             size="small"
-            icon={<FilePdfOutlined />}
+            icon={<EyeOutlined />}
+            title="View Invoice"
             onClick={() =>
               navigate(`/mec/payments/invoice/${encodeURIComponent(record.payment!.invoiceNumber)}`)
             }
-          >
-            View
-          </Button>
+          />
         ) : null,
     },
     {
@@ -338,15 +339,14 @@ export default function MecPaymentHistory() {
         <Button
           type="link"
           size="small"
-          icon={<FilePdfOutlined />}
+          icon={<EyeOutlined />}
+          title="View Invoice"
           onClick={() =>
             navigate(
               `/mec/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`,
             )
           }
-        >
-          View
-        </Button>
+        />
       ),
     },
   ];
@@ -396,7 +396,7 @@ export default function MecPaymentHistory() {
           </Select>
         </>
       )}
-      {activeTab === "all-payments" && (
+      {(activeTab === "guardian-records" || activeTab === "office-records") && (
         <Select
           placeholder="Method"
           style={{ width: 150 }}
@@ -423,6 +423,140 @@ export default function MecPaymentHistory() {
       </Button>
     </Space>
   );
+
+  // Office row: grouped by invoiceNumber (same as guardian but with due tracking)
+  interface OfficeRow {
+    id: string;
+    studentId: string;
+    student?: MecPayment["student"];
+    invoiceNumber: string;
+    paymentMonths: string[];
+    amount: number;
+    dueAmount: number;
+    paymentDate: string;
+    paymentMethod: string;
+  }
+
+  // Office-facing columns (grouped, shows actual amounts + due)
+  const officeColumns: ColumnsType<OfficeRow> = [
+    {
+      title: "Invoice",
+      dataIndex: "invoiceNumber",
+      key: "invoiceNumber",
+      width: 160,
+      render: (text: string) => <strong>{text}</strong>,
+    },
+    {
+      title: "Student",
+      key: "student",
+      render: (_: unknown, record: OfficeRow) => {
+        const student = record.student;
+        return (
+          <div>
+            <strong>{student?.name}</strong>
+            {student?.class && (
+              <div style={{ fontSize: 12, color: "#888" }}>Class {student.class}</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: "Month(s)",
+      key: "paymentMonths",
+      render: (_: unknown, record: OfficeRow) => (
+        <Space size={[4, 4]} wrap>
+          {record.paymentMonths.map((m, i) => (
+            <Tag key={i} color="blue">{dayjs(m).format("MMM YYYY")}</Tag>
+          ))}
+        </Space>
+      ),
+    },
+    {
+      title: "Amount (Office)",
+      key: "amount",
+      width: 130,
+      render: (_: unknown, record: OfficeRow) => (
+        <div>
+          <strong style={{ color: "#2e7d32" }}>৳{record.amount.toLocaleString()}</strong>
+          {record.dueAmount > 0 && (
+            <div style={{ fontSize: 12, color: "#d32f2f" }}>
+              Due: ৳{record.dueAmount.toLocaleString()}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Date",
+      dataIndex: "paymentDate",
+      key: "paymentDate",
+      width: 100,
+      render: (date: string) => (date ? dayjs(date).format("DD/MM/YYYY") : "-"),
+    },
+    {
+      title: "Method",
+      dataIndex: "paymentMethod",
+      key: "paymentMethod",
+      width: 100,
+      render: (method: string) =>
+        method ? <Tag>{method.replace(/_/g, " ").toUpperCase()}</Tag> : "-",
+    },
+    {
+      title: "Actions",
+      key: "action",
+      width: 130,
+      render: (_: unknown, record: OfficeRow) => (
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            title="View Invoice"
+            onClick={() =>
+              navigate(`/mec/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)
+            }
+          />
+          {record.dueAmount > 0 && (
+            <Button
+              type="primary"
+              size="small"
+              danger
+              onClick={() =>
+                navigate(`/mec/payments/collect-due?studentId=${record.studentId}`)
+              }
+            >
+              Collect Due
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  const officeRows = useMemo((): OfficeRow[] => {
+    const invoiceMap = new Map<string, MecPayment[]>();
+    for (const p of allPayments) {
+      const key = p.invoiceNumber;
+      if (!invoiceMap.has(key)) invoiceMap.set(key, []);
+      invoiceMap.get(key)!.push(p);
+    }
+    const rows: OfficeRow[] = Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        id: first.id,
+        studentId: first.studentId,
+        student: first.student,
+        invoiceNumber: first.invoiceNumber,
+        paymentMonths: group.map((p) => p.paymentMonth),
+        amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((sum, p) => sum + p.amount, 0),
+        dueAmount: first.dueAmount ?? 0,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+    return showDueOnly ? rows.filter((r) => r.dueAmount > 0) : rows;
+  }, [allPayments, showDueOnly]);
 
   if (paymentsIsError) return <QueryError error={paymentsError as Error} onRetry={refetchPayments} />;
 
@@ -509,8 +643,8 @@ export default function MecPaymentHistory() {
             ),
           },
           {
-            key: "all-payments",
-            label: `All Payments (${groupedMecPayments.length})`,
+            key: "guardian-records",
+            label: `Guardian Records (${groupedMecPayments.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
@@ -542,6 +676,52 @@ export default function MecPaymentHistory() {
                   );
                 }}
               />
+            ),
+          },
+          {
+            key: "office-records",
+            label: `Office Records (${officeRows.length})`,
+            children: (
+              <div>
+                <Space style={{ marginBottom: 12 }}>
+                  <span style={{ fontWeight: 500 }}>Show Due Only:</span>
+                  <Switch checked={showDueOnly} onChange={setShowDueOnly} />
+                  {showDueOnly && <Tag color="error">{officeRows.length} with due</Tag>}
+                </Space>
+                <Table
+                  columns={officeColumns}
+                  dataSource={officeRows}
+                  rowKey="invoiceNumber"
+                  loading={loadingPayments}
+                  pagination={{
+                    pageSize: 15,
+                    showSizeChanger: true,
+                    showTotal: (total) => `Total ${total} payments`,
+                  }}
+                  summary={(pageData) => {
+                    const total = pageData.reduce((sum, row) => sum + row.amount, 0);
+                    const totalDue = pageData.reduce((sum, row) => sum + row.dueAmount, 0);
+                    return (
+                      <Table.Summary.Row>
+                        <Table.Summary.Cell index={0} colSpan={3}>
+                          <strong>Page Total</strong>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={3}>
+                          <div>
+                            <strong style={{ color: "#2e7d32" }}>৳{total.toLocaleString()}</strong>
+                            {totalDue > 0 && (
+                              <div style={{ fontSize: 12, color: "#d32f2f" }}>
+                                Due: ৳{totalDue.toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                        </Table.Summary.Cell>
+                        <Table.Summary.Cell index={4} colSpan={3} />
+                      </Table.Summary.Row>
+                    );
+                  }}
+                />
+              </div>
             ),
           },
         ]}

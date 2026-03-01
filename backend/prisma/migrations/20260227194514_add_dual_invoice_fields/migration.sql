@@ -1,0 +1,32 @@
+-- AlterTable
+ALTER TABLE "mbcs_payments" ADD COLUMN     "additionalDiscount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "dueAmount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "guardianAmount" DOUBLE PRECISION,
+ADD COLUMN     "guardianGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "guardianPaid" DOUBLE PRECISION,
+ADD COLUMN     "guardianSubTotal" DOUBLE PRECISION,
+ADD COLUMN     "officeGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "officePaid" DOUBLE PRECISION,
+ADD COLUMN     "officeSubTotal" DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "mec_payments" ADD COLUMN     "additionalDiscount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "dueAmount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "guardianAmount" DOUBLE PRECISION,
+ADD COLUMN     "guardianGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "guardianPaid" DOUBLE PRECISION,
+ADD COLUMN     "guardianSubTotal" DOUBLE PRECISION,
+ADD COLUMN     "officeGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "officePaid" DOUBLE PRECISION,
+ADD COLUMN     "officeSubTotal" DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "uac_payments" ADD COLUMN     "additionalDiscount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "dueAmount" DOUBLE PRECISION DEFAULT 0,
+ADD COLUMN     "guardianAmount" DOUBLE PRECISION,
+ADD COLUMN     "guardianGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "guardianPaid" DOUBLE PRECISION,
+ADD COLUMN     "guardianSubTotal" DOUBLE PRECISION,
+ADD COLUMN     "officeGrandTotal" DOUBLE PRECISION,
+ADD COLUMN     "officePaid" DOUBLE PRECISION,
+ADD COLUMN     "officeSubTotal" DOUBLE PRECISION;

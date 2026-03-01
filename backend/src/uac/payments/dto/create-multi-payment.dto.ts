@@ -53,4 +53,14 @@ export class CreateMultiPaymentDto {
   @ValidateNested({ each: true })
   @Type(() => UacPaymentLineItemDto)
   lineItems: UacPaymentLineItemDto[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  additionalDiscount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  dueAmount?: number;
 }

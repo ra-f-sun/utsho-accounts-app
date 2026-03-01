@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, UacPayment, MbcsPayment, MecPayment } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsQueryDto, Organization } from './dto/analytics-query.dto';
 import dayjs from 'dayjs';
@@ -32,6 +32,14 @@ export interface OutstandingPayment {
   monthlyFee: number;
   unpaidMonths: number;
   lastPaymentDate?: Date;
+}
+
+export interface OutstandingDueSummary {
+  organization: string;
+  totalOriginalDue: number; // Sum of dueAmount from original invoices with outstanding balance
+  totalCollected: number; // Sum of officePaid from due-collection rows
+  netOutstandingDue: number; // totalOriginalDue - totalCollected
+  studentsWithDue: number; // Count of distinct students with any outstanding due
 }
 
 @Injectable()
@@ -96,35 +104,50 @@ export class AnalyticsService {
       orgs.includes(Organization.UAC)
         ? this.prisma.uacPayment.groupBy({
             by: ['paymentMonth'],
-            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            where: {
+              isActive: true,
+              paymentDate: { gte: startDate, lte: endDate },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve([]),
       orgs.includes(Organization.MBCS)
         ? this.prisma.mbcsPayment.groupBy({
             by: ['paymentMonth'],
-            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            where: {
+              isActive: true,
+              paymentDate: { gte: startDate, lte: endDate },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve([]),
       orgs.includes(Organization.MEC)
         ? this.prisma.mecPayment.groupBy({
             by: ['paymentMonth'],
-            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            where: {
+              isActive: true,
+              paymentDate: { gte: startDate, lte: endDate },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve([]),
       orgs.includes(Organization.UAC)
         ? this.prisma.uacPayroll.groupBy({
             by: ['paymentMonth', 'payableType'],
-            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            where: {
+              isActive: true,
+              paymentDate: { gte: startDate, lte: endDate },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve([]),
       orgs.includes(Organization.MBCS)
         ? this.prisma.mbcsPayroll.groupBy({
             by: ['paymentMonth', 'payableType'],
-            where: { isActive: true, paymentDate: { gte: startDate, lte: endDate } },
+            where: {
+              isActive: true,
+              paymentDate: { gte: startDate, lte: endDate },
+            },
             _sum: { amount: true },
           })
         : Promise.resolve([]),
@@ -133,7 +156,9 @@ export class AnalyticsService {
         where: {
           isActive: true,
           paymentDate: { gte: startDate, lte: endDate },
-          ...(filters.organization ? { organization: filters.organization } : {}),
+          ...(filters.organization
+            ? { organization: filters.organization }
+            : {}),
         },
         _sum: { amount: true },
       }),
@@ -144,30 +169,30 @@ export class AnalyticsService {
 
     const uacPayMap = new Map<string, number>();
     for (const row of uacPayments) {
-      uacPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+      uacPayMap.set(toMonthKey(row.paymentMonth), row._sum.amount ?? 0);
     }
 
     const mbcsPayMap = new Map<string, number>();
     for (const row of mbcsPayments) {
-      mbcsPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+      mbcsPayMap.set(toMonthKey(row.paymentMonth), row._sum.amount ?? 0);
     }
 
     const mecPayMap = new Map<string, number>();
     for (const row of mecPayments) {
-      mecPayMap.set(toMonthKey(row.paymentMonth), (row._sum.amount ?? 0));
+      mecPayMap.set(toMonthKey(row.paymentMonth), row._sum.amount ?? 0);
     }
 
     // Payroll maps: key = "YYYY-MM:teacher" or "YYYY-MM:staff"
     const uacPayrollMap = new Map<string, number>();
     for (const row of uacPayroll) {
       const k = `${toMonthKey(row.paymentMonth)}:${row.payableType}`;
-      uacPayrollMap.set(k, (row._sum.amount ?? 0));
+      uacPayrollMap.set(k, row._sum.amount ?? 0);
     }
 
     const mbcsPayrollMap = new Map<string, number>();
     for (const row of mbcsPayroll) {
       const k = `${toMonthKey(row.paymentMonth)}:${row.payableType}`;
-      mbcsPayrollMap.set(k, (row._sum.amount ?? 0));
+      mbcsPayrollMap.set(k, row._sum.amount ?? 0);
     }
 
     const expenseMap = new Map<string, number>();
@@ -213,7 +238,8 @@ export class AnalyticsService {
         teacherPayroll,
         staffPayroll,
         expenses: expensesTotal,
-        netRevenue: studentPayments - (teacherPayroll + staffPayroll + expensesTotal),
+        netRevenue:
+          studentPayments - (teacherPayroll + staffPayroll + expensesTotal),
       });
 
       currentMonth = currentMonth.add(1, 'month');
@@ -283,6 +309,89 @@ export class AnalyticsService {
   }
 
   // ========== HELPER METHODS ==========
+
+  /**
+   * 6E audit: all revenue queries use `amount` (office copy field).
+   * `guardianAmount` is NEVER summed in analytics — it is display-only.
+   *
+   * Outstanding due summary: uses actual `dueAmount` from payment records
+   * (net of already-collected dues) to give a precise "money owed" figure.
+   */
+  async getOutstandingDueSummary(
+    filters: AnalyticsQueryDto,
+  ): Promise<OutstandingDueSummary[]> {
+    const orgs = filters.organization
+      ? [filters.organization]
+      : [Organization.UAC, Organization.MBCS, Organization.MEC];
+
+    return Promise.all(orgs.map((org) => this.getOrgOutstandingDue(org)));
+  }
+
+  private async getOrgOutstandingDue(
+    org: Organization,
+  ): Promise<OutstandingDueSummary> {
+    let totalOriginalDue = 0;
+    let totalCollected = 0;
+    let studentsWithDue = 0;
+
+    if (org === Organization.UAC) {
+      const invoicesWithDue = await this.prisma.uacPayment.findMany({
+        where: { isDueCollection: false, isActive: true, dueAmount: { gt: 0 } },
+        select: { invoiceNumber: true, dueAmount: true, studentId: true },
+        distinct: ['invoiceNumber'],
+      });
+      totalOriginalDue = invoicesWithDue.reduce(
+        (sum, i) => sum + (i.dueAmount ?? 0),
+        0,
+      );
+      studentsWithDue = new Set(invoicesWithDue.map((i) => i.studentId)).size;
+      const collectedResult = await this.prisma.uacPayment.aggregate({
+        where: { isDueCollection: true, isActive: true },
+        _sum: { officePaid: true },
+      });
+      totalCollected = collectedResult._sum.officePaid ?? 0;
+    } else if (org === Organization.MBCS) {
+      const invoicesWithDue = await this.prisma.mbcsPayment.findMany({
+        where: { isDueCollection: false, isActive: true, dueAmount: { gt: 0 } },
+        select: { invoiceNumber: true, dueAmount: true, studentId: true },
+        distinct: ['invoiceNumber'],
+      });
+      totalOriginalDue = invoicesWithDue.reduce(
+        (sum, i) => sum + (i.dueAmount ?? 0),
+        0,
+      );
+      studentsWithDue = new Set(invoicesWithDue.map((i) => i.studentId)).size;
+      const collectedResult = await this.prisma.mbcsPayment.aggregate({
+        where: { isDueCollection: true, isActive: true },
+        _sum: { officePaid: true },
+      });
+      totalCollected = collectedResult._sum.officePaid ?? 0;
+    } else if (org === Organization.MEC) {
+      const invoicesWithDue = await this.prisma.mecPayment.findMany({
+        where: { isDueCollection: false, isActive: true, dueAmount: { gt: 0 } },
+        select: { invoiceNumber: true, dueAmount: true, studentId: true },
+        distinct: ['invoiceNumber'],
+      });
+      totalOriginalDue = invoicesWithDue.reduce(
+        (sum, i) => sum + (i.dueAmount ?? 0),
+        0,
+      );
+      studentsWithDue = new Set(invoicesWithDue.map((i) => i.studentId)).size;
+      const collectedResult = await this.prisma.mecPayment.aggregate({
+        where: { isDueCollection: true, isActive: true },
+        _sum: { officePaid: true },
+      });
+      totalCollected = collectedResult._sum.officePaid ?? 0;
+    }
+
+    return {
+      organization: org,
+      totalOriginalDue,
+      totalCollected,
+      netOutstandingDue: Math.max(0, totalOriginalDue - totalCollected),
+      studentsWithDue,
+    };
+  }
 
   private async getOrgRevenueStats(
     org: Organization,
@@ -449,7 +558,7 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
-        const payments = student.payments as UacPayment[];
+        const payments = student.payments;
         const lastPaymentMonth =
           payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 
@@ -487,7 +596,7 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
-        const payments = student.payments as MbcsPayment[];
+        const payments = student.payments;
         const lastPaymentMonth =
           payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 
@@ -525,7 +634,7 @@ export class AnalyticsService {
       });
 
       for (const student of students) {
-        const payments = student.payments as MecPayment[];
+        const payments = student.payments;
         const lastPaymentMonth =
           payments.length > 0 ? dayjs(payments[0].paymentMonth) : null;
 

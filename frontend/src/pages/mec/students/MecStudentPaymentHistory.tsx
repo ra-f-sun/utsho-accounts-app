@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal } from "antd";
+import { Table, Button, Card, Statistic, Row, Col, Tag, Spin, App, Modal, Alert } from "antd";
 import {
   ArrowLeftOutlined,
   PlusOutlined,
@@ -9,6 +9,8 @@ import {
   UserDeleteOutlined,
   UserAddOutlined,
   VerticalAlignTopOutlined,
+  ExclamationCircleOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { mecPaymentsService } from "../../../services/mecPaymentsService";
@@ -91,21 +93,90 @@ export default function MecStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const payments: MecPayment[] = paymentsData?.data?.data || [];
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const { data: dueSummaryData } = useQuery({
+    queryKey: ["mec-due-summary", id],
+    queryFn: () => mecPaymentsService.getDueSummary(id!),
+    enabled: !!id,
+  });
+
+  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+
+  const payments: MecPayment[] = useMemo(
+    () => paymentsData?.data?.data || [],
+    [paymentsData],
+  );
+
+  // Group payments by invoice to get per-invoice totals
+  const invoiceMap = new Map<string, MecPayment[]>();
+  for (const p of payments) {
+    if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
+    invoiceMap.get(p.invoiceNumber)!.push(p);
+  }
+
+  // Total Paid = sum of officePaid per unique invoice (use first row of each invoice)
+  const totalPaid = Array.from(invoiceMap.values()).reduce((sum, rows) => {
+    return sum + (rows[0].officePaid ?? rows.reduce((s, r) => s + r.amount, 0));
+  }, 0);
+
+  // Total unique invoices (not line items)
+  const totalInvoices = invoiceMap.size;
 
   // Build paid months set for current year
   const currentYear = new Date().getFullYear();
-  const paidMonths = new Set(
-    payments.map((p) => dayjs(p.paymentMonth).format("YYYY-MM")),
-  );
+  const monthlyTuition =
+    (student?.monthlyTuitionFee ?? 0) - (student?.discountTuition ?? 0);
+
+  // Sum tuition amounts per month (MEC is tuition-only, no paymentType filter needed)
+  const tuitionByMonth = new Map<string, number>();
+  for (const p of payments) {
+    const key = dayjs(p.paymentMonth).format("YYYY-MM");
+    tuitionByMonth.set(key, (tuitionByMonth.get(key) ?? 0) + p.amount);
+  }
+
+  const paidMonths = new Set<string>();
+  const partialMonths = new Set<string>();
+  for (const [key, total] of tuitionByMonth) {
+    if (monthlyTuition > 0 && total >= monthlyTuition) {
+      paidMonths.add(key);
+    } else if (total > 0) {
+      partialMonths.add(key);
+    }
+  }
 
   // Admission month key — months before this are "N/A" (student not yet enrolled)
   const admissionMonthKey = student?.admissionDate
     ? dayjs(student.admissionDate).format("YYYY-MM")
     : null;
 
-  const columns: ColumnsType<MecPayment> = [
+  interface GroupedRow {
+    invoiceNumber: string;
+    paymentMonths: string[];
+    amount: number;
+    dueAmount: number;
+    paymentDate: string;
+    paymentMethod: string;
+  }
+
+  const groupedPayments = useMemo((): GroupedRow[] => {
+    const invoiceMap = new Map<string, MecPayment[]>();
+    for (const p of payments) {
+      if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
+      invoiceMap.get(p.invoiceNumber)!.push(p);
+    }
+    return Array.from(invoiceMap.values()).map((group) => {
+      const first = group[0];
+      return {
+        invoiceNumber: first.invoiceNumber,
+        paymentMonths: group.map((r) => r.paymentMonth),
+        amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((s, r) => s + r.amount, 0),
+        dueAmount: first.dueAmount ?? 0,
+        paymentDate: first.paymentDate,
+        paymentMethod: first.paymentMethod,
+      };
+    });
+  }, [payments]);
+
+  const columns: ColumnsType<GroupedRow> = [
     {
       title: "Invoice",
       dataIndex: "invoiceNumber",
@@ -114,19 +185,29 @@ export default function MecStudentPaymentHistory() {
       render: (text: string) => <strong>{text}</strong>,
     },
     {
-      title: "Month",
-      dataIndex: "paymentMonth",
-      key: "paymentMonth",
-      width: 120,
-      render: (date: string) => dayjs(date).format("MMM YYYY"),
+      title: "Month(s)",
+      key: "paymentMonths",
+      render: (_: unknown, record: GroupedRow) => (
+        <Space size={[4, 4]} wrap>
+          {record.paymentMonths.map((m, i) => (
+            <Tag key={i} color="blue">{dayjs(m).format("MMM YYYY")}</Tag>
+          ))}
+        </Space>
+      ),
     },
     {
-      title: "Amount",
-      dataIndex: "amount",
+      title: "Amount (Office)",
       key: "amount",
-      width: 110,
-      render: (amount: number) => (
-        <strong style={{ color: "#2e7d32" }}>৳{amount.toLocaleString()}</strong>
+      width: 130,
+      render: (_: unknown, record: GroupedRow) => (
+        <div>
+          <strong style={{ color: "#2e7d32" }}>৳{record.amount.toLocaleString()}</strong>
+          {record.dueAmount > 0 && (
+            <div style={{ fontSize: 11, color: "#ff4d4f" }}>
+              Due: ৳{record.dueAmount.toLocaleString()}
+            </div>
+          )}
+        </div>
       ),
     },
     {
@@ -149,15 +230,13 @@ export default function MecStudentPaymentHistory() {
       title: "Actions",
       key: "actions",
       width: 80,
-      render: (_: unknown, record: MecPayment) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/mec/payments/${record.id}/invoice`)}
-            title="View Invoice"
-          />
-        </Space>
+      render: (_: unknown, record: GroupedRow) => (
+        <Button
+          type="link"
+          icon={<EyeOutlined />}
+          title="View Invoice"
+          onClick={() => navigate(`/mec/payments/invoice/${encodeURIComponent(record.invoiceNumber)}`)}
+        />
       ),
     },
   ];
@@ -236,6 +315,12 @@ export default function MecStudentPaymentHistory() {
           >
             Record Payment
           </Button>
+          <Button
+            icon={<DollarOutlined />}
+            onClick={() => navigate(`/mec/payments/collect-due?studentId=${id}`)}
+          >
+            Collect Due
+          </Button>
         </div>
       </div>
 
@@ -260,7 +345,7 @@ export default function MecStudentPaymentHistory() {
             />
           </Col>
           <Col span={8}>
-            <Statistic title="Total Payments" value={payments.length} />
+            <Statistic title="Total Payments" value={totalInvoices} />
           </Col>
         </Row>
       </Card>
@@ -276,22 +361,29 @@ export default function MecStudentPaymentHistory() {
             const isBeforeAdmission =
               admissionMonthKey !== null && monthKey < admissionMonthKey;
             const isPaid = !isBeforeAdmission && paidMonths.has(monthKey);
+            const isPartial = !isBeforeAdmission && !isPaid && partialMonths.has(monthKey);
             const bg = isBeforeAdmission
               ? "#f5f5f5"
               : isPaid
                 ? "#f6ffed"
-                : "#fff2f0";
+                : isPartial
+                  ? "#fffbe6"
+                  : "#fff2f0";
             const borderColor = isBeforeAdmission
               ? "#d9d9d9"
               : isPaid
                 ? "#b7eb8f"
-                : "#ffccc7";
-            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : "Unpaid";
+                : isPartial
+                  ? "#ffe58f"
+                  : "#ffccc7";
+            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
             const tagColor = isBeforeAdmission
               ? "default"
               : isPaid
                 ? "success"
-                : "error";
+                : isPartial
+                  ? "warning"
+                  : "error";
             return (
               <Col span={4} key={monthKey}>
                 <div
@@ -317,12 +409,50 @@ export default function MecStudentPaymentHistory() {
         </Row>
       </Card>
 
+      {/* Due Summary — MEC tuition only */}
+      {dueSummary && (dueSummary as { totalDue?: number }).totalDue! > 0 && (
+        <Card
+          title={
+            <span>
+              <ExclamationCircleOutlined style={{ color: "#ff4d4f", marginRight: 8 }} />
+              Outstanding Due
+            </span>
+          }
+          style={{ marginBottom: 16, borderColor: "#ffccc7" }}
+          styles={{ header: { color: "#cf1322" } }}
+        >
+          <Row gutter={16}>
+            <Col span={8}>
+              <Statistic
+                title="Tuition Due"
+                value={`৳${(dueSummary as { breakdown?: { tuition?: { due?: number } } }).breakdown?.tuition?.due?.toLocaleString() ?? 0}`}
+                styles={{ content: { color: "#cf1322", fontSize: 18 } }}
+              />
+            </Col>
+            <Col span={8}>
+              <Statistic
+                title="Total Outstanding"
+                value={`৳${(dueSummary as { totalDue?: number }).totalDue?.toLocaleString()}`}
+                styles={{ content: { color: "#cf1322", fontSize: 18 } }}
+              />
+            </Col>
+          </Row>
+          <Alert
+            type="warning"
+            title="Outstanding tuition due exists for this student."
+            description="Use the 'Collect Due' page to collect outstanding payments from this student."
+            showIcon
+            style={{ marginTop: 16 }}
+          />
+        </Card>
+      )}
+
       {/* Payment Records Table */}
       <Card title="All Payment Records">
         <Table
           columns={columns}
-          dataSource={payments}
-          rowKey="id"
+          dataSource={groupedPayments}
+          rowKey="invoiceNumber"
           loading={loadingPayments}
           pagination={{
             pageSize: 10,

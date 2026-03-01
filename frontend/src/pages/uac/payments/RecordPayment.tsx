@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Form,
   Input,
@@ -14,6 +14,7 @@ import {
   Divider,
   Space,
   Typography,
+  Collapse,
 } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,11 +27,27 @@ import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
 import settingsService from "../../../services/settingsService";
+import axios from "axios";
 import dayjs from "dayjs";
 
 const { Option } = Select;
-const { TextArea } = Input;
 const { Text } = Typography;
+
+interface UacPaymentFormLineItem {
+  paymentType?: string;
+  amount?: number;
+  paymentMonth?: ReturnType<typeof dayjs>;
+  notes?: string;
+}
+
+interface UacPaymentFormValues {
+  studentId: string;
+  paymentDate?: ReturnType<typeof dayjs>;
+  paymentMethod: string;
+  lineItems: UacPaymentFormLineItem[];
+  additionalDiscount?: number;
+  dueAmount?: number;
+}
 
 export default function RecordPayment() {
   const { message } = App.useApp();
@@ -46,6 +63,7 @@ export default function RecordPayment() {
   const [selectedStudentId, setSelectedStudentId] = useState<
     string | undefined
   >();
+  const initialStudentApplied = useRef(false);
 
   // Fetch all students
   const { data: studentsData } = useQuery({
@@ -53,7 +71,7 @@ export default function RecordPayment() {
     queryFn: () => studentsService.getAll(undefined, 1, 1000),
   });
 
-  const allStudents: Student[] = studentsData?.data?.data || [];
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Derive unique classes and groups from students
   const availableClasses = useMemo(
@@ -80,12 +98,17 @@ export default function RecordPayment() {
 
   // Auto-populate from URL query params
   useEffect(() => {
+    if (initialStudentApplied.current) return;
     const studentId = searchParams.get("studentId");
     if (studentId && allStudents.length > 0) {
       const student = allStudents.find((s) => s.id === studentId);
       if (student) {
+        initialStudentApplied.current = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param auto-population
         setSelectedClass(student.class);
+         
         setSelectedGroup(student.group);
+         
         setSelectedStudentId(studentId);
         form.setFieldsValue({ studentId });
       }
@@ -104,10 +127,45 @@ export default function RecordPayment() {
     (studyMaterialsData as { settingValue?: { items: Array<{ name: string; price: number }> } } | null)
       ?.settingValue?.items ?? [];
 
+  // Fetch invoice mode setting
+  const { data: invoiceModeData } = useQuery({
+    queryKey: ["uac-settings", "invoice_mode"],
+    queryFn: () => settingsService.getSetting("uac", "invoice_mode"),
+  });
+  const invoiceMode = (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
+
+  // Watch form values for live totals
+  const formLineItems = Form.useWatch("lineItems", form);
+  const additionalDiscountValue = Form.useWatch("additionalDiscount", form) ?? 0;
+  const dueAmountValue = Form.useWatch("dueAmount", form) ?? 0;
+
+  // Guardian sub total: full (pre-discount) amounts from student profile
+  const guardianSubTotal = useMemo(() => {
+    if (!formLineItems || formLineItems.length === 0) return 0;
+    return (formLineItems as UacPaymentFormLineItem[]).reduce((sum: number, item: UacPaymentFormLineItem) => {
+      const type = item?.paymentType;
+      if (type === "tuition") return sum + (selectedStudent?.monthlyTuitionFee ?? item?.amount ?? 0);
+      if (type === "admission") return sum + (selectedStudent?.admissionFee ?? item?.amount ?? 0);
+      if (type === "readmission") return sum + (selectedStudent?.readmissionFee ?? item?.amount ?? 0);
+      return sum + (item?.amount ?? 0);
+    }, 0);
+  }, [formLineItems, selectedStudent]);
+
+  // Office sub total: actual (post-discount) amounts from form inputs
+  const officeSubTotal = useMemo(() => {
+    if (!formLineItems || formLineItems.length === 0) return 0;
+    return (formLineItems as UacPaymentFormLineItem[]).reduce((sum: number, item: UacPaymentFormLineItem) => sum + (item?.amount ?? 0), 0);
+  }, [formLineItems]);
+
+  const guardianGrandTotal = guardianSubTotal - additionalDiscountValue;
+  const officeGrandTotal = officeSubTotal - additionalDiscountValue;
+  const guardianPaid = guardianGrandTotal - dueAmountValue;
+  const officePaid = officeGrandTotal - dueAmountValue;
+
   // Auto-fill amount on type change — discount-aware
   const onLineItemTypeChange = (type: string, fieldIndex: number) => {
     if (!selectedStudent) return;
-    const lineItems: any[] = form.getFieldValue("lineItems") || [];
+    const lineItems: UacPaymentFormLineItem[] = form.getFieldValue("lineItems") || [];
     let amount: number | undefined;
     if (type === "tuition") {
       amount =
@@ -137,10 +195,11 @@ export default function RecordPayment() {
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       queryClient.invalidateQueries({ queryKey: ["uac-payment-history"] });
       form.resetFields();
+      form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
       setSelectedStudentId(undefined);
     },
-    onError: (err: any) => {
-      if (err?.response?.status === 409) {
+    onError: (err: unknown) => {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
         message.error(err.response.data?.message || "Duplicate payment detected");
       } else {
         message.error("Failed to record payment");
@@ -148,12 +207,12 @@ export default function RecordPayment() {
     },
   });
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: UacPaymentFormValues) => {
     const paymentDate = values.paymentDate
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems = (values.lineItems || []).map((item: any) => ({
+    const lineItems = (values.lineItems || []).map((item: UacPaymentFormLineItem) => ({
       paymentType: item.paymentType,
       amount: item.amount,
       paymentMonth:
@@ -174,6 +233,8 @@ export default function RecordPayment() {
       paymentDate,
       paymentMethod: values.paymentMethod,
       lineItems,
+      additionalDiscount: values.additionalDiscount ?? 0,
+      dueAmount: values.dueAmount ?? 0,
     };
     createMutation.mutate(data);
   };
@@ -214,7 +275,7 @@ export default function RecordPayment() {
         form={form}
         layout="vertical"
         onFinish={onFinish}
-        initialValues={{ lineItems: [{}], paymentDate: dayjs() }}
+        initialValues={{ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 }}
       >
         {/* Student Selection with Cascading Filters */}
         <Card title="Student Information" style={{ marginBottom: 16 }}>
@@ -409,7 +470,7 @@ export default function RecordPayment() {
                                         (m) => m.name === materialName,
                                       );
                                       if (mat) {
-                                        const lineItems: any[] =
+                                        const lineItems: UacPaymentFormLineItem[] =
                                           form.getFieldValue("lineItems") || [];
                                         lineItems[index] = {
                                           ...lineItems[index],
@@ -486,6 +547,134 @@ export default function RecordPayment() {
               </>
             )}
           </Form.List>
+        </Card>
+
+        {/* Payment Summary */}
+        <Card title="Payment Summary" style={{ marginBottom: 16 }}>
+          <Row gutter={24}>
+            <Col span={invoiceMode === "dual" ? 12 : 24}>
+              {invoiceMode === "dual" && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#667eea",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                    letterSpacing: 1,
+                  }}
+                >
+                  Guardian Copy
+                </div>
+              )}
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>Sub Total</Col>
+                <Col>৳{guardianSubTotal.toFixed(2)}</Col>
+              </Row>
+              <Form.Item
+                name="additionalDiscount"
+                label="Additional Discount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber min={0} style={{ width: "100%" }} />
+              </Form.Item>
+              <Row justify="space-between" style={{ marginBottom: 8 }}>
+                <Col>
+                  <strong>Grand Total</strong>
+                </Col>
+                <Col>
+                  <strong>৳{guardianGrandTotal.toFixed(2)}</strong>
+                </Col>
+              </Row>
+              <Form.Item
+                name="dueAmount"
+                label="Due Amount (৳)"
+                style={{ marginBottom: 8 }}
+              >
+                <InputNumber
+                  min={0}
+                  max={guardianGrandTotal}
+                  style={{ width: "100%" }}
+                />
+              </Form.Item>
+              <Divider style={{ margin: "8px 0" }} />
+              <Row justify="space-between">
+                <Col>
+                  <strong>Paid</strong>
+                </Col>
+                <Col>
+                  <strong style={{ color: "#52c41a" }}>
+                    ৳{guardianPaid.toFixed(2)}
+                  </strong>
+                </Col>
+              </Row>
+            </Col>
+
+            {invoiceMode === "dual" && (
+              <Col span={12}>
+                <Collapse
+                  ghost
+                  items={[
+                    {
+                      key: "office",
+                      label: (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#f5222d",
+                            textTransform: "uppercase",
+                            letterSpacing: 1,
+                          }}
+                        >
+                          Office Summary (Actual)
+                        </span>
+                      ),
+                      children: (
+                        <>
+                          {(formLineItems || []).map((item: { paymentType?: string; amount?: number }, i: number) => (
+                            item?.paymentType ? (
+                              <Row key={i} justify="space-between" style={{ marginBottom: 4, fontSize: 13 }}>
+                                <Col><Text type="secondary">{item.paymentType.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</Text></Col>
+                                <Col>৳{(item.amount ?? 0).toFixed(2)}</Col>
+                              </Row>
+                            ) : null
+                          ))}
+                          <Row justify="space-between" style={{ marginBottom: 8, marginTop: 4 }}>
+                            <Col>Sub Total</Col>
+                            <Col>৳{officeSubTotal.toFixed(2)}</Col>
+                          </Row>
+                          <Row justify="space-between" style={{ marginBottom: 8 }}>
+                            <Col>
+                              <strong>Grand Total</strong>
+                            </Col>
+                            <Col>
+                              <strong>৳{officeGrandTotal.toFixed(2)}</strong>
+                            </Col>
+                          </Row>
+                          <Row justify="space-between" style={{ marginBottom: 8 }}>
+                            <Col><Text type="danger">Due</Text></Col>
+                            <Col><Text type="danger">৳{dueAmountValue.toFixed(2)}</Text></Col>
+                          </Row>
+                          <Divider style={{ margin: "8px 0" }} />
+                          <Row justify="space-between">
+                            <Col>
+                              <strong>Paid</strong>
+                            </Col>
+                            <Col>
+                              <strong style={{ color: "#52c41a" }}>
+                                ৳{officePaid.toFixed(2)}
+                              </strong>
+                            </Col>
+                          </Row>
+                        </>
+                      ),
+                    },
+                  ]}
+                />
+              </Col>
+            )}
+          </Row>
         </Card>
 
         <Form.Item>

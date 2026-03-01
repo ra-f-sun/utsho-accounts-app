@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Form,
   Input,
@@ -26,6 +26,7 @@ export default function AddMbcsTeacher() {
   const [paymentType, setPaymentType] = useState<"fixed" | "lecture_based">(
     "fixed",
   );
+  const existingDataApplied = useRef(false);
 
   // Fetch existing teacher for edit
   const { data: existingData } = useQuery({
@@ -35,10 +36,13 @@ export default function AddMbcsTeacher() {
   });
 
   useEffect(() => {
+    if (existingDataApplied.current) return;
     if (existingData) {
       const teacher = existingData?.data;
       if (teacher) {
+        existingDataApplied.current = true;
         form.setFieldsValue(teacher);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- edit form hydration
         setPaymentType(teacher.paymentType || "fixed");
       }
     }
