@@ -126,11 +126,33 @@ export default function MecStudentPaymentHistory() {
   const monthlyTuition =
     (student?.monthlyTuitionFee ?? 0) - (student?.discountTuition ?? 0);
 
-  // Sum tuition amounts per month (MEC is tuition-only, no paymentType filter needed)
+  // Compute actual tuition paid per month, accounting for officePaid allocation
   const tuitionByMonth = new Map<string, number>();
+  // Group payments by invoiceNumber to allocate officePaid correctly
+  const invoiceGroups = new Map<string, typeof payments>();
   for (const p of payments) {
-    const key = dayjs(p.paymentMonth).format("YYYY-MM");
-    tuitionByMonth.set(key, (tuitionByMonth.get(key) ?? 0) + p.amount);
+    const inv = p.invoiceNumber ?? `__${p.id}`;
+    if (!invoiceGroups.has(inv)) invoiceGroups.set(inv, []);
+    invoiceGroups.get(inv)!.push(p);
+  }
+  for (const rows of invoiceGroups.values()) {
+    const { officePaid = 0, isDueCollection } = rows[0];
+    if (isDueCollection) {
+      // Due-collection: amount IS actual paid per type
+      for (const r of rows) {
+        const mk = dayjs(r.paymentMonth).format("YYYY-MM");
+        tuitionByMonth.set(mk, (tuitionByMonth.get(mk) ?? 0) + r.amount);
+      }
+    } else {
+      // Original invoice: allocate officePaid to items in order (all are tuition in MEC)
+      let remaining = officePaid;
+      for (const r of rows) {
+        const paid = Math.min(remaining, r.amount);
+        remaining -= paid;
+        const mk = dayjs(r.paymentMonth).format("YYYY-MM");
+        tuitionByMonth.set(mk, (tuitionByMonth.get(mk) ?? 0) + paid);
+      }
+    }
   }
 
   const paidMonths = new Set<string>();
@@ -173,7 +195,8 @@ export default function MecStudentPaymentHistory() {
         paymentDate: first.paymentDate,
         paymentMethod: first.paymentMethod,
       };
-    });
+    })
+    .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
   }, [payments]);
 
   const columns: ColumnsType<GroupedRow> = [

@@ -567,6 +567,35 @@ export default function RecordPayment() {
                   Guardian Copy
                 </div>
               )}
+              {Array.isArray(formLineItems) &&
+                (formLineItems as UacPaymentFormLineItem[]).map(
+                  (item: UacPaymentFormLineItem, i: number) => {
+                    if (!item?.paymentType) return null;
+                    const label = item.paymentType
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                    let guardianAmt = item.amount ?? 0;
+                    if (item.paymentType === "tuition")
+                      guardianAmt =
+                        selectedStudent?.monthlyTuitionFee ?? guardianAmt;
+                    else if (item.paymentType === "admission")
+                      guardianAmt =
+                        selectedStudent?.admissionFee ?? guardianAmt;
+                    else if (item.paymentType === "readmission")
+                      guardianAmt =
+                        selectedStudent?.readmissionFee ?? guardianAmt;
+                    return (
+                      <Row
+                        key={i}
+                        justify="space-between"
+                        style={{ marginBottom: 4, fontSize: 13 }}
+                      >
+                        <Col>{label}</Col>
+                        <Col>৳{guardianAmt.toFixed(2)}</Col>
+                      </Row>
+                    );
+                  },
+                )}
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Col>Sub Total</Col>
                 <Col>৳{guardianSubTotal.toFixed(2)}</Col>

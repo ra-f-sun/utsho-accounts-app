@@ -97,7 +97,7 @@ describe('AnalyticsService', () => {
 
     it('should return all organizations stats when no filter provided', async () => {
       const mockDate = new Date('2026-01-01');
-      
+
       // Mock aggregates for all organizations
       jest.spyOn(prismaService.uacPayment, 'aggregate').mockResolvedValue({
         _sum: { amount: 100000 },
@@ -120,7 +120,7 @@ describe('AnalyticsService', () => {
         _max: {},
         _min: {},
       });
-      
+
       jest.spyOn(prismaService.uacPayroll, 'aggregate').mockResolvedValue({
         _sum: { amount: 30000 },
         _avg: {},
@@ -135,7 +135,7 @@ describe('AnalyticsService', () => {
         _max: {},
         _min: {},
       });
-      
+
       jest.spyOn(prismaService.expense, 'aggregate').mockResolvedValue({
         _sum: { amount: 10000 },
         _avg: {},
@@ -175,7 +175,6 @@ describe('AnalyticsService', () => {
         },
       ];
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest
         .spyOn(prismaService.expense, 'groupBy')
         .mockResolvedValue(mockExpenses as any);

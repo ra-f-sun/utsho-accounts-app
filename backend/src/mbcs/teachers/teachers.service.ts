@@ -15,7 +15,10 @@ export class TeachersService {
   }
 
   async findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) {
-    const where: Prisma.MbcsTeacherWhereInput = { isActive: true, associationEndDate: null };
+    const where: Prisma.MbcsTeacherWhereInput = {
+      isActive: true,
+      associationEndDate: null,
+    };
 
     if (filters?.paymentType) {
       where.paymentType = filters.paymentType;
@@ -76,7 +79,8 @@ export class TeachersService {
 
   async reassociate(id: string) {
     const teacher = await this.prisma.mbcsTeacher.findUnique({ where: { id } });
-    if (!teacher) throw new NotFoundException(`Teacher with ID ${id} not found`);
+    if (!teacher)
+      throw new NotFoundException(`Teacher with ID ${id} not found`);
     return this.prisma.mbcsTeacher.update({
       where: { id },
       data: { associationEndDate: null },

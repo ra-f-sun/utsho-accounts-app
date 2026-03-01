@@ -32,6 +32,7 @@ import type { MbcsDueProfile, MbcsCollectDueDto, DueSummary } from "../../../ser
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -243,7 +244,7 @@ export default function MbcsCollectDue() {
             <Form.Item label="Class">
               <Select allowClear placeholder="All Classes" value={selectedClass}
                 onChange={(v) => { setSelectedClass(v); setSelectedShift(undefined); setSelectedStudentId(undefined); form.resetFields(); }}
-                options={availableClasses.map((c) => ({ value: c, label: `Class ${c}` }))}
+                options={availableClasses.map((c) => ({ value: c, label: MBCS_CLASS_MAP[c] ?? `Class ${c}` }))}
               />
             </Form.Item>
           </Col>
@@ -274,7 +275,7 @@ export default function MbcsCollectDue() {
                 suffixIcon={<SearchOutlined />}
                 options={filteredStudents.map((s) => ({
                   value: s.id,
-                  label: `${s.name} — Class ${s.class}${s.shift ? ` (${s.shift})` : ""}`,
+                  label: `${s.name} — ${MBCS_CLASS_MAP[s.class] ?? `Class ${s.class}`}${s.shift ? ` (${s.shift})` : ""}`,
                 }))}
               />
             </Form.Item>

@@ -144,7 +144,8 @@ export class StudentsService {
 
   async reassociate(id: string) {
     const student = await this.prisma.uacStudent.findUnique({ where: { id } });
-    if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
+    if (!student)
+      throw new NotFoundException(`Student with ID ${id} not found`);
     return this.prisma.uacStudent.update({
       where: { id },
       data: { associationEndDate: null },
@@ -165,8 +166,10 @@ export class StudentsService {
       }
     }
 
-    const resolveOrDefault = (overrideKey: string, defaultKey: string): number =>
-      settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
+    const resolveOrDefault = (
+      overrideKey: string,
+      defaultKey: string,
+    ): number => settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
     const students = await this.prisma.uacStudent.findMany({
       where: { isActive: true },
@@ -202,7 +205,9 @@ export class StudentsService {
   async promote(id: string, dto: PromoteStudentDto, promotedBy: string) {
     const student = await this.findOne(id);
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'uac' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'uac' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
@@ -212,8 +217,13 @@ export class StudentsService {
     const resolve = (overrideKey: string, defaultKey: string) =>
       settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
-    const newTuition = resolve(`tuition_override_${dto.toClass}`, 'tuition_default') || student.monthlyTuitionFee;
-    const newReadmission = resolve(`readmission_override_${dto.toClass}`, 'readmission_default');
+    const newTuition =
+      resolve(`tuition_override_${dto.toClass}`, 'tuition_default') ||
+      student.monthlyTuitionFee;
+    const newReadmission = resolve(
+      `readmission_override_${dto.toClass}`,
+      'readmission_default',
+    );
 
     const [, updatedStudent] = await this.prisma.$transaction([
       this.prisma.promotionLog.create({
@@ -238,14 +248,19 @@ export class StudentsService {
     return updatedStudent;
   }
 
-  async promoteBulk(dto: PromoteBulkDto, promotedBy: string): Promise<{ promoted: number }> {
+  async promoteBulk(
+    dto: PromoteBulkDto,
+    promotedBy: string,
+  ): Promise<{ promoted: number }> {
     const students = await this.prisma.uacStudent.findMany({
       where: { isActive: true, associationEndDate: null, class: dto.fromClass },
       select: { id: true, monthlyTuitionFee: true },
     });
     if (students.length === 0) return { promoted: 0 };
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'uac' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'uac' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
@@ -255,8 +270,14 @@ export class StudentsService {
     const resolve = (overrideKey: string, defaultKey: string) =>
       settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
-    const newTuition = resolve(`tuition_override_${dto.toClass}`, 'tuition_default');
-    const newReadmission = resolve(`readmission_override_${dto.toClass}`, 'readmission_default');
+    const newTuition = resolve(
+      `tuition_override_${dto.toClass}`,
+      'tuition_default',
+    );
+    const newReadmission = resolve(
+      `readmission_override_${dto.toClass}`,
+      'readmission_default',
+    );
 
     const ops = students.flatMap((s) => [
       this.prisma.promotionLog.create({

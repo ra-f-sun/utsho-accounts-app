@@ -15,7 +15,10 @@ import { CreateMecStudentDto } from './dto/create-student.dto';
 import { ImportMecStudentsDto } from './dto/import-students.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
 import { FilterMecStudentDto } from './dto/filter-student.dto';
-import { PromoteMecBulkDto, PromoteMecStudentDto } from './dto/promote-student.dto';
+import {
+  PromoteMecBulkDto,
+  PromoteMecStudentDto,
+} from './dto/promote-student.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../../guards/roles.guard';
 import { OrganizationGuard } from '../../guards/organization.guard';

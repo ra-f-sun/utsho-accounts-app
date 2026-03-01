@@ -20,17 +20,37 @@ Before starting, ensure your second device has:
 
 ## Quick Reference — What Changed in v1.2
 
-| Change Type | Description |
-|-------------|-------------|
-| **New DB Table** | `org_settings` — stores per-organization configuration (tuition fees, discounts, study materials) |
-| **New DB Table** | `promotion_logs` — tracks student class promotions |
-| **New Columns** | `readmission_fee`, `discount_tuition`, `discount_admission`, `discount_readmission`, `association_end_date` on all student models |
-| **New Columns** | `association_end_date` on all teacher and staff models |
-| **New Columns** | `sub_total`, `discount`, `grand_total`, `paid_amount`, `due_amount` on all payment models |
-| **New Columns** | `paid_amount`, `due_amount` on all payroll models |
-| **New Backend Module** | `src/settings/` — settings CRUD API |
-| **New Frontend Pages** | Settings pages, Import/Export pages, Promotion pages |
-| **New npm packages** | Possibly new packages — check `package.json` diffs |
+### Database Changes (Migrations)
+
+| Migration Date | Description |
+|----------------|-------------|
+| Feb 17 | `init` — initial schema (all base tables) |
+| Feb 22 | Remove invoice unique constraint on payment tables |
+| Feb 23 | Add soft-delete (`isActive`) on financial record tables |
+| Feb 24 | Standardize payment methods across all orgs |
+| Feb 25 | Per-org invoice counter system |
+| Feb 26 | `org_settings` table — per-organization configuration |
+| Feb 26 | Student fee & discount fields (`readmission_fee`, `discount_tuition`, `discount_admission`, `discount_readmission`) |
+| Feb 26 | `association_end_date` on student, teacher, staff models |
+| Feb 26 | `promotion_logs` table — tracks class promotions |
+| Feb 27 | **Dual invoice fields** — `guardianAmount`, `guardianSubTotal`, `guardianGrandTotal`, `guardianPaid`, `officeSubTotal`, `officeGrandTotal`, `officePaid`, `additionalDiscount`, `dueAmount` on all 3 payment tables |
+| Feb 27 | **Due collection fields** — `isDueCollection`, `parentInvoiceNumber` on payment tables; `dueAmount`, `isDueCollection`, `parentPayrollId` on payroll tables; new indexes |
+| Feb 28 | **Payroll paid amount** — `paidAmount` on `uac_payroll` and `mbcs_payroll` |
+
+### Code-Level Changes (No Migration Needed)
+
+These are handled automatically by `git pull` — no extra steps required:
+
+| Area | Description |
+|------|-------------|
+| **Payment Recording** | Dual invoice mode (guardian copy + office copy), due amount tracking, study material name in line items |
+| **Collect Due** | Multi-month allocation fix — due collection now correctly distributes across individual months instead of assigning all to the first month |
+| **Invoice Components** | Show additional discount, due amount, study material names; print support fixed |
+| **Payment History** | Grouped by invoice, sorted newest-first, MBCS class labels, tuition status allocation logic (officePaid-based priority allocation) |
+| **MBCS Class Display** | All pages use `MBCS_CLASS_MAP` from `constants/mbcsClasses.ts` instead of raw integers |
+| **Payroll Invoices** | Show `paidAmount` vs `amount`, due amount display |
+| **Student Forms** | Class 0 (Play Group) support, empty-string sanitization |
+| **Backend** | `allocatePaid` made generic to preserve `paymentMonth` through pipelines; ESLint/TypeScript clean |
 
 ---
 
@@ -147,11 +167,12 @@ npx prisma studio
 5. **Staff tables** (`uac_staff`, `mbcs_staff`):
    - New column visible: `association_end_date` (NULL for all existing rows)
 6. **Payment tables** (`uac_payments`, `mbcs_payments`, `mec_payments`):
-   - New columns visible: `sub_total`, `discount`, `grand_total`, `paid_amount`, `due_amount`
-   - Existing rows should have `NULL` or `0`
-7. **Payroll tables** (`uac_payroll`, `mbcs_payroll`):
-   - New columns visible: `paid_amount`, `due_amount`
-   - Existing rows should have `NULL` or `0`
+   - Dual invoice columns: `guardianAmount`, `guardianSubTotal`, `guardianGrandTotal`, `guardianPaid`, `officeSubTotal`, `officeGrandTotal`, `officePaid`, `additionalDiscount`, `dueAmount`
+   - Due collection columns: `isDueCollection` (default false), `parentInvoiceNumber`
+   - Existing rows should have defaults (0 or NULL)
+6. **Payroll tables** (`uac_payroll`, `mbcs_payroll`):
+   - New columns: `paidAmount`, `dueAmount`, `isDueCollection`, `parentPayrollId`
+   - Existing rows should have NULL or 0
 
 Close Prisma Studio when done (Ctrl+C).
 
@@ -393,5 +414,5 @@ pg_dump -U utsho_user utsho_db > backup_before_v1.2_$(date +%Y%m%d_%H%M%S).sql
 
 ---
 
-*Last Updated: February 26, 2026*  
-*Status: Ready for Use*
+*Last Updated: March 2, 2026*  
+*Status: Ready for Use — covers all migrations through Feb 28 and code changes through Mar 2*

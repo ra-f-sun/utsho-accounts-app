@@ -40,7 +40,7 @@ export class CreateMecStudentDto {
   // === Optional academic fields ===
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   class?: number;
 
   @IsOptional()

@@ -31,6 +31,7 @@ import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP, MBCS_CLASSES } from "../../../constants/mbcsClasses";
 
 const { Option } = Select;
 
@@ -139,7 +140,7 @@ export default function MbcsPaymentHistory() {
             <strong>{record.student.name}</strong>
           </div>
           <div style={{ fontSize: 12, color: "#888" }}>
-            Class {record.student.class}
+            {MBCS_CLASS_MAP[record.student.class] ?? `Class ${record.student.class}`}
             {record.student.shift ? ` · ${record.student.shift}` : ""}
           </div>
         </div>
@@ -294,7 +295,7 @@ export default function MbcsPaymentHistory() {
           <div>
             <strong>{student?.name}</strong>
             <div style={{ fontSize: 12, color: "#888" }}>
-              Class {student?.class}
+              {MBCS_CLASS_MAP[student?.class ?? -1] ?? `Class ${student?.class}`}
               {student?.shift ? ` · ${student.shift}` : ""}
             </div>
           </div>
@@ -395,7 +396,7 @@ export default function MbcsPaymentHistory() {
           <div>
             <strong>{student?.name}</strong>
             <div style={{ fontSize: 12, color: "#888" }}>
-              Class {student?.class}
+              {MBCS_CLASS_MAP[student?.class ?? -1] ?? `Class ${student?.class}`}
               {student?.shift ? ` · ${student.shift}` : ""}
             </div>
           </div>
@@ -493,9 +494,9 @@ export default function MbcsPaymentHistory() {
         }
         allowClear
       >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((cls) => (
+        {MBCS_CLASSES.map(({ value: cls, label }) => (
           <Option key={cls} value={cls}>
-            Class {cls}
+            {label}
           </Option>
         ))}
       </Select>

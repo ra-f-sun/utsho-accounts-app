@@ -41,7 +41,12 @@ export class UacExpensesController {
 
   @Get()
   findAll(@Query() query: FilterOrgExpenseDto) {
-    return this.expensesService.findAll('uac', query.expenseType, query.expenseMonth, query);
+    return this.expensesService.findAll(
+      'uac',
+      query.expenseType,
+      query.expenseMonth,
+      query,
+    );
   }
 
   @Get('summary/:month')

@@ -108,6 +108,14 @@ const MbcsStaffPayrollInvoice = forwardRef<HTMLDivElement, { data: PayrollInvoic
           </div>
         </div>
 
+        {/* Due Amount */}
+        {(data.dueAmount ?? 0) > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 24px", fontSize: 14, color: "#ff4d4f", fontWeight: 600, marginBottom: 8 }}>
+            <span>Due Amount</span>
+            <span>৳{data.dueAmount?.toLocaleString()}</span>
+          </div>
+        )}
+
         {/* Amount */}
         <div
           style={{
@@ -124,7 +132,7 @@ const MbcsStaffPayrollInvoice = forwardRef<HTMLDivElement, { data: PayrollInvoic
             Total Salary Paid
           </span>
           <span style={{ fontSize: 34, fontWeight: 800, color: "#fff" }}>
-            ৳{data.amount.toLocaleString()}
+            ৳{(data.paidAmount ?? data.amount).toLocaleString()}
           </span>
         </div>
 

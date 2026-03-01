@@ -28,6 +28,7 @@ import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import settingsService from "../../../services/settingsService";
 import axios from "axios";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -297,7 +298,7 @@ export default function MbcsRecordPayment() {
                 >
                   {availableClasses.map((cls) => (
                     <Option key={cls} value={cls}>
-                      Class {cls}
+                      {MBCS_CLASS_MAP[cls] ?? `Class ${cls}`}
                     </Option>
                   ))}
                 </Select>
@@ -339,7 +340,7 @@ export default function MbcsRecordPayment() {
               showSearch
               options={filteredStudents.map((student) => ({
                 value: student.id,
-                label: `${student.name} - Class ${student.class}${student.shift ? ` (${student.shift})` : ""} · ${student.contactNumber}`,
+                label: `${student.name} - ${MBCS_CLASS_MAP[student.class] ?? `Class ${student.class}`}${student.shift ? ` (${student.shift})` : ""} · ${student.contactNumber}`,
               }))}
               filterOption={(input, option) =>
                 ((option?.label as string) || "")
@@ -572,6 +573,37 @@ export default function MbcsRecordPayment() {
                   Guardian Copy
                 </div>
               )}
+              {Array.isArray(formLineItems) &&
+                formLineItems.map(
+                  (item: MbcsPaymentFormLineItem, i: number) => {
+                    if (!item?.paymentType) return null;
+                    const label = item.paymentType
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+                    let guardianAmt = item.amount ?? 0;
+                    if (invoiceMode !== "unified") {
+                      if (item.paymentType === "tuition")
+                        guardianAmt =
+                          selectedStudent?.monthlyTuitionFee ?? guardianAmt;
+                      else if (item.paymentType === "admission")
+                        guardianAmt =
+                          selectedStudent?.admissionFee ?? guardianAmt;
+                      else if (item.paymentType === "readmission")
+                        guardianAmt =
+                          selectedStudent?.readmissionFee ?? guardianAmt;
+                    }
+                    return (
+                      <Row
+                        key={i}
+                        justify="space-between"
+                        style={{ marginBottom: 4, fontSize: 13 }}
+                      >
+                        <Col>{label}</Col>
+                        <Col>৳{guardianAmt.toFixed(2)}</Col>
+                      </Row>
+                    );
+                  },
+                )}
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Col>Sub Total</Col>
                 <Col>৳{guardianSubTotal.toFixed(2)}</Col>

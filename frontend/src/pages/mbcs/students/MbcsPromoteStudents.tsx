@@ -16,6 +16,7 @@ import { ArrowLeftOutlined, VerticalAlignTopOutlined } from "@ant-design/icons";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const { Title, Text } = Typography;
 
@@ -23,9 +24,8 @@ const MBCS_FROM_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const MBCS_TO_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 const classLabel = (c: number) => {
-  if (c === 0) return "Nursery (Class 0)";
   if (c === 11) return "Graduated";
-  return `Class ${c}`;
+  return MBCS_CLASS_MAP[c] ?? `Class ${c}`;
 };
 
 export default function MbcsPromoteStudents() {

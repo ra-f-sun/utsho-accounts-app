@@ -100,12 +100,16 @@ export default function AddMecStudent() {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
-    const data = {
+    const raw = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD") ?? undefined,
       discountTuition: values.discountTuition ?? 0,
     };
+    // Strip empty strings to undefined so optional backend validators don't reject ""
+    const data = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, v === "" ? undefined : v]),
+    );
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {

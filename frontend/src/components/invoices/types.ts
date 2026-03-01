@@ -51,6 +51,8 @@ export interface StudentPaymentInvoiceData {
 export interface PayrollInvoiceData {
   invoiceNumber: string;
   amount: number;
+  paidAmount?: number;
+  dueAmount?: number;
   paymentDate: string;
   paymentMonth: string;
   paymentMethod: string;

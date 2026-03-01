@@ -52,17 +52,12 @@ function buildPriorityOrder(
   });
 }
 
-function allocatePaid(
-  lineItems: { paymentType: string; amount: number }[],
+function allocatePaid<T extends { paymentType: string; amount: number }>(
+  lineItems: T[],
   totalPaid: number,
   priorityOrder: { group: string; types: string[] }[],
-) {
-  const result: {
-    paymentType: string;
-    amount: number;
-    paidAmount: number;
-    dueAmount: number;
-  }[] = [];
+): (T & { paidAmount: number; dueAmount: number })[] {
+  const result: (T & { paidAmount: number; dueAmount: number })[] = [];
   let remaining = totalPaid;
 
   for (const pg of priorityOrder) {
@@ -513,6 +508,8 @@ export class PaymentsService {
     const lineItems = originalRows.map((r) => ({
       paymentType: r.paymentType,
       amount: r.amount,
+      paymentMonth: r.paymentMonth,
+      studentId: r.studentId,
     }));
     const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
     const existingAllocation = allocatePaid(
@@ -522,7 +519,12 @@ export class PaymentsService {
     );
     const dueItemsNow = existingAllocation
       .filter((i) => i.dueAmount > 0)
-      .map((i) => ({ paymentType: i.paymentType, amount: i.dueAmount }));
+      .map((i) => ({
+        paymentType: i.paymentType,
+        amount: i.dueAmount,
+        paymentMonth: i.paymentMonth,
+        studentId: i.studentId,
+      }));
 
     const newAllocation = allocatePaid(
       dueItemsNow,
@@ -543,15 +545,12 @@ export class PaymentsService {
     return this.prisma.$transaction(async (tx) => {
       const payments = await Promise.all(
         itemsToPay.map((item) => {
-          const originalRow = originalRows.find(
-            (r) => r.paymentType === item.paymentType,
-          )!;
           return tx.mbcsPayment.create({
             data: {
-              studentId: originalRow.studentId,
+              studentId: item.studentId,
               paymentType: item.paymentType,
               amount: item.paidAmount,
-              paymentMonth: originalRow.paymentMonth,
+              paymentMonth: item.paymentMonth,
               paymentDate: new Date(dto.paymentDate),
               paymentMethod: dto.paymentMethod,
               notes: dto.notes,

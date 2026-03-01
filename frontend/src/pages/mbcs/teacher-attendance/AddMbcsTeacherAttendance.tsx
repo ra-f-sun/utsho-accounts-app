@@ -19,6 +19,7 @@ import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
 import axios from "axios";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 interface MbcsAttendanceFormValues {
   teacherId: string;
@@ -222,7 +223,7 @@ export default function AddMbcsTeacherAttendance() {
                     <Select placeholder="Which class (optional)" allowClear>
                       {[6, 7, 8, 9, 10].map((cls) => (
                         <Select.Option key={cls} value={cls}>
-                          Class {cls}
+                          {MBCS_CLASS_MAP[cls] ?? `Class ${cls}`}
                         </Select.Option>
                       ))}
                     </Select>

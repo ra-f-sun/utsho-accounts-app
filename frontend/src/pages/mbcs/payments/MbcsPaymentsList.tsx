@@ -14,6 +14,7 @@ import type {
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import QueryError from "../../../components/QueryError";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const { Option } = Select;
 
@@ -105,7 +106,7 @@ export default function MbcsPaymentsList() {
         <div>
           <div><strong>{record.student?.name}</strong></div>
           <div style={{ fontSize: 12, color: "#888" }}>
-            Class {record.student?.class}
+            {MBCS_CLASS_MAP[record.student?.class ?? -1] ?? `Class ${record.student?.class}`}
             {record.student?.shift ? ` \u00b7 ${record.student.shift}` : ""}
           </div>
         </div>

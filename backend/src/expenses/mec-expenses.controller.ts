@@ -41,7 +41,12 @@ export class MecExpensesController {
 
   @Get()
   findAll(@Query() query: FilterOrgExpenseDto) {
-    return this.expensesService.findAll('mec', query.expenseType, query.expenseMonth, query);
+    return this.expensesService.findAll(
+      'mec',
+      query.expenseType,
+      query.expenseMonth,
+      query,
+    );
   }
 
   @Get('summary/:month')

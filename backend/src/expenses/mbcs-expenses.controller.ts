@@ -41,7 +41,12 @@ export class MbcsExpensesController {
 
   @Get()
   findAll(@Query() query: FilterOrgExpenseDto) {
-    return this.expensesService.findAll('mbcs', query.expenseType, query.expenseMonth, query);
+    return this.expensesService.findAll(
+      'mbcs',
+      query.expenseType,
+      query.expenseMonth,
+      query,
+    );
   }
 
   @Get('summary/:month')

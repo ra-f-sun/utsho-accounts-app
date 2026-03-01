@@ -5,7 +5,10 @@ import { CreateMecStudentDto } from './dto/create-student.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
 import { FilterMecStudentDto } from './dto/filter-student.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { PromoteMecBulkDto, PromoteMecStudentDto } from './dto/promote-student.dto';
+import {
+  PromoteMecBulkDto,
+  PromoteMecStudentDto,
+} from './dto/promote-student.dto';
 
 @Injectable()
 export class MecStudentsService {
@@ -119,7 +122,8 @@ export class MecStudentsService {
 
   async reassociate(id: string) {
     const student = await this.prisma.mecStudent.findUnique({ where: { id } });
-    if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
+    if (!student)
+      throw new NotFoundException(`Student with ID ${id} not found`);
     return this.prisma.mecStudent.update({
       where: { id },
       data: { associationEndDate: null },
@@ -164,14 +168,17 @@ export class MecStudentsService {
   async promote(id: string, dto: PromoteMecStudentDto, promotedBy: string) {
     const student = await this.findOne(id);
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'mec' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'mec' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
       const numVal = val?.value;
       if (numVal && numVal > 0) settingMap.set(row.settingKey, numVal);
     }
-    const newTuition = settingMap.get('tuition_default') || student.monthlyTuitionFee;
+    const newTuition =
+      settingMap.get('tuition_default') || student.monthlyTuitionFee;
 
     const [, updatedStudent] = await this.prisma.$transaction([
       this.prisma.promotionLog.create({
@@ -192,14 +199,19 @@ export class MecStudentsService {
     return updatedStudent;
   }
 
-  async promoteBulk(dto: PromoteMecBulkDto, promotedBy: string): Promise<{ promoted: number }> {
+  async promoteBulk(
+    dto: PromoteMecBulkDto,
+    promotedBy: string,
+  ): Promise<{ promoted: number }> {
     const students = await this.prisma.mecStudent.findMany({
       where: { isActive: true, associationEndDate: null, class: dto.fromClass },
       select: { id: true },
     });
     if (students.length === 0) return { promoted: 0 };
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'mec' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'mec' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
@@ -223,7 +235,8 @@ export class MecStudentsService {
         where: { id: s.id },
         data: {
           class: dto.toClass,
-          ...(newTuition && newTuition > 0 && { monthlyTuitionFee: newTuition }),
+          ...(newTuition &&
+            newTuition > 0 && { monthlyTuitionFee: newTuition }),
         },
       }),
     ]);

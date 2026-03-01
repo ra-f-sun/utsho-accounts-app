@@ -88,6 +88,8 @@ export default function PayrollInvoice() {
   const invoiceData: PayrollInvoiceData = {
     invoiceNumber: payroll.invoiceNumber,
     amount: payroll.amount,
+    paidAmount: payroll.paidAmount,
+    dueAmount: payroll.dueAmount,
     paymentDate: payroll.paymentDate,
     paymentMonth: payroll.paymentMonth,
     paymentMethod: payroll.paymentMethod,

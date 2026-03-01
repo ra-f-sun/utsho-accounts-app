@@ -1543,3 +1543,82 @@ These items from `REFACTOR_CHECKLIST_2.md` were marked as incomplete and may int
 ### Bug Fixes Applied
 - Fixed `syncFeesFromSettings` JSON bug in UAC, MBCS, MEC student services (settings stored as `{value: N}` objects, not bare numbers)
 - Fixed frontend TypeScript errors: `allowClear` on `InputNumber`, unused `Title`/`prefix` variables, `KeyboardEvent` type-only imports (7 files in `settings/` pages)
+
+### Bug Report — Payment System Issues (March 2, 2026) — ✅ ALL RESOLVED
+
+**Scenario reproduced on MBCS:** Tuition fee 1200 (no discount), Admission fee 10200 (discount 1000 → effective 9200). Admission date February 2026.
+
+#### Issue A — MBCS Class Display Shows Raw Numbers — ✅ FIXED
+- **Problem:** MBCS uses coded integer classes (0=Play Group, 1=Nursery, 2=KG, 3=Class 1, …, 10=Class 8). Every page/component renders `Class {n}` with the raw integer instead of looking up `MBCS_CLASS_MAP`.
+- **Scope:** ~16 locations across 10 files.
+- **Fix applied:** Imported `MBCS_CLASS_MAP` / `MBCS_CLASSES` from `constants/mbcsClasses.ts` in all files. Replaced raw `Class {n}` with `MBCS_CLASS_MAP[n]`. Fixed falsy check for class 0 (Play Group). Updated all dropdowns to include class 0 and use proper labels.
+
+#### Issue B — Record Payment: Guardian Copy Missing Line-Item Breakdown — ✅ FIXED
+- **Problem:** Guardian Copy section only showed "Sub Total ৳X" without per-type line items.
+- **Scope:** All 3 org RecordPayment forms.
+- **Fix applied:** Added per-type guardian amount breakdown (using student profile fees for tuition/admission/readmission) above the Sub Total line in `MbcsRecordPayment.tsx`, `RecordPayment.tsx` (UAC), `MecRecordPayment.tsx`. MEC uses "Month N" labels since it's tuition-only.
+
+#### Issue C — Invoice Page Not Showing Due Amount — ✅ FIXED
+- **Problem:** Invoice templates receive `dueAmount` but never render it.
+- **Scope:** All 6 invoice components.
+- **Fix applied:** Added conditional "Additional Discount" and "Due Amount" rows (when > 0) between line items table and "Total Amount Paid" bar in all 6 invoice components.
+
+#### Issue D — Tuition Status Logic Still Incorrect (allocatePaid mismatch) — ✅ FIXED
+- **Problem:** Previous logic summed `p.amount` (= fee charged, NOT paid amount) causing false "Paid" status.
+- **Scope:** All 3 StudentPaymentHistory files.
+- **Fix applied:** Replaced naive sum with invoice-grouped allocation: groups payments by `invoiceNumber`, then for non-due-collection invoices allocates `officePaid` to tuition rows first (highest priority) using `min(remaining, amount)`. Due-collection rows use `amount` directly. Correctly compares per-month totals to `monthlyTuitionFee - discountTuition`.
+
+---
+
+### Bug Report — Payment & Display Issues Round 2 (March 2, 2026)
+
+#### Issue E — "Study Materials" Label Not Descriptive in Invoices & Payment History
+- **Problem:** When a payment includes study materials, the line-item type shows only "Study Materials" without specifying WHICH material. The specific material name is stored in the line item's `notes` field (populated from the material selector in RecordPayment), but no invoice or table component renders it alongside the type label.
+- **Example:** Invoice shows "Study Materials — ৳200" but the user has no idea if it's "Math Book" or "Drawing Kit".
+- **Scope:**
+  - Invoice components (4 files with `paymentType`): `UacStudentInvoice.tsx`, `UacStudentOfficeInvoice.tsx`, `MbcsStudentInvoice.tsx`, `MbcsStudentOfficeInvoice.tsx` — all render `fmt(item.paymentType)` ignoring `item.notes`. MEC has no study materials.
+  - Student payment history pages (UAC, MBCS): grouped row type tags show `type.replace(/_/g, " ").toUpperCase()` without notes.
+  - General payment history/list pages.
+- **Fix:** Append ` — {notes}` when `paymentType === "study_materials" && notes` exists, e.g., "Study Materials — Math Book".
+
+#### Issue F — Student Payment History: No Sorting & No Filters
+- **Problem:** On the individual student payment history page, grouped payment records are not explicitly sorted. The Map insertion order depends on the backend response, which may not consistently be newest-first. Also, there are no filter controls (by date, type, etc.) to narrow down records.
+- **Scope:** All 3 StudentPaymentHistory files: `StudentPaymentHistory.tsx` (UAC), `MbcsStudentPaymentHistory.tsx`, `MecStudentPaymentHistory.tsx`.
+- **Fix (sorting):** Add `.sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())` to the `groupedPayments` array.
+- **Fix (filters):** Add payment type and/or date range filter controls above the table.
+
+#### Issue G — Payroll Invoices Missing Due Amount
+- **Problem:** Student invoice components were fixed to show due amounts (Issue C), but payroll/teacher/staff invoice components have not been updated. The `PayrollInvoiceData` type is missing `paidAmount` and `dueAmount` fields. The payroll invoice pages don't pass these fields. The 4 template components always show `data.amount` (total salary) regardless of whether full or partial salary was paid.
+- **Scope:**
+  - Type: `PayrollInvoiceData` in `types.ts` — needs `paidAmount?: number` and `dueAmount?: number`.
+  - Invoice pages: `PayrollInvoice.tsx` (UAC), `MbcsPayrollInvoice.tsx` — need to pass `paidAmount` and `dueAmount`.
+  - Template components (4): `UacTeacherPayrollInvoice.tsx`, `UacStaffPayrollInvoice.tsx`, `MbcsTeacherPayrollInvoice.tsx`, `MbcsStaffPayrollInvoice.tsx` — need conditional due row and change displayed amount to `paidAmount ?? amount`.
+- **Fix:** Add fields to type, pass from pages, render due amount conditionally in templates.
+
+#### Issue H — MBCS Students List: Table Column Shows Raw Class Numbers
+- **Problem:** The class filter dropdown was fixed to show "Play Group", "Nursery", etc., but the table column `Class` still renders the raw integer (0, 1, 2, 3...) because it uses `dataIndex: "class"` without a `render` function.
+- **Scope:** `MbcsStudentsList.tsx` — column definition at line ~63-68.
+- **Fix:** Add `render: (cls: number) => MBCS_CLASS_MAP[cls] ?? cls` and import `MBCS_CLASS_MAP`.
+
+---
+
+### Bug Report — Due Collection Multi-Month Allocation Bug (March 2, 2026)
+
+#### Issue I — Backend collectDue Assigns All Due-Collection Records to First Month's paymentMonth
+
+- **Problem:** When an original invoice has multiple tuition rows for different months (e.g., Feb + Mar), and the guardian keeps a due, the `collectDue` backend method uses `.find(r => r.paymentType === item.paymentType)` to look up the original row for each allocated item. Since `.find()` always returns the FIRST match, ALL due-collection tuition records get `paymentMonth` from the first tuition row (Feb), even if the allocation is paying toward a different month (Mar). This causes the tuition status display to be wrong — March stays "Unpaid" even after its due is fully collected.
+
+- **Root cause (UAC/MBCS):** In `collectDue`, the pipeline: `originalRows → lineItems → allocatePaid → dueItemsNow → allocatePaid → itemsToPay` correctly distributes amounts across the right types, but `lineItems` only carried `{ paymentType, amount }` — **no `paymentMonth`** to distinguish same-type items. Then `.find()` by `paymentType` always matched the first row.
+
+- **Root cause (MEC):** The MEC `collectDue` only created 1 record using `originalRows[0]`, ignoring all other months. Even for multi-month invoices, the entire collected amount was attributed to the first month.
+
+- **Example scenario:** Feb tuition 1200 + Mar tuition 1200. OfficePaid 1100, due 1300. Collect 1000 → backend creates Feb tuition 100 + Mar tuition 900. But BOTH records had `paymentMonth = Feb` (from `.find()`). Frontend sees Feb = 1200 (paid), Mar = 0 (unpaid). Even after collecting remaining 300, Mar stays 0.
+
+- **Scope:** Backend `collectDue` in all 3 payment services.
+
+- **Fix applied:**
+  1. **Made `allocatePaid` generic** (`<T extends { paymentType: string; amount: number }>`) in UAC and MBCS so extra fields survive the pipeline via `{ ...item }` spread.
+  2. **Added `paymentMonth` and `studentId`** to `lineItems` and `dueItemsNow` mappings so each allocation entry knows which specific original row it represents.
+  3. **Removed `.find()` lookup** — record creation now uses `item.paymentMonth` and `item.studentId` directly from the allocation pipeline.
+  4. **MEC:** Rewrote to create **multiple records** (one per month receiving payment), distributing the collected amount across months with outstanding dues in order.
+

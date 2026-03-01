@@ -406,39 +406,79 @@ export class MecPaymentsService {
     const newInvoiceNumber =
       await this.invoiceService.generateInvoiceNumber('mec');
 
-    // MEC has one row per invoice (tuition only)
-    const originalRow = originalRows[0];
+    // MEC may have multiple rows per invoice (one per month).
+    // Distribute the paid amount across months with outstanding dues.
+    const originalOfficePaid = originalRows[0].officePaid ?? 0;
+    const totalPaidSoFar = originalOfficePaid + priorCollectedTotal;
+    let allocRemaining = totalPaidSoFar;
+    const perMonthDue: {
+      paymentMonth: Date;
+      studentId: string;
+      dueAmount: number;
+    }[] = [];
+    for (const row of originalRows) {
+      const paid = Math.min(allocRemaining, row.amount);
+      allocRemaining -= paid;
+      const due = row.amount - paid;
+      if (due > 0) {
+        perMonthDue.push({
+          paymentMonth: row.paymentMonth,
+          studentId: row.studentId,
+          dueAmount: due,
+        });
+      }
+    }
+    let toPay = dto.paidAmount;
+    const itemsToPay: {
+      paymentMonth: Date;
+      studentId: string;
+      paidAmount: number;
+    }[] = [];
+    for (const d of perMonthDue) {
+      const paid = Math.min(toPay, d.dueAmount);
+      toPay -= paid;
+      if (paid > 0)
+        itemsToPay.push({
+          paymentMonth: d.paymentMonth,
+          studentId: d.studentId,
+          paidAmount: paid,
+        });
+    }
 
     return this.prisma.$transaction(async (tx) => {
-      const payment = await tx.mecPayment.create({
-        data: {
-          studentId: originalRow.studentId,
-          amount: dto.paidAmount,
-          paymentMonth: originalRow.paymentMonth,
-          paymentDate: new Date(dto.paymentDate),
-          paymentMethod: dto.paymentMethod,
-          notes: dto.notes,
-          invoiceNumber: newInvoiceNumber,
-          createdBy,
-          isDueCollection: true,
-          parentInvoiceNumber: dto.parentInvoiceNumber,
-          guardianAmount: dto.paidAmount,
-          officeSubTotal: officeGrandTotal,
-          guardianSubTotal: guardianGrandTotal,
-          additionalDiscount: 0,
-          officeGrandTotal,
-          guardianGrandTotal,
-          officePaid,
-          guardianPaid,
-          dueAmount: newDueAmount,
-        },
-        include: {
-          student: { select: { id: true, name: true, class: true } },
-        },
-      });
+      const payments = await Promise.all(
+        itemsToPay.map((item) => {
+          return tx.mecPayment.create({
+            data: {
+              studentId: item.studentId,
+              amount: item.paidAmount,
+              paymentMonth: item.paymentMonth,
+              paymentDate: new Date(dto.paymentDate),
+              paymentMethod: dto.paymentMethod,
+              notes: dto.notes,
+              invoiceNumber: newInvoiceNumber,
+              createdBy,
+              isDueCollection: true,
+              parentInvoiceNumber: dto.parentInvoiceNumber,
+              guardianAmount: item.paidAmount,
+              officeSubTotal: officeGrandTotal,
+              guardianSubTotal: guardianGrandTotal,
+              additionalDiscount: 0,
+              officeGrandTotal,
+              guardianGrandTotal,
+              officePaid,
+              guardianPaid,
+              dueAmount: newDueAmount,
+            },
+            include: {
+              student: { select: { id: true, name: true, class: true } },
+            },
+          });
+        }),
+      );
       return {
         invoiceNumber: newInvoiceNumber,
-        payments: [payment],
+        payments,
         remainingDue: newDueAmount,
       };
     });

@@ -25,7 +25,7 @@ export class CreateStudentDto {
   dateOfBirth: string;
 
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(10)
   class: number;
 

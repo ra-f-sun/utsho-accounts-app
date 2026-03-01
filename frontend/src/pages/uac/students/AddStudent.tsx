@@ -135,7 +135,7 @@ export default function AddStudent() {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
-    const data = {
+    const raw = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
@@ -143,10 +143,14 @@ export default function AddStudent() {
       discountAdmission: values.discountAdmission ?? 0,
       discountReadmission: values.discountReadmission ?? 0,
     };
+    // Strip empty strings to undefined so optional backend validators don't reject ""
+    const data = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, v === "" ? undefined : v]),
+    );
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data as CreateStudentDto);
+      createMutation.mutate(data as unknown as CreateStudentDto);
     }
   };
 
