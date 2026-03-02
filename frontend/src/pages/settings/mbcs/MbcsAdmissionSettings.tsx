@@ -9,10 +9,12 @@ import {
   Space,
   message,
   Divider,
+  Tooltip,
 } from "antd";
-import { SaveOutlined } from "@ant-design/icons";
+import { SaveOutlined, SyncOutlined } from "@ant-design/icons";
 import settingsService, { type OrgSetting } from "../../../services/settingsService";
 import { MBCS_CLASSES } from "../../../constants/mbcsClasses";
+import { api } from "../../../lib/axios";
 
 const { Text } = Typography;
 const ORG = "mbcs";
@@ -23,6 +25,19 @@ export default function MbcsAdmissionSettings() {
   const [readmissionDefault, setReadmissionDefault] = useState<number | null>(null);
   const [readmissionOverrides, setReadmissionOverrides] = useState<Record<number, number | null>>({});
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  async function handleSyncFees() {
+    setSyncing(true);
+    try {
+      await api.post("/mbcs/students/sync-fees-from-settings");
+      message.success("All active MBCS students' admission fees have been synced from settings");
+    } catch {
+      message.error("Failed to sync fees");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   useEffect(() => {
     void loadSettings();
@@ -163,16 +178,29 @@ export default function MbcsAdmissionSettings() {
 
       <Divider />
 
-      <Row justify="end">
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
-          onClick={handleSave}
-          loading={saving}
-          size="large"
-        >
-          Save Admission Settings
-        </Button>
+      <Row justify="space-between" align="middle">
+        <Col>
+          <Tooltip title="Updates admissionFee and readmissionFee on all currently active MBCS students based on their class and the settings above">
+            <Button
+              icon={<SyncOutlined />}
+              onClick={handleSyncFees}
+              loading={syncing}
+            >
+              Sync Fees to All Active Students
+            </Button>
+          </Tooltip>
+        </Col>
+        <Col>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={handleSave}
+            loading={saving}
+            size="large"
+          >
+            Save Admission Settings
+          </Button>
+        </Col>
       </Row>
     </Space>
   );

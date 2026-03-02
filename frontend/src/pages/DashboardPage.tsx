@@ -21,6 +21,7 @@ import {
   DownloadOutlined,
   FilePdfOutlined,
   FileExcelOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import {
   LineChart,
@@ -45,7 +46,10 @@ import type {
   OutstandingDueSummary,
 } from "../services/analyticsService";
 import dayjs from "dayjs";
-import { Button, App, Dropdown } from "antd";
+import isoWeek from "dayjs/plugin/isoWeek";
+import { Button, App, Dropdown, Radio } from "antd";
+
+dayjs.extend(isoWeek);
 import QueryError from "../components/QueryError";
 
 const { Title } = Typography;
@@ -76,10 +80,41 @@ export default function DashboardPage() {
         : undefined;
 
   const [orgFilter, setOrgFilter] = useState<string | undefined>(defaultOrg);
+  const [periodPreset, setPeriodPreset] = useState<string>("yearly");
   const [dateRange, setDateRange] = useState<[string, string]>([
     dayjs().startOf("year").format("YYYY-MM-DD"),
     dayjs().endOf("year").format("YYYY-MM-DD"),
   ]);
+
+  function applyPeriodPreset(preset: string) {
+    setPeriodPreset(preset);
+    const today = dayjs();
+    switch (preset) {
+      case "daily":
+        setDateRange([today.format("YYYY-MM-DD"), today.format("YYYY-MM-DD")]);
+        break;
+      case "weekly":
+        setDateRange([
+          today.startOf("isoWeek").format("YYYY-MM-DD"),
+          today.endOf("isoWeek").format("YYYY-MM-DD"),
+        ]);
+        break;
+      case "monthly":
+        setDateRange([
+          today.startOf("month").format("YYYY-MM-DD"),
+          today.endOf("month").format("YYYY-MM-DD"),
+        ]);
+        break;
+      case "yearly":
+        setDateRange([
+          today.startOf("year").format("YYYY-MM-DD"),
+          today.endOf("year").format("YYYY-MM-DD"),
+        ]);
+        break;
+      default:
+        break;
+    }
+  }
 
   // Fetch revenue stats
   const { data: revenueData, isLoading: loadingRevenue, isError: revenueIsError, error: revenueError, refetch: refetchRevenue } = useQuery({
@@ -302,10 +337,25 @@ export default function DashboardPage() {
               </Col>
             )}
             <Col>
+              <Radio.Group
+                value={periodPreset}
+                onChange={(e) => applyPeriodPreset(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                size="middle"
+              >
+                <Radio.Button value="daily"><CalendarOutlined /> Daily</Radio.Button>
+                <Radio.Button value="weekly">Weekly</Radio.Button>
+                <Radio.Button value="monthly">Monthly</Radio.Button>
+                <Radio.Button value="yearly">Yearly</Radio.Button>
+              </Radio.Group>
+            </Col>
+            <Col>
               <RangePicker
                 value={[dayjs(dateRange[0]), dayjs(dateRange[1])]}
                 onChange={(dates) => {
                   if (dates && dates[0] && dates[1]) {
+                    setPeriodPreset("");
                     setDateRange([
                       dates[0].format("YYYY-MM-DD"),
                       dates[1].format("YYYY-MM-DD"),
