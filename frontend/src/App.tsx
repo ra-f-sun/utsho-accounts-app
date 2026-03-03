@@ -68,6 +68,8 @@ import NotFoundPage from "./pages/NotFoundPage";
 import StaffPayrollHistory from "./pages/uac/staff/StaffPayrollHistory";
 import MbcsStaffPayrollHistory from "./pages/mbcs/staff/MbcsStaffPayrollHistory";
 import ImportExportStudents from "./pages/import-export/ImportExportStudents";
+import UacStudentDirectory from "./pages/uac/students/UacStudentDirectory";
+import MbcsStudentDirectory from "./pages/mbcs/students/MbcsStudentDirectory";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +126,7 @@ function App() {
                   <Route path="uac/students" element={<StudentsList />} />
                   <Route path="uac/students/add" element={<AddStudent />} />
                   <Route path="uac/students/promote" element={<PromoteStudents />} />
+                  <Route path="uac/students/directory" element={<UacStudentDirectory />} />
                   <Route path="uac/students/edit/:id" element={<AddStudent />} />
                   <Route path="uac/students/:id/payments" element={<StudentPaymentHistory />} />
                   <Route path="uac/teachers" element={<TeachersList />} />
@@ -155,6 +158,7 @@ function App() {
                   <Route path="mbcs/students" element={<MbcsStudentsList />} />
                   <Route path="mbcs/students/add" element={<AddMbcsStudent />} />
                   <Route path="mbcs/students/promote" element={<MbcsPromoteStudents />} />
+                  <Route path="mbcs/students/directory" element={<MbcsStudentDirectory />} />
                   <Route path="mbcs/students/edit/:id" element={<AddMbcsStudent />} />
                   <Route path="mbcs/students/:id/payments" element={<MbcsStudentPaymentHistory />} />
                   <Route path="mbcs/teachers" element={<MbcsTeachersList />} />

@@ -1622,3 +1622,175 @@ These items from `REFACTOR_CHECKLIST_2.md` were marked as incomplete and may int
   3. **Removed `.find()` lookup** — record creation now uses `item.paymentMonth` and `item.studentId` directly from the allocation pipeline.
   4. **MEC:** Rewrote to create **multiple records** (one per month receiving payment), distributing the collected amount across months with outstanding dues in order.
 
+
+---
+
+## Bug/Feature Report — MBCS Tuition Rules, Late Fee, Readmission Display, Student Directory (March 3, 2026)
+
+### Issue J — MBCS Tuition Grid: All Months from January Must Be Applicable
+
+- **Reported:** March 3, 2026
+- **Status:** 🔲 PENDING
+
+**Problem:**
+MBCS follows a school rule: **regardless of when a student is admitted, tuition is applicable from January of the current year**. A student admitted in April still owes tuition for January, February, and March. The current logic marks months before the admission month as "N/A" (not applicable), which is incorrect for MBCS.
+
+**Current logic (frontend — MbcsPaymentHistory.tsx L107-115):**
+```ts
+const admMonth = student.admissionDate
+  ? dayjs(student.admissionDate).format("YYYY-MM")
+  : null;
+const isAvailable = admMonth === null || admMonth <= monthStr;
+```
+This sets `isAvailable = false` when `monthStr < admMonth` → shown as **N/A** tag.
+
+**Same logic exists in 3 more locations:**
+1. `MbcsPaymentHistory.tsx` (tuition status grid) — `isAvailable` condition
+2. `MbcsStudentPaymentHistory.tsx` (individual tuition grid) — `isBeforeAdmission` condition at L420-467
+3. `backend/src/mbcs/payments/payments.service.ts` `getDueSummary()` L749-753 — `startMonth = admMonth` for current-year admissions
+
+**Impact:** MBCS students admitted mid-year show fewer due months than they actually owe. This only affects MBCS — UAC keeps the existing N/A logic as-is.
+
+**Proposed fix:** [User Agree]
+1. **Frontend `MbcsPaymentHistory.tsx`:** Remove the `isAvailable` check — all months are always available for MBCS. Set `isAvailable = true` unconditionally (or remove the field).
+2. **Frontend `MbcsStudentPaymentHistory.tsx`:** Remove the `isBeforeAdmission` logic — all 12 months are always shown as Paid/Partial/Unpaid, never N/A.
+3. **Backend `getDueSummary()` in `mbcs/payments/payments.service.ts`:** Change `startMonth` to always be `1` for MBCS students admitted in the current year (instead of `admMonth`). Keep `startMonth = currentMonth + 1` for future-year admissions as a safety guard.
+
+**Scope:** MBCS only. UAC and MEC are NOT affected (they keep their existing admission-based N/A logic).
+
+---
+
+### Issue K — Late Fee System for MBCS Tuition
+
+- **Reported:** March 3, 2026
+- **Status:** 🔲 PENDING
+
+**Problem:**
+MBCS requires a **late fee of ৳100** when a month's tuition payment is made after the 15th of that month.
+
+**Current state:** No late fee system exists anywhere in the codebase.
+
+**Proposed approach — Settings-driven, automatically calculated:** [User Agree]
+
+1. **New settings keys** (stored in `org_settings` for MBCS):
+   - `late_fee_amount` — default ৳100 (configurable)
+   - `late_fee_day_threshold` — default 15 (configurable)
+
+2. **New settings tab** in MBCS Settings page: "Late Fee" tab with two inputs.
+
+3. **Backend calculation logic** (in `getDueSummary` and payment recording):
+   - For each unpaid month `M`, if today > 15th of month `M`, add ৳100 to that month's due.
+   - When recording a payment for month `M`, if `paymentDate > 15th of M`, automatically add a `late_fee` line item of ৳100 to the invoice.
+   - Late fee is **per-month** — if a student is 3 months overdue with late fees, that's ৳300 in total late fees.
+
+4. **Frontend display:**
+   - In the tuition grid (MbcsPaymentHistory + MbcsStudentPaymentHistory), show late fee status alongside tuition status (e.g., "Unpaid + ৳100 late").
+   - In RecordPayment / CollectDue, auto-add `late_fee` line item when applicable months have crossed the threshold.
+   - In invoices, show late fee as a separate line item.
+
+5. **Payment type addition:**
+   - Add `late_fee` to the MBCS payment types list (alongside tuition, admission, readmission, study_materials, etc.).
+
+6. **Files affected:**
+   - Backend: `mbcs/payments/payments.service.ts` (getDueSummary, recordPayment, collectDue)
+   - Backend: New settings keys in org_settings
+   - Frontend: `MbcsPaymentHistory.tsx`, `MbcsStudentPaymentHistory.tsx`, `MbcsRecordPayment.tsx`, `MbcsCollectDue.tsx`
+   - Frontend: New `MbcsLateFeeSettings.tsx` component + add tab to `MbcsSettings.tsx`
+   - Frontend: Invoice components for late fee line item display
+
+**Alternative simpler approach:** ~~REJECTED by user~~ — User prefers the full `late_fee` payment type approach above.
+
+---
+
+### Issue L — New Admission Students Should Not See Readmission Fee as Due
+
+- **Reported:** March 3, 2026
+- **Status:** 🔲 PENDING
+
+**Problem:**
+New admission students (not promoted/readmitted) see "Readmission: ৳X DUE" in their individual payment history's due summary card. This is incorrect — only students who were readmitted (came back after leaving) should have readmission fees. [Users Comment: You said wrong. If a student left, they will be "not associated". After that, if they come again, they will be considered as new student. In that case, come back after leaving means admission. We don't need to bother regarding that. But when a student is promoted to new class, that then we will need readmission. ]
+
+**Root cause:**
+1. The `syncFeesFromSettings` method (L170-190 in `mbcs/students/students.service.ts`) sets `readmissionFee` for **ALL active students** from settings, regardless of whether they're new admissions or readmissions.
+2. The `promote` and `promoteBulk` methods also set `readmissionFee` from settings when `newReadmission > 0`.
+3. In `getDueSummary()` (L793), the check is simply: `if (!hasType('readmission') && (student.readmissionFee ?? 0) > 0)` — if `readmissionFee > 0` and no readmission payment exists, it shows as due.
+4. Since there's no `isReadmission` or `isPromoted` field on the student model, the system has no way to distinguish a genuinely readmitted student from a new admission who got `readmissionFee` set by syncFees.
+
+**Proposed fix — Persistent `isPromoted` flag (final approach):**
+
+Add a persistent `isPromoted` flag that distinguishes promoted students from new admissions. The flag **never resets** — it's a permanent marker that the student reached their current class via promotion.
+
+1. **Schema migration:** Add `isPromoted Boolean @default(false)` to `MbcsStudent` and `UacStudent`.
+
+2. **`promote` / `promoteBulk`:** Set `isPromoted = true` when promoting a student to a new class.
+
+3. **`syncFeesFromSettings`:** 
+   - For `isPromoted = true` students: sync `readmissionFee` from settings (per-class override or default).
+   - For `isPromoted = false` students: set `readmissionFee = 0` (they're new admissions, no readmission applies).
+   - **No flag reset** — `isPromoted` stays `true` permanently so re-syncing after fee adjustments always works.
+
+4. **`getDueSummary`:** Logic remains the same (`readmissionFee > 0` → due). The flag ensures only promoted students ever get a non-zero `readmissionFee`.
+
+5. **`create` (new student):** `isPromoted` defaults to `false`, and `readmissionFee` is NOT set (null/0). New admissions never see readmission due.
+
+**Lifecycle:**
+- New student created → `isPromoted = false`, `readmissionFee = null/0` → no readmission due shown.
+- Student gets promoted → `isPromoted = true`, `readmissionFee` set from class settings by promote method.
+- Admin clicks "Sync Fees" → `isPromoted = true` students get readmission fee re-synced from settings; `isPromoted = false` students get `readmissionFee = 0`. Admin can adjust settings and re-sync unlimited times.
+- Next year, student promoted again → `isPromoted` stays `true` → cycle continues.
+
+**Why not reset the flag?** Resetting `isPromoted = false` after sync means a second "Sync Fees" (e.g., after adjusting the fee amount in settings) would skip promoted students and zero out their readmission fee. Persistent flag avoids this.
+
+**Scope:** MBCS and UAC (both have the same pattern). MEC doesn't have admission/readmission fees.
+
+**Files affected:**
+- `backend/prisma/schema.prisma` — Add `isPromoted` to MbcsStudent + UacStudent
+- New migration for the field
+- `backend/src/mbcs/students/students.service.ts` — `syncFeesFromSettings` (conditional readmission sync), `promote`/`promoteBulk` (set `isPromoted = true`)
+- `backend/src/uac/students/students.service.ts` — same
+- Verification: `create()` doesn't set readmissionFee unless explicitly provided
+---
+
+### Issue M — Student Directory Menu with Filters and Excel Export
+
+- **Reported:** March 3, 2026
+- **Status:** 🔲 PENDING
+
+**Problem:**
+The existing Students page (`/mbcs/students`, `/uac/students`) combines CRUD operations, individual payment history navigation, and the student list. The user needs a **separate, read-only "Student Directory"** menu focused purely on:
+- Viewing the full student list
+- Searching and filtering by multiple criteria
+- Exporting filtered results to Excel
+
+This allows staff to quickly answer questions like "Who was admitted this week?" or "List all Class 3 Morning shift students" without the clutter of CRUD buttons.
+
+**Proposed implementation:**
+
+1. **New sidebar menu items:**
+   - MBCS Module → "Student Directory" (`/mbcs/student-directory`)
+   - UAC Module → "Student Directory" (`/uac/student-directory`)
+
+2. **New page components:**
+   - `frontend/src/pages/mbcs/students/MbcsStudentDirectory.tsx`
+   - `frontend/src/pages/uac/students/UacStudentDirectory.tsx`
+
+3. **Features per page:**
+   - **Search:** By name, guardian name, contact number (debounced)
+   - **Filters (MBCS):** Class (MBCS_CLASSES dropdown), Shift (Morning/Day), Branch, Admission Date range + "Today" button
+   - **Filters (UAC):** Class (8-12 dropdown), Group (Science/Business/Arts), School, Admission Date range + "Today" button
+   - **Table columns:** Name, Class, Shift/Group, Branch/School, Guardian, Contact, Admission Date, Monthly Fee, Status (Active/Inactive)
+   - **No action buttons** (no Edit, Delete, Payment History)
+   - **Excel export button:** Exports the currently filtered/searched results using a library like `xlsx` (already used in the project for revenue export)
+   - **Pagination:** Server-side, 50 per page
+
+4. **Backend:** No backend changes needed — the existing `findAll` endpoints with query params for search/filter already exist.
+
+5. **Routing:** Add routes in `App.tsx` for `/mbcs/student-directory` and `/uac/student-directory`.
+
+6. **Sidebar:** Add menu items in `DashboardLayout.tsx` under each module, using an icon like `SolutionOutlined` or `ContactsOutlined`.
+
+**Files affected:**
+- Frontend: New `MbcsStudentDirectory.tsx` + `UacStudentDirectory.tsx`
+- Frontend: `DashboardLayout.tsx` (sidebar menu items)
+- Frontend: `App.tsx` (routes)
+- No backend changes needed

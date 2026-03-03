@@ -79,6 +79,7 @@ model UacStudent {
   admissionDate        DateTime?
   // System
   isActive             Boolean      @default(true)
+  isPromoted           Boolean      @default(false) // true = reached current class via promotion (needs readmission fee)
   associationEndDate   DateTime?    // NULL = active; set = no longer associated
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
@@ -242,6 +243,7 @@ model MbcsStudent {
   admissionDate        DateTime?
   // System
   isActive             Boolean       @default(true)
+  isPromoted           Boolean       @default(false) // true = reached current class via promotion (needs readmission fee)
   associationEndDate   DateTime?     // NULL = active; set = no longer associated
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt

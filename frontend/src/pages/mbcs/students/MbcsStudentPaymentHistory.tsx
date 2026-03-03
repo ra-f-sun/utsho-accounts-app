@@ -165,13 +165,12 @@ export default function MbcsStudentPaymentHistory() {
     }
   }
 
-  // Admission month key — months before this are "N/A" (student not yet enrolled)
-  const admissionMonthKey = student?.admissionDate
-    ? dayjs(student.admissionDate).format("YYYY-MM")
-    : null;
+  // MBCS rule: all months from January are always applicable regardless of admission date
+  // (admissionMonthKey not used for MBCS tuition grid)
 
   const TYPE_COLORS: Record<string, string> = {
     tuition: "blue",
+    late_fee: "volcano",
     admission: "green",
     readmission: "cyan",
     exam: "orange",
@@ -413,32 +412,25 @@ export default function MbcsStudentPaymentHistory() {
         <Row gutter={[8, 8]}>
           {MONTHS.map((month, idx) => {
             const monthKey = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
-            const isBeforeAdmission =
-              admissionMonthKey !== null && monthKey < admissionMonthKey;
-            const isPaid = !isBeforeAdmission && paidMonths.has(monthKey);
-            const isPartial = !isBeforeAdmission && !isPaid && partialMonths.has(monthKey);
-            const bg = isBeforeAdmission
-              ? "#f5f5f5"
-              : isPaid
-                ? "#f6ffed"
-                : isPartial
-                  ? "#fffbe6"
-                  : "#fff2f0";
-            const borderColor = isBeforeAdmission
-              ? "#d9d9d9"
-              : isPaid
-                ? "#b7eb8f"
-                : isPartial
-                  ? "#ffe58f"
-                  : "#ffccc7";
-            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
-            const tagColor = isBeforeAdmission
-              ? "default"
-              : isPaid
-                ? "success"
-                : isPartial
-                  ? "warning"
-                  : "error";
+            // MBCS rule: all months always applicable — no N/A state
+            const isPaid = paidMonths.has(monthKey);
+            const isPartial = !isPaid && partialMonths.has(monthKey);
+            const bg = isPaid
+              ? "#f6ffed"
+              : isPartial
+                ? "#fffbe6"
+                : "#fff2f0";
+            const borderColor = isPaid
+              ? "#b7eb8f"
+              : isPartial
+                ? "#ffe58f"
+                : "#ffccc7";
+            const tagText = isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
+            const tagColor = isPaid
+              ? "success"
+              : isPartial
+                ? "warning"
+                : "error";
             return (
               <Col span={4} key={monthKey}>
                 <div
@@ -478,10 +470,11 @@ export default function MbcsStudentPaymentHistory() {
           <Row gutter={16}>
             {Object.entries((dueSummary as { breakdown?: Record<string, { due: number; status: string }> }).breakdown ?? {}).map(([type, info]) => {
               if (info.status === "na") return null;
+              const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
               return (
                 <Col span={6} key={type}>
                   <Statistic
-                    title={type.charAt(0).toUpperCase() + type.slice(1)}
+                    title={label}
                     value={info.due > 0 ? `৳${info.due.toLocaleString()}` : "No Due"}
                     styles={{ content: { color: info.due > 0 ? "#cf1322" : "#52c41a", fontSize: 16 } }}
                   />

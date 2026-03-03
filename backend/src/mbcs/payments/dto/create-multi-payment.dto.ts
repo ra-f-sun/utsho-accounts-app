@@ -17,6 +17,7 @@ export class MbcsPaymentLineItemDto {
     'tuition',
     'admission',
     'readmission',
+    'late_fee',
     'exam',
     'session_charge',
     'study_materials',

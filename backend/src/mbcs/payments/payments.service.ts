@@ -16,6 +16,7 @@ import { CollectMbcsDueDto } from './dto/collect-due.dto';
 
 const MBCS_PRIORITY_ORDER = [
   { group: 'tuition', types: ['tuition'] },
+  { group: 'late_fee', types: ['late_fee'] },
   { group: 'admission', types: ['admission'] },
   { group: 'readmission', types: ['readmission'] },
   {
@@ -707,6 +708,7 @@ export class PaymentsService {
     let tuitionDue = dues['tuition'] ?? 0;
     let admissionDue = dues['admission'] ?? 0;
     let readmissionDue = dues['readmission'] ?? 0;
+    let lateFeeDue = dues['late_fee'] ?? 0;
 
     // Enhance dues with fully-unpaid months/fees from the student's stored fee fields
     const student = await this.prisma.mbcsStudent.findUnique({
@@ -741,17 +743,14 @@ export class PaymentsService {
         }
       }
 
+      // MBCS rule: all months from January are applicable regardless of admission date
       let startMonth = 1;
       if (student.admissionDate) {
         const admYear = student.admissionDate.getFullYear();
-        const admMonth = student.admissionDate.getMonth() + 1;
         if (admYear > currentYear) {
           startMonth = currentMonth + 1; // admitted in a future year — no dues
-        } else if (admYear === currentYear) {
-          startMonth = admMonth;
-        } else {
-          startMonth = 1;
         }
+        // else: startMonth stays 1 — even if admitted mid-year, Jan onwards is due
       }
 
       const paidTuitionMonthKeys = new Set(
@@ -788,13 +787,57 @@ export class PaymentsService {
           student.readmissionFee! - (student.discountReadmission ?? 0),
         );
       }
+
+      // Late fee calculation: load settings and check unpaid months past threshold
+      const lateFeeSettings = await this.prisma.orgSettings.findMany({
+        where: {
+          organization: 'mbcs',
+          settingKey: { in: ['late_fee_amount', 'late_fee_day_threshold'] },
+        },
+      });
+      const lateFeeSettingMap = new Map<string, number>();
+      for (const s of lateFeeSettings) {
+        const val = (s.settingValue as { value?: number } | null)?.value;
+        if (val != null) lateFeeSettingMap.set(s.settingKey, val);
+      }
+      const lateFeeAmount = lateFeeSettingMap.get('late_fee_amount') ?? 0;
+      const lateFeeThreshold = lateFeeSettingMap.get('late_fee_day_threshold') ?? 15;
+
+      if (lateFeeAmount > 0) {
+        // Check which late_fee payments already exist
+        const paidLateFeeMonthKeys = new Set(
+          payments
+            .filter((p) => p.paymentType === 'late_fee')
+            .map((p) => {
+              const d = new Date(p.paymentMonth);
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }),
+        );
+
+        for (let m = startMonth; m <= endMonth; m++) {
+          const key = `${currentYear}-${String(m).padStart(2, '0')}`;
+          // Late fee applies if: tuition was not paid AND we are past the threshold day of that month
+          if (!paidTuitionMonthKeys.has(key) && !paidLateFeeMonthKeys.has(key)) {
+            const thresholdDate = new Date(currentYear, m - 1, lateFeeThreshold);
+            if (now > thresholdDate) {
+              lateFeeDue += lateFeeAmount;
+            }
+          }
+        }
+      }
     }
 
     return {
       studentId,
-      totalDue: tuitionDue + admissionDue + readmissionDue + othersDue,
+      totalDue:
+        tuitionDue + admissionDue + readmissionDue + lateFeeDue + othersDue,
       breakdown: {
         tuition: { due: tuitionDue, status: tuitionDue > 0 ? 'due' : 'paid' },
+        late_fee: {
+          due: lateFeeDue,
+          status:
+            lateFeeDue > 0 ? 'due' : hasType('late_fee') ? 'paid' : 'na',
+        },
         admission: {
           due: admissionDue,
           status:

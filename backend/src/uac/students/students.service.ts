@@ -173,7 +173,7 @@ export class StudentsService {
 
     const students = await this.prisma.uacStudent.findMany({
       where: { isActive: true },
-      select: { id: true, class: true },
+      select: { id: true, class: true, isPromoted: true },
     });
 
     if (students.length === 0) return { updated: 0 };
@@ -190,10 +190,13 @@ export class StudentsService {
             `admission_override_${s.class}`,
             'admission_default',
           ),
-          readmissionFee: resolveOrDefault(
-            `readmission_override_${s.class}`,
-            'readmission_default',
-          ),
+          // Only promoted students get readmission fee; new admissions get 0
+          readmissionFee: s.isPromoted
+            ? resolveOrDefault(
+                `readmission_override_${s.class}`,
+                'readmission_default',
+              )
+            : 0,
         },
       }),
     );
@@ -241,6 +244,7 @@ export class StudentsService {
         data: {
           class: dto.toClass,
           monthlyTuitionFee: newTuition,
+          isPromoted: true,
           ...(newReadmission > 0 && { readmissionFee: newReadmission }),
         },
       }),
@@ -294,6 +298,7 @@ export class StudentsService {
         where: { id: s.id },
         data: {
           class: dto.toClass,
+          isPromoted: true,
           ...(newTuition > 0 && { monthlyTuitionFee: newTuition }),
           ...(newReadmission > 0 && { readmissionFee: newReadmission }),
         },

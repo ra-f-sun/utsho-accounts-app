@@ -37,6 +37,7 @@ const { Option } = Select;
 
 const PAYMENT_TYPE_COLORS: Record<string, string> = {
   tuition: "blue",
+  late_fee: "volcano",
   admission: "green",
   readmission: "cyan",
   exam: "orange",
@@ -107,27 +108,24 @@ export default function MbcsPaymentHistory() {
       students = students.filter((s) => s.shift === filters.shiftFilter);
 
     const rows: StudentStatus[] = students.map((student) => {
-      const admMonth = student.admissionDate
-        ? dayjs(student.admissionDate).format("YYYY-MM")
-        : null;
-      const isAvailable = admMonth === null || admMonth <= monthStr;
+      // MBCS rule: all months from January are always applicable regardless of admission date
       return {
         student,
         payment: tuitionPayments.find((p) => p.studentId === student.id),
-        isPaid: isAvailable && paidStudentIds.has(student.id),
-        isAvailable,
+        isPaid: paidStudentIds.has(student.id),
+        isAvailable: true,
       };
     });
 
     if (filters.statusFilter === "paid") return rows.filter((r) => r.isPaid);
     if (filters.statusFilter === "unpaid")
-      return rows.filter((r) => r.isAvailable && !r.isPaid);
+      return rows.filter((r) => !r.isPaid);
     return rows;
   }, [allStudents, allPayments, filters]);
 
   const paidCount = tuitionStatusRows.filter((r) => r.isPaid).length;
   const unpaidCount = tuitionStatusRows.filter(
-    (r) => r.isAvailable && !r.isPaid,
+    (r) => !r.isPaid,
   ).length;
 
   const statusColumns: ColumnsType<StudentStatus> = [

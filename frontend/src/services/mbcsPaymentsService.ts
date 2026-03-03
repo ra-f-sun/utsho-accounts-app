@@ -70,6 +70,7 @@ export interface FilterMbcsPaymentDto {
 
 export const MBCS_PAYMENT_TYPES = [
   { value: "tuition", label: "Tuition" },
+  { value: "late_fee", label: "Late Fee" },
   { value: "admission", label: "Admission" },
   { value: "readmission", label: "Readmission" },
   { value: "exam", label: "Exam" },
@@ -154,6 +155,7 @@ export interface DueSummary {
   totalDue: number;
   breakdown: {
     tuition: DueSummaryItem;
+    late_fee: DueSummaryItem;
     admission: DueSummaryItem;
     readmission: DueSummaryItem;
     others: DueSummaryItem;

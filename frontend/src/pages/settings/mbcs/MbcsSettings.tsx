@@ -5,6 +5,7 @@ import MbcsStudyMaterialsSettings from "./MbcsStudyMaterialsSettings";
 import MbcsDiscountSettings from "./MbcsDiscountSettings";
 import MbcsInvoiceSettings from "./MbcsInvoiceSettings";
 import MbcsPaymentPrioritySettings from "./MbcsPaymentPrioritySettings";
+import MbcsLateFeeSettings from "./MbcsLateFeeSettings";
 
 const tabItems = [
   {
@@ -21,6 +22,11 @@ const tabItems = [
     key: "study_materials",
     label: "Study Materials",
     children: <MbcsStudyMaterialsSettings />,
+  },
+  {
+    key: "late_fee",
+    label: "Late Fee",
+    children: <MbcsLateFeeSettings />,
   },
   {
     key: "discounts",

@@ -83,6 +83,14 @@ export default function MbcsRecordPayment() {
     (studyMaterialsData as { settingValue?: { items: Array<{ name: string; price: number }> } } | null)
       ?.settingValue?.items ?? [];
 
+  // Fetch late fee amount setting
+  const { data: lateFeeData } = useQuery({
+    queryKey: ["mbcs-settings", "late_fee_amount"],
+    queryFn: () => settingsService.getSetting("mbcs", "late_fee_amount"),
+  });
+  const lateFeeAmount: number =
+    (lateFeeData as { settingValue?: { value?: number } } | null)?.settingValue?.value ?? 0;
+
   // Fetch all students
   const { data: studentsData } = useQuery({
     queryKey: ["mbcs-students"],
@@ -153,6 +161,8 @@ export default function MbcsRecordPayment() {
       const base = selectedStudent.readmissionFee ?? 0;
       if (base > 0)
         amount = base - (selectedStudent.discountReadmission ?? 0);
+    } else if (type === "late_fee") {
+      if (lateFeeAmount > 0) amount = lateFeeAmount;
     }
     if (amount !== undefined) {
       lineItems[fieldIndex] = { ...lineItems[fieldIndex], amount };

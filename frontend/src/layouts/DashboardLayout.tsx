@@ -12,6 +12,7 @@ import {
   SettingOutlined,
   VerticalAlignTopOutlined,
   SwapOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 
@@ -30,6 +31,7 @@ export default function DashboardLayout() {
     "/users",
     "/uac/students",
     "/uac/students/promote",
+    "/uac/students/directory",
     "/uac/teachers",
     "/uac/staff",
     "/uac/payments",
@@ -40,6 +42,7 @@ export default function DashboardLayout() {
     "/uac/expenses",
     "/mbcs/students",
     "/mbcs/students/promote",
+    "/mbcs/students/directory",
     "/mbcs/teachers",
     "/mbcs/staff",
     "/mbcs/payments",
@@ -118,6 +121,12 @@ export default function DashboardLayout() {
             ]
           : []),
         {
+          key: "/uac/students/directory",
+          icon: <BookOutlined />,
+          label: "Student Directory",
+          onClick: () => navigate("/uac/students/directory"),
+        },
+        {
           key: "/uac/teachers",
           label: "Teachers",
           onClick: () => navigate("/uac/teachers"),
@@ -187,6 +196,12 @@ export default function DashboardLayout() {
               },
             ]
           : []),
+        {
+          key: "/mbcs/students/directory",
+          icon: <BookOutlined />,
+          label: "Student Directory",
+          onClick: () => navigate("/mbcs/students/directory"),
+        },
         {
           key: "/mbcs/teachers",
           label: "Teachers",
