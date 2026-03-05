@@ -102,11 +102,7 @@ export default function MbcsPayrollInvoice() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           Back

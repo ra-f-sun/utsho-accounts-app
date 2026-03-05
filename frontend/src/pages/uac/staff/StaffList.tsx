@@ -153,11 +153,7 @@ export default function StaffList() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Input
           placeholder="Search by name, designation, or contact"

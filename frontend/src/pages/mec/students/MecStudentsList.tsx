@@ -124,12 +124,7 @@ export default function MecStudentsList() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <h2 style={{ margin: 0 }}>MEC Students</h2>
         <Button

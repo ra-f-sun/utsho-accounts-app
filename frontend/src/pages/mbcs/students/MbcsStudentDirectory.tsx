@@ -323,7 +323,7 @@ export default function MbcsStudentDirectory() {
           </Col>
         </Row>
         <Row style={{ marginTop: 12 }}>
-          <Col xs={24} md={8}>
+          <Col span={8}>
             <Input
               placeholder="Search by name, contact, guardian..."
               prefix={<SearchOutlined />}

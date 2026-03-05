@@ -86,7 +86,34 @@ function App() {
       <ConfigProvider
         theme={{
           token: {
-            colorPrimary: "#667eea",
+            colorPrimary: "#4361ee",
+            colorInfo: "#4361ee",
+            colorSuccess: "#2ec4b6",
+            colorWarning: "#ff9f1c",
+            colorError: "#e63946",
+            borderRadius: 10,
+            borderRadiusLG: 14,
+            fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+            fontSize: 14,
+            colorBgLayout: "#f0f2f8",
+            colorBgContainer: "#ffffff",
+            boxShadow: "0 2px 12px rgba(67,97,238,0.08)",
+            boxShadowSecondary: "0 1px 6px rgba(0,0,0,0.06)",
+          },
+          components: {
+            Menu: {
+              itemBorderRadius: 8,
+              itemMarginInline: 8,
+            },
+            Card: {
+              borderRadiusLG: 14,
+            },
+            Button: {
+              borderRadius: 8,
+            },
+            Table: {
+              borderRadius: 12,
+            },
           },
         }}
       >
@@ -94,117 +121,319 @@ function App() {
           <ErrorBoundary>
             <BrowserRouter>
               <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <DashboardLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
 
-                {/* Import & Export — all roles can export, admin-only import */}
-                <Route path="import-export" element={<ImportExportStudents />} />
+                  {/* Import & Export — all roles can export, admin-only import */}
+                  <Route
+                    path="import-export"
+                    element={<ImportExportStudents />}
+                  />
 
-                {/* Settings Routes — SUPER_ADMIN and DIRECTOR */}
-                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR']} />}>
-                  <Route path="settings" element={<SettingsPage />} />
+                  {/* Settings Routes — SUPER_ADMIN and DIRECTOR */}
+                  <Route
+                    element={
+                      <RoleProtectedRoute
+                        allowedRoles={["SUPER_ADMIN", "DIRECTOR"]}
+                      />
+                    }
+                  >
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
+
+                  {/* Users Routes — SUPER_ADMIN only */}
+                  <Route
+                    element={
+                      <RoleProtectedRoute allowedRoles={["SUPER_ADMIN"]} />
+                    }
+                  >
+                    <Route path="users" element={<UsersList />} />
+                    <Route path="users/add" element={<AddUser />} />
+                    <Route path="users/edit/:id" element={<AddUser />} />
+                  </Route>
+
+                  {/* UAC Routes */}
+                  <Route
+                    element={
+                      <RoleProtectedRoute
+                        allowedRoles={[
+                          "SUPER_ADMIN",
+                          "DIRECTOR",
+                          "ACCOUNTANT_UAC",
+                        ]}
+                      />
+                    }
+                  >
+                    <Route path="uac/students" element={<StudentsList />} />
+                    <Route path="uac/students/add" element={<AddStudent />} />
+                    <Route
+                      path="uac/students/promote"
+                      element={<PromoteStudents />}
+                    />
+                    <Route
+                      path="uac/students/directory"
+                      element={<UacStudentDirectory />}
+                    />
+                    <Route
+                      path="uac/students/edit/:id"
+                      element={<AddStudent />}
+                    />
+                    <Route
+                      path="uac/students/:id/payments"
+                      element={<StudentPaymentHistory />}
+                    />
+                    <Route path="uac/teachers" element={<TeachersList />} />
+                    <Route path="uac/teachers/add" element={<AddTeacher />} />
+                    <Route
+                      path="uac/teachers/edit/:id"
+                      element={<AddTeacher />}
+                    />
+                    <Route
+                      path="uac/teachers/:id/payroll"
+                      element={<TeacherPayrollHistory />}
+                    />
+                    <Route path="uac/staff" element={<StaffList />} />
+                    <Route path="uac/staff/add" element={<AddStaff />} />
+                    <Route path="uac/staff/edit/:id" element={<AddStaff />} />
+                    <Route
+                      path="uac/staff/:id/payroll"
+                      element={<StaffPayrollHistory />}
+                    />
+                    <Route path="uac/payments" element={<PaymentsList />} />
+                    <Route
+                      path="uac/payments/record"
+                      element={<RecordPayment />}
+                    />
+                    <Route
+                      path="uac/payments/collect-due"
+                      element={<CollectDue />}
+                    />
+                    <Route
+                      path="uac/payments/invoice/:invoiceNumber"
+                      element={<InvoiceByNumber />}
+                    />
+                    <Route
+                      path="uac/payments/:id/invoice"
+                      element={<PaymentInvoice />}
+                    />
+                    <Route
+                      path="uac/payment-history"
+                      element={<UacPaymentHistory />}
+                    />
+                    <Route path="uac/expenses" element={<UacExpensesList />} />
+                    <Route
+                      path="uac/expenses/add"
+                      element={<AddUacExpense />}
+                    />
+                    <Route
+                      path="uac/expenses/edit/:id"
+                      element={<AddUacExpense />}
+                    />
+                    <Route
+                      path="uac/teacher-attendance"
+                      element={<TeacherAttendanceList />}
+                    />
+                    <Route
+                      path="uac/teacher-attendance/add"
+                      element={<AddTeacherAttendance />}
+                    />
+                    <Route path="uac/payroll" element={<PayrollList />} />
+                    <Route
+                      path="uac/payroll/create"
+                      element={<CreatePayroll />}
+                    />
+                    <Route
+                      path="uac/payroll/:id/invoice"
+                      element={<PayrollInvoice />}
+                    />
+                  </Route>
+
+                  {/* MBCS Routes */}
+                  <Route
+                    element={
+                      <RoleProtectedRoute
+                        allowedRoles={[
+                          "SUPER_ADMIN",
+                          "DIRECTOR",
+                          "ACCOUNTANT_MBCS",
+                        ]}
+                      />
+                    }
+                  >
+                    <Route
+                      path="mbcs/students"
+                      element={<MbcsStudentsList />}
+                    />
+                    <Route
+                      path="mbcs/students/add"
+                      element={<AddMbcsStudent />}
+                    />
+                    <Route
+                      path="mbcs/students/promote"
+                      element={<MbcsPromoteStudents />}
+                    />
+                    <Route
+                      path="mbcs/students/directory"
+                      element={<MbcsStudentDirectory />}
+                    />
+                    <Route
+                      path="mbcs/students/edit/:id"
+                      element={<AddMbcsStudent />}
+                    />
+                    <Route
+                      path="mbcs/students/:id/payments"
+                      element={<MbcsStudentPaymentHistory />}
+                    />
+                    <Route
+                      path="mbcs/teachers"
+                      element={<MbcsTeachersList />}
+                    />
+                    <Route
+                      path="mbcs/teachers/add"
+                      element={<AddMbcsTeacher />}
+                    />
+                    <Route
+                      path="mbcs/teachers/edit/:id"
+                      element={<AddMbcsTeacher />}
+                    />
+                    <Route
+                      path="mbcs/teachers/:id/payroll"
+                      element={<MbcsTeacherPayrollHistory />}
+                    />
+                    <Route path="mbcs/staff" element={<MbcsStaffList />} />
+                    <Route path="mbcs/staff/add" element={<AddMbcsStaff />} />
+                    <Route
+                      path="mbcs/staff/edit/:id"
+                      element={<AddMbcsStaff />}
+                    />
+                    <Route
+                      path="mbcs/staff/:id/payroll"
+                      element={<MbcsStaffPayrollHistory />}
+                    />
+                    <Route
+                      path="mbcs/payments"
+                      element={<MbcsPaymentsList />}
+                    />
+                    <Route
+                      path="mbcs/payments/record"
+                      element={<MbcsRecordPayment />}
+                    />
+                    <Route
+                      path="mbcs/payments/collect-due"
+                      element={<MbcsCollectDue />}
+                    />
+                    <Route
+                      path="mbcs/payments/invoice/:invoiceNumber"
+                      element={<MbcsInvoiceByNumber />}
+                    />
+                    <Route
+                      path="mbcs/payments/:id/invoice"
+                      element={<MbcsPaymentInvoice />}
+                    />
+                    <Route
+                      path="mbcs/payment-history"
+                      element={<MbcsPaymentHistory />}
+                    />
+                    <Route
+                      path="mbcs/expenses"
+                      element={<MbcsExpensesList />}
+                    />
+                    <Route
+                      path="mbcs/expenses/add"
+                      element={<AddMbcsExpense />}
+                    />
+                    <Route
+                      path="mbcs/expenses/edit/:id"
+                      element={<AddMbcsExpense />}
+                    />
+                    <Route
+                      path="mbcs/teacher-attendance"
+                      element={<MbcsTeacherAttendanceList />}
+                    />
+                    <Route
+                      path="mbcs/teacher-attendance/add"
+                      element={<AddMbcsTeacherAttendance />}
+                    />
+                    <Route path="mbcs/payroll" element={<MbcsPayrollList />} />
+                    <Route
+                      path="mbcs/payroll/create"
+                      element={<MbcsCreatePayroll />}
+                    />
+                    <Route
+                      path="mbcs/payroll/:id/invoice"
+                      element={<MbcsPayrollInvoice />}
+                    />
+                  </Route>
+
+                  {/* MEC Routes */}
+                  <Route
+                    element={
+                      <RoleProtectedRoute
+                        allowedRoles={[
+                          "SUPER_ADMIN",
+                          "DIRECTOR",
+                          "ACCOUNTANT_MEC",
+                        ]}
+                      />
+                    }
+                  >
+                    <Route path="mec/students" element={<MecStudentsList />} />
+                    <Route
+                      path="mec/students/add"
+                      element={<AddMecStudent />}
+                    />
+                    <Route
+                      path="mec/students/edit/:id"
+                      element={<AddMecStudent />}
+                    />
+                    <Route
+                      path="mec/students/:id/payments"
+                      element={<MecStudentPaymentHistory />}
+                    />
+                    <Route
+                      path="mec/payments/record"
+                      element={<MecRecordPayment />}
+                    />
+                    <Route
+                      path="mec/payments/collect-due"
+                      element={<MecCollectDue />}
+                    />
+                    <Route
+                      path="mec/payments/invoice/:invoiceNumber"
+                      element={<MecInvoiceByNumber />}
+                    />
+                    <Route
+                      path="mec/payments/:id/invoice"
+                      element={<MecPaymentInvoice />}
+                    />
+                    <Route
+                      path="mec/payment-history"
+                      element={<MecPaymentHistory />}
+                    />
+                    <Route path="mec/expenses" element={<MecExpensesList />} />
+                    <Route
+                      path="mec/expenses/add"
+                      element={<AddMecExpense />}
+                    />
+                    <Route
+                      path="mec/expenses/edit/:id"
+                      element={<AddMecExpense />}
+                    />
+                  </Route>
                 </Route>
-
-                {/* Users Routes — SUPER_ADMIN only */}
-                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
-                  <Route path="users" element={<UsersList />} />
-                  <Route path="users/add" element={<AddUser />} />
-                  <Route path="users/edit/:id" element={<AddUser />} />
-                </Route>
-
-                {/* UAC Routes */}
-                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR', 'ACCOUNTANT_UAC']} />}>
-                  <Route path="uac/students" element={<StudentsList />} />
-                  <Route path="uac/students/add" element={<AddStudent />} />
-                  <Route path="uac/students/promote" element={<PromoteStudents />} />
-                  <Route path="uac/students/directory" element={<UacStudentDirectory />} />
-                  <Route path="uac/students/edit/:id" element={<AddStudent />} />
-                  <Route path="uac/students/:id/payments" element={<StudentPaymentHistory />} />
-                  <Route path="uac/teachers" element={<TeachersList />} />
-                  <Route path="uac/teachers/add" element={<AddTeacher />} />
-                  <Route path="uac/teachers/edit/:id" element={<AddTeacher />} />
-                  <Route path="uac/teachers/:id/payroll" element={<TeacherPayrollHistory />} />
-                  <Route path="uac/staff" element={<StaffList />} />
-                  <Route path="uac/staff/add" element={<AddStaff />} />
-                  <Route path="uac/staff/edit/:id" element={<AddStaff />} />
-                  <Route path="uac/staff/:id/payroll" element={<StaffPayrollHistory />} />
-                  <Route path="uac/payments" element={<PaymentsList />} />
-                  <Route path="uac/payments/record" element={<RecordPayment />} />
-                  <Route path="uac/payments/collect-due" element={<CollectDue />} />
-                  <Route path="uac/payments/invoice/:invoiceNumber" element={<InvoiceByNumber />} />
-                  <Route path="uac/payments/:id/invoice" element={<PaymentInvoice />} />
-                  <Route path="uac/payment-history" element={<UacPaymentHistory />} />
-                  <Route path="uac/expenses" element={<UacExpensesList />} />
-                  <Route path="uac/expenses/add" element={<AddUacExpense />} />
-                  <Route path="uac/expenses/edit/:id" element={<AddUacExpense />} />
-                  <Route path="uac/teacher-attendance" element={<TeacherAttendanceList />} />
-                  <Route path="uac/teacher-attendance/add" element={<AddTeacherAttendance />} />
-                  <Route path="uac/payroll" element={<PayrollList />} />
-                  <Route path="uac/payroll/create" element={<CreatePayroll />} />
-                  <Route path="uac/payroll/:id/invoice" element={<PayrollInvoice />} />
-                </Route>
-
-                {/* MBCS Routes */}
-                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR', 'ACCOUNTANT_MBCS']} />}>
-                  <Route path="mbcs/students" element={<MbcsStudentsList />} />
-                  <Route path="mbcs/students/add" element={<AddMbcsStudent />} />
-                  <Route path="mbcs/students/promote" element={<MbcsPromoteStudents />} />
-                  <Route path="mbcs/students/directory" element={<MbcsStudentDirectory />} />
-                  <Route path="mbcs/students/edit/:id" element={<AddMbcsStudent />} />
-                  <Route path="mbcs/students/:id/payments" element={<MbcsStudentPaymentHistory />} />
-                  <Route path="mbcs/teachers" element={<MbcsTeachersList />} />
-                  <Route path="mbcs/teachers/add" element={<AddMbcsTeacher />} />
-                  <Route path="mbcs/teachers/edit/:id" element={<AddMbcsTeacher />} />
-                  <Route path="mbcs/teachers/:id/payroll" element={<MbcsTeacherPayrollHistory />} />
-                  <Route path="mbcs/staff" element={<MbcsStaffList />} />
-                  <Route path="mbcs/staff/add" element={<AddMbcsStaff />} />
-                  <Route path="mbcs/staff/edit/:id" element={<AddMbcsStaff />} />
-                  <Route path="mbcs/staff/:id/payroll" element={<MbcsStaffPayrollHistory />} />
-                  <Route path="mbcs/payments" element={<MbcsPaymentsList />} />
-                  <Route path="mbcs/payments/record" element={<MbcsRecordPayment />} />
-                  <Route path="mbcs/payments/collect-due" element={<MbcsCollectDue />} />
-                  <Route path="mbcs/payments/invoice/:invoiceNumber" element={<MbcsInvoiceByNumber />} />
-                  <Route path="mbcs/payments/:id/invoice" element={<MbcsPaymentInvoice />} />
-                  <Route path="mbcs/payment-history" element={<MbcsPaymentHistory />} />
-                  <Route path="mbcs/expenses" element={<MbcsExpensesList />} />
-                  <Route path="mbcs/expenses/add" element={<AddMbcsExpense />} />
-                  <Route path="mbcs/expenses/edit/:id" element={<AddMbcsExpense />} />
-                  <Route path="mbcs/teacher-attendance" element={<MbcsTeacherAttendanceList />} />
-                  <Route path="mbcs/teacher-attendance/add" element={<AddMbcsTeacherAttendance />} />
-                  <Route path="mbcs/payroll" element={<MbcsPayrollList />} />
-                  <Route path="mbcs/payroll/create" element={<MbcsCreatePayroll />} />
-                  <Route path="mbcs/payroll/:id/invoice" element={<MbcsPayrollInvoice />} />
-                </Route>
-
-                {/* MEC Routes */}
-                <Route element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'DIRECTOR', 'ACCOUNTANT_MEC']} />}>
-                  <Route path="mec/students" element={<MecStudentsList />} />
-                  <Route path="mec/students/add" element={<AddMecStudent />} />
-                  <Route path="mec/students/edit/:id" element={<AddMecStudent />} />
-                  <Route path="mec/students/:id/payments" element={<MecStudentPaymentHistory />} />
-                  <Route path="mec/payments/record" element={<MecRecordPayment />} />
-                  <Route path="mec/payments/collect-due" element={<MecCollectDue />} />
-                  <Route path="mec/payments/invoice/:invoiceNumber" element={<MecInvoiceByNumber />} />
-                  <Route path="mec/payments/:id/invoice" element={<MecPaymentInvoice />} />
-                  <Route path="mec/payment-history" element={<MecPaymentHistory />} />
-                  <Route path="mec/expenses" element={<MecExpensesList />} />
-                  <Route path="mec/expenses/add" element={<AddMecExpense />} />
-                  <Route path="mec/expenses/edit/:id" element={<AddMecExpense />} />
-                </Route>
-              </Route>
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </BrowserRouter>
-        </ErrorBoundary>
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </BrowserRouter>
+          </ErrorBoundary>
         </AntApp>
       </ConfigProvider>
     </QueryClientProvider>
