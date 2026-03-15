@@ -161,6 +161,11 @@ export default function AddTeacher() {
                       required: true,
                       message: "Please enter monthly salary",
                     },
+                    {
+                      type: "number",
+                      min: 0,
+                      message: "Monthly salary must be a valid number",
+                    },
                   ]}
                 >
                   <InputNumber
@@ -181,6 +186,11 @@ export default function AddTeacher() {
                     {
                       required: true,
                       message: "Please enter per lecture rate",
+                    },
+                    {
+                      type: "number",
+                      min: 0,
+                      message: "Per lecture rate must be a valid number",
                     },
                   ]}
                 >
