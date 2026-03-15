@@ -15,8 +15,13 @@ export class MecStudentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createStudentDto: CreateMecStudentDto) {
+    const normalizedGroup =
+      typeof createStudentDto.class === 'number' && createStudentDto.class < 9
+        ? undefined
+        : createStudentDto.group;
     const data: Prisma.MecStudentCreateInput = {
       ...createStudentDto,
+      group: normalizedGroup,
       dateOfBirth: new Date(createStudentDto.dateOfBirth),
       admissionDate: createStudentDto.admissionDate
         ? new Date(createStudentDto.admissionDate)
@@ -32,6 +37,10 @@ export class MecStudentsService {
         this.prisma.mecStudent.create({
           data: {
             ...dto,
+            group:
+              typeof dto.class === 'number' && dto.class < 9
+                ? undefined
+                : dto.group,
             dateOfBirth: new Date(dto.dateOfBirth),
             admissionDate: dto.admissionDate
               ? new Date(dto.admissionDate)
@@ -90,7 +99,7 @@ export class MecStudentsService {
   }
 
   async update(id: string, updateStudentDto: UpdateMecStudentDto) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
 
     const data: Prisma.MecStudentUpdateInput = { ...updateStudentDto };
 
@@ -99,6 +108,11 @@ export class MecStudentsService {
     }
     if (updateStudentDto.admissionDate) {
       data.admissionDate = new Date(updateStudentDto.admissionDate);
+    }
+
+    const effectiveClass = updateStudentDto.class ?? existing.class;
+    if (typeof effectiveClass === 'number' && effectiveClass < 9) {
+      data.group = undefined;
     }
 
     return this.prisma.mecStudent.update({ where: { id }, data });

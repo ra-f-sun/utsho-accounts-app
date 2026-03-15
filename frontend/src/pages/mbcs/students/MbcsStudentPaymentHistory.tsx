@@ -98,7 +98,7 @@ export default function MbcsStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+  const dueSummary = dueSummaryData?.data;
 
   const payments: MbcsPayment[] = useMemo(
     () => paymentsData?.data?.data || [],

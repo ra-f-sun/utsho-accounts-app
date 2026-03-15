@@ -97,7 +97,7 @@ export default function StudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+  const dueSummary = dueSummaryData?.data;
 
   const payments: Payment[] = useMemo(
     () => paymentsData?.data?.data || [],

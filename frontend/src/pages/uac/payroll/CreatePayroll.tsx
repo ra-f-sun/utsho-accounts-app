@@ -50,6 +50,7 @@ export default function CreatePayroll() {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [calculatedData, setCalculatedData] = useState<{
+    paymentType?: string;
     amount: number;
     totalLectures: number | null;
   } | null>(null);
