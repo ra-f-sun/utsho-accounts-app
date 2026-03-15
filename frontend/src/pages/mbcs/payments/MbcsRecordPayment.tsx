@@ -196,7 +196,14 @@ export default function MbcsRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems = (values.lineItems || []).map((item: MbcsPaymentFormLineItem) => ({
+    const lineItems: CreateMbcsMultiPaymentDto["lineItems"] = (values.lineItems || [])
+      .filter(
+        (
+          item,
+        ): item is MbcsPaymentFormLineItem & { paymentType: string; amount: number } =>
+          Boolean(item?.paymentType) && typeof item?.amount === "number",
+      )
+      .map((item) => ({
       paymentType: item.paymentType,
       amount: item.amount,
       paymentMonth:

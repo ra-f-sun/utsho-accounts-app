@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { teachersService } from "../../../services/teachersService";
 import type { CreateTeacherDto } from "../../../services/teachersService";
+import { PERSON_NAME_MESSAGE, PERSON_NAME_REGEX } from "../../../utils/validators";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -97,6 +98,7 @@ export default function AddTeacher() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter teacher name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Enter full name" />

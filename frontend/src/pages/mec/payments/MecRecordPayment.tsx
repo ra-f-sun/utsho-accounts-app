@@ -118,7 +118,12 @@ export default function MecRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems = (values.lineItems || []).map((item: MecPaymentFormLineItem) => ({
+    const lineItems: CreateMecMultiPaymentDto["lineItems"] = (values.lineItems || [])
+      .filter(
+        (item): item is MecPaymentFormLineItem & { amount: number } =>
+          typeof item?.amount === "number",
+      )
+      .map((item) => ({
       amount: item.amount,
       paymentMonth: item.paymentMonth
         ? item.paymentMonth.startOf("month").toISOString()

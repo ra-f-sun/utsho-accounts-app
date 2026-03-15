@@ -7,6 +7,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { Role } from '@prisma/client';
+import { IsPersonName } from '../../common/validators/is-person-name.validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -18,6 +19,7 @@ export class CreateUserDto {
 
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   fullName: string;
 
   @IsEnum(Role)

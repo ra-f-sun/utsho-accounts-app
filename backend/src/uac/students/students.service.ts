@@ -12,8 +12,10 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(createStudentDto: CreateStudentDto) {
+    const normalizedGroup = createStudentDto.class < 9 ? undefined : createStudentDto.group;
     const data: Prisma.UacStudentCreateInput = {
       ...createStudentDto,
+      group: normalizedGroup,
       dateOfBirth: new Date(createStudentDto.dateOfBirth),
       admissionDate: createStudentDto.admissionDate
         ? new Date(createStudentDto.admissionDate)
@@ -31,6 +33,7 @@ export class StudentsService {
         this.prisma.uacStudent.create({
           data: {
             ...dto,
+            group: dto.class < 9 ? undefined : dto.group,
             dateOfBirth: new Date(dto.dateOfBirth),
             admissionDate: dto.admissionDate
               ? new Date(dto.admissionDate)
@@ -103,7 +106,7 @@ export class StudentsService {
 
   async update(id: string, updateStudentDto: UpdateStudentDto) {
     // Check if student exists
-    await this.findOne(id);
+    const existing = await this.findOne(id);
 
     const data: Prisma.UacStudentUpdateInput = {
       ...updateStudentDto,
@@ -115,6 +118,11 @@ export class StudentsService {
     }
     if (updateStudentDto.admissionDate) {
       data.admissionDate = new Date(updateStudentDto.admissionDate);
+    }
+
+    const effectiveClass = updateStudentDto.class ?? existing.class;
+    if (effectiveClass < 9) {
+      data.group = undefined;
     }
 
     return this.prisma.uacStudent.update({

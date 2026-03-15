@@ -188,8 +188,8 @@ export default function MbcsPayrollList() {
             }
             allowClear
           >
-            <Option value="teacher">Teacher</Option>
-            <Option value="staff">Staff</Option>
+            <Select.Option value="teacher">Teacher</Select.Option>
+            <Select.Option value="staff">Staff</Select.Option>
           </Select>
         </Space>
         <Button

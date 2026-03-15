@@ -6,10 +6,12 @@ import {
   MinLength,
   Matches,
 } from 'class-validator';
+import { IsPersonName } from '../../../common/validators/is-person-name.validator';
 
 export class CreateStaffDto {
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   name: string;
 
   @IsString()

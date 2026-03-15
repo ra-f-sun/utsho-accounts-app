@@ -1,5 +1,7 @@
 import * as XLSX from "xlsx";
 
+const PERSON_NAME_REGEX = /^\p{L}+(?:\s+\p{L}+)*$/u;
+
 type OrgType = "uac" | "mbcs" | "mec";
 
 interface TemplateColumn {
@@ -186,6 +188,41 @@ export function parseImportFile(
 
           if (org !== "mec" && !student.class) {
             errors.push(`Row ${rowNum}: Class is required`);
+          }
+
+          if (student.name && typeof student.name === "string" && !PERSON_NAME_REGEX.test(student.name.trim())) {
+            errors.push(`Row ${rowNum}: Name can contain letters and spaces only`);
+          }
+          if (
+            student.guardianName &&
+            typeof student.guardianName === "string" &&
+            !PERSON_NAME_REGEX.test(student.guardianName.trim())
+          ) {
+            errors.push(`Row ${rowNum}: Guardian Name can contain letters and spaces only`);
+          }
+          if (student.fatherName && typeof student.fatherName === "string" && !PERSON_NAME_REGEX.test(student.fatherName.trim())) {
+            errors.push(`Row ${rowNum}: Father Name can contain letters and spaces only`);
+          }
+          if (student.motherName && typeof student.motherName === "string" && !PERSON_NAME_REGEX.test(student.motherName.trim())) {
+            errors.push(`Row ${rowNum}: Mother Name can contain letters and spaces only`);
+          }
+
+          if (student.dateOfBirth && typeof student.dateOfBirth === "string") {
+            const dob = new Date(student.dateOfBirth);
+            const today = new Date();
+            dob.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            if (!Number.isNaN(dob.getTime()) && dob > today) {
+              errors.push(`Row ${rowNum}: Date of Birth cannot be in the future`);
+            }
+          }
+
+          if (
+            student.group &&
+            typeof student.class === "number" &&
+            student.class < 9
+          ) {
+            student.group = undefined;
           }
 
           parsed.push(student);

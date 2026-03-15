@@ -52,7 +52,7 @@ export default function MbcsCreatePayroll() {
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [calculatedData, setCalculatedData] = useState<{
     paymentType?: string;
-    totalLectures?: number;
+    totalLectures?: number | null;
     amount?: number;
   } | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
@@ -158,16 +158,22 @@ export default function MbcsCreatePayroll() {
   };
 
   const onFinish = (values: MbcsPayrollFormValues) => {
+    const payableId =
+      values.payableType === "teacher" ? values.teacherId : values.staffId;
+    if (!payableId) {
+      message.error("Please select a teacher/staff");
+      return;
+    }
+
     const data: CreateMbcsPayrollDto = {
       payableType: values.payableType,
-      payableId:
-        values.payableType === "teacher" ? values.teacherId : values.staffId,
+      payableId,
       paymentMonth: values.paymentMonthPicker
         ? values.paymentMonthPicker.startOf("month").toISOString()
         : new Date().toISOString(),
       amount: calculatedData?.amount ?? values.amount,
       paidAmount: values.paidAmount ?? (calculatedData?.amount ?? values.amount),
-      totalLectures: calculatedData?.totalLectures,
+      totalLectures: calculatedData?.totalLectures ?? undefined,
       paymentDate: values.paymentDate
         ? values.paymentDate.toISOString()
         : new Date().toISOString(),

@@ -14,6 +14,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import type { CreateMbcsTeacherDto } from "../../../services/mbcsTeachersService";
+import { PERSON_NAME_MESSAGE, PERSON_NAME_REGEX } from "../../../utils/validators";
 
 const { Option } = Select;
 
@@ -43,7 +44,9 @@ export default function AddMbcsTeacher() {
         existingDataApplied.current = true;
         form.setFieldsValue(teacher);
         // eslint-disable-next-line react-hooks/set-state-in-effect -- edit form hydration
-        setPaymentType(teacher.paymentType || "fixed");
+        setPaymentType(
+          teacher.paymentType === "lecture_based" ? "lecture_based" : "fixed",
+        );
       }
     }
   }, [existingData, form]);
@@ -92,6 +95,7 @@ export default function AddMbcsTeacher() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter teacher name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Enter full name" />

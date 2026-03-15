@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { CreateMbcsStaffDto } from "../../../services/mbcsStaffService";
+import { PERSON_NAME_MESSAGE, PERSON_NAME_REGEX } from "../../../utils/validators";
 
 export default function AddMbcsStaff() {
   const [form] = Form.useForm();
@@ -78,7 +79,10 @@ export default function AddMbcsStaff() {
               <Form.Item
                 label="Full Name"
                 name="name"
-                rules={[{ required: true, message: "Please enter staff name" }]}
+                rules={[
+                  { required: true, message: "Please enter staff name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
+                ]}
               >
                 <Input placeholder="Enter full name" />
               </Form.Item>

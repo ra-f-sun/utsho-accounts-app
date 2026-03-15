@@ -9,10 +9,12 @@ import {
   IsArray,
   ValidateIf,
 } from 'class-validator';
+import { IsPersonName } from '../../../common/validators/is-person-name.validator';
 
 export class CreateTeacherDto {
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   name: string;
 
   @IsString()

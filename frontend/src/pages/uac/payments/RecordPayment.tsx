@@ -212,7 +212,14 @@ export default function RecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems = (values.lineItems || []).map((item: UacPaymentFormLineItem) => ({
+    const lineItems: CreateMultiPaymentDto["lineItems"] = (values.lineItems || [])
+      .filter(
+        (
+          item,
+        ): item is UacPaymentFormLineItem & { paymentType: string; amount: number } =>
+          Boolean(item?.paymentType) && typeof item?.amount === "number",
+      )
+      .map((item) => ({
       paymentType: item.paymentType,
       amount: item.amount,
       paymentMonth:
