@@ -1,4 +1,13 @@
-import { IsInt, IsOptional, IsString, Min, Max } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  Max,
+  IsArray,
+  ArrayMinSize,
+  IsUUID,
+} from 'class-validator';
 
 export class PromoteStudentDto {
   @IsInt()
@@ -25,4 +34,10 @@ export class PromoteBulkDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  studentIds?: string[];
 }

@@ -16,13 +16,14 @@ import { ArrowLeftOutlined, VerticalAlignTopOutlined } from "@ant-design/icons";
 import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
+import { uacClassLabel } from "../../../constants/uacClasses";
 
 const { Title, Text } = Typography;
 
 const UAC_CLASSES = [8, 9, 10, 11, 12];
 const UAC_TO_CLASSES = [9, 10, 11, 12, 13];
 
-const classLabel = (c: number) => (c === 13 ? "Graduated" : `Class ${c}`);
+const classLabel = (c: number) => uacClassLabel(c);
 
 export default function PromoteStudents() {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ export default function PromoteStudents() {
       studentsService.promoteBulk({
         fromClass: fromClass!,
         toClass: toClass!,
+        studentIds: selectedRowKeys,
         notes: `Bulk promotion from ${classLabel(fromClass!)} to ${classLabel(toClass!)}`,
       }),
     onSuccess: (res) => {
@@ -67,7 +69,7 @@ export default function PromoteStudents() {
       title: "Class",
       dataIndex: "class",
       key: "class",
-      render: (c: number) => <Tag color="blue">Class {c}</Tag>,
+      render: (c: number) => <Tag color="blue">{classLabel(c)}</Tag>,
     },
     {
       title: "Guardian",
@@ -91,7 +93,8 @@ export default function PromoteStudents() {
     fromClass !== undefined &&
     toClass !== undefined &&
     toClass > fromClass &&
-    students.length > 0;
+    students.length > 0 &&
+    selectedRowKeys.length > 0;
 
   return (
     <div>
@@ -147,7 +150,7 @@ export default function PromoteStudents() {
               loading={promoteMutation.isPending}
               onClick={() => promoteMutation.mutate()}
             >
-              Promote All ({students.length})
+              Promote Selected ({selectedRowKeys.length})
             </Button>
           </div>
         </Space>

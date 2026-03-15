@@ -264,8 +264,17 @@ export class StudentsService {
     dto: PromoteBulkDto,
     promotedBy: string,
   ): Promise<{ promoted: number }> {
+    const selectedIds = dto.studentIds?.length
+      ? Array.from(new Set(dto.studentIds))
+      : undefined;
+
     const students = await this.prisma.uacStudent.findMany({
-      where: { isActive: true, associationEndDate: null, class: dto.fromClass },
+      where: {
+        isActive: true,
+        associationEndDate: null,
+        class: dto.fromClass,
+        ...(selectedIds ? { id: { in: selectedIds } } : {}),
+      },
       select: { id: true, monthlyTuitionFee: true },
     });
     if (students.length === 0) return { promoted: 0 };

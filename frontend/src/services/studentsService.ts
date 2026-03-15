@@ -102,7 +102,7 @@ export const studentsService = {
   reassociate: (id: string) => apiPatch<Student>(`/uac/students/${id}/reassociate`, {}),
   promote: (id: string, data: { toClass: number; notes?: string }) =>
     apiPost<Student>(`/uac/students/${id}/promote`, data),
-  promoteBulk: (data: { fromClass: number; toClass: number; notes?: string }) =>
+  promoteBulk: (data: { fromClass: number; toClass: number; notes?: string; studentIds?: string[] }) =>
     apiPost<{ promoted: number }>('/uac/students/promote-bulk', data),
   importStudents: (students: CreateStudentDto[]) =>
     apiPost<Student[]>('/uac/students/import', { students }),

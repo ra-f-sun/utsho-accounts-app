@@ -26,6 +26,10 @@ import type {
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import { useDebouncedValue } from "../../../utils/useDebouncedValue";
+import {
+  UAC_CLASS_FILTER_OPTIONS,
+  uacClassLabel,
+} from "../../../constants/uacClasses";
 
 const { Option } = Select;
 
@@ -73,6 +77,7 @@ export default function StudentsList() {
       dataIndex: "class",
       key: "class",
       width: 80,
+      render: (cls: number) => uacClassLabel(cls),
     },
     {
       title: "Group",
@@ -156,9 +161,9 @@ export default function StudentsList() {
             }
             allowClear
           >
-            {[8, 9, 10, 11, 12].map((cls) => (
-              <Option key={cls} value={cls}>
-                Class {cls}
+            {UAC_CLASS_FILTER_OPTIONS.map(({ value, label }) => (
+              <Option key={value} value={value}>
+                {label}
               </Option>
             ))}
           </Select>

@@ -21,7 +21,7 @@ import type { CreateStudentDto } from "../../../services/studentsService";
 import settingsService, {
   type OrgSetting,
 } from "../../../services/settingsService";
-import { UAC_CLASSES } from "../../../constants/uacClasses";
+import { UAC_ADMISSION_CLASSES } from "../../../constants/uacClasses";
 import dayjs from "dayjs";
 import {
   PERSON_NAME_MESSAGE,
@@ -241,7 +241,7 @@ export default function AddStudent() {
                   placeholder="Select class"
                   onChange={(cls: number) => onClassChange(cls)}
                 >
-                  {UAC_CLASSES.map(({ value: cls, label }) => (
+                  {UAC_ADMISSION_CLASSES.map(({ value: cls, label }) => (
                     <Option key={cls} value={cls}>
                       {label}
                     </Option>
