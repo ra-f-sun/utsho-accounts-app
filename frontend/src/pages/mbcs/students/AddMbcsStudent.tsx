@@ -16,8 +16,8 @@ import {
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { CreateMbcsStudentDto } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { CreateStudentDto } from "../../../services/studentsService";
 import settingsService, { type OrgSetting } from "../../../services/settingsService";
 import { MBCS_CLASSES } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
@@ -90,8 +90,8 @@ export default function AddMbcsStudent() {
 
   // Fetch existing student for edit
   const { data: existingData } = useQuery({
-    queryKey: ["mbcs-student", id],
-    queryFn: () => mbcsStudentsService.getOne(id!),
+    queryKey: ["mbcs", "student", id],
+    queryFn: () => studentsService.getOne("mbcs", id!),
     enabled: isEditMode,
   });
 
@@ -114,28 +114,28 @@ export default function AddMbcsStudent() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsStudentDto) =>
-      mbcsStudentsService.create(data),
+    mutationFn: (data: CreateStudentDto) =>
+      studentsService.create("mbcs", data),
     onSuccess: () => {
       message.success("Student added successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "students"] });
       navigate("/mbcs/students");
     },
     onError: () => message.error("Failed to add student"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<CreateMbcsStudentDto>) =>
-      mbcsStudentsService.update(id!, data),
+    mutationFn: (data: Partial<CreateStudentDto>) =>
+      studentsService.update("mbcs", id!, data),
     onSuccess: () => {
       message.success("Student updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "students"] });
       navigate("/mbcs/students");
     },
     onError: () => message.error("Failed to update student"),
   });
 
-  const onFinish = (values: Omit<CreateMbcsStudentDto, 'dateOfBirth' | 'admissionDate'> & {
+  const onFinish = (values: Omit<CreateStudentDto, 'dateOfBirth' | 'admissionDate'> & {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
@@ -154,7 +154,7 @@ export default function AddMbcsStudent() {
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data as unknown as CreateMbcsStudentDto);
+      createMutation.mutate(data as unknown as CreateStudentDto);
     }
   };
 

@@ -19,8 +19,8 @@ import {
   FileExcelOutlined,
   CalendarOutlined,
 } from "@ant-design/icons";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsStudent } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import { MBCS_CLASS_MAP, MBCS_CLASSES } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
 import type { ColumnsType } from "antd/es/table";
@@ -36,11 +36,11 @@ export default function MbcsStudentDirectory() {
   const [admissionDateTo, setAdmissionDateTo] = useState<dayjs.Dayjs | null>(null);
 
   const { data: studentsData, isLoading } = useQuery({
-    queryKey: ["mbcs-students-directory"],
-    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mbcs", "students-directory"],
+    queryFn: () => studentsService.getAll("mbcs", undefined, 1, 1000),
   });
 
-  const allStudents: MbcsStudent[] = useMemo(
+  const allStudents: Student[] = useMemo(
     () => studentsData?.data?.data ?? [],
     [studentsData],
   );
@@ -171,7 +171,7 @@ export default function MbcsStudentDirectory() {
     URL.revokeObjectURL(url);
   }, [filtered, classFilter]);
 
-  const columns: ColumnsType<MbcsStudent> = [
+  const columns: ColumnsType<Student> = [
     {
       title: "#",
       key: "index",

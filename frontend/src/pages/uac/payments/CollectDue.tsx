@@ -63,8 +63,8 @@ export default function CollectDue() {
 
   // Fetch all students
   const { data: studentsData } = useQuery({
-    queryKey: ["students"],
-    queryFn: () => studentsService.getAll(undefined, 1, 1000),
+    queryKey: ["uac", "students"],
+    queryFn: () => studentsService.getAll("uac", undefined, 1, 1000),
   });
   const allStudents = useMemo<Student[]>(
     () => studentsData?.data?.data ?? [],

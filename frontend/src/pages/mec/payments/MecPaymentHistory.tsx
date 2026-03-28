@@ -24,8 +24,8 @@ import { useNavigate } from "react-router-dom";
 import QueryError from "../../../components/QueryError";
 import { paymentsService } from "../../../services/paymentsService";
 import type { Payment } from "../../../services/paymentsService";
-import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { MecStudent } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -39,7 +39,7 @@ interface Filters {
 }
 
 interface StudentStatus {
-  student: MecStudent;
+  student: Student;
   payment?: Payment;
   isPaid: boolean;
   isAvailable: boolean;
@@ -65,10 +65,10 @@ export default function PaymentHistory() {
 
   // Fetch all active students
   const { data: studentsData } = useQuery({
-    queryKey: ["mec-students"],
-    queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mec", "students"],
+    queryFn: () => studentsService.getAll("mec", undefined, 1, 1000),
   });
-  const allStudents: MecStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Fetch all payments with active filters
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({

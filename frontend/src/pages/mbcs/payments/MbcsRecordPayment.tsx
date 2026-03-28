@@ -24,8 +24,8 @@ import {
   MBCS_PAYMENT_TYPES,
 } from "../../../services/paymentsService";
 import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsStudent } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import settingsService from "../../../services/settingsService";
 import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import axios from "axios";
@@ -106,11 +106,11 @@ export default function MbcsRecordPayment() {
 
   // Fetch all students
   const { data: studentsData } = useQuery({
-    queryKey: ["mbcs-students"],
-    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mbcs", "students"],
+    queryFn: () => studentsService.getAll("mbcs", undefined, 1, 1000),
   });
 
-  const allStudents: MbcsStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Derive unique classes and shifts
   const availableClasses = useMemo(

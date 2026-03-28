@@ -29,8 +29,8 @@ import {
   MBCS_PAYMENT_TYPES,
 } from "../../../services/paymentsService";
 import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/paymentsService";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsStudent } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import dayjs from "dayjs";
 import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
@@ -63,10 +63,10 @@ export default function MbcsCollectDue() {
   const [successInvoice, setSuccessInvoice] = useState<string | null>(null);
 
   const { data: studentsData } = useQuery({
-    queryKey: ["mbcs-students"],
-    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mbcs", "students"],
+    queryFn: () => studentsService.getAll("mbcs", undefined, 1, 1000),
   });
-  const allStudents = useMemo<MbcsStudent[]>(
+  const allStudents = useMemo<Student[]>(
     () => studentsData?.data?.data ?? [],
     [studentsData],
   );

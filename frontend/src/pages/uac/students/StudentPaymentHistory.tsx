@@ -41,21 +41,21 @@ export default function StudentPaymentHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => studentsService.disassociate(id!),
+    mutationFn: () => studentsService.disassociate("uac", id!),
     onSuccess: () => {
       message.success("Student marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["student", id] });
-      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "students"] });
     },
     onError: () => message.error("Failed to disassociate student"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => studentsService.reassociate(id!),
+    mutationFn: () => studentsService.reassociate("uac", id!),
     onSuccess: () => {
       message.success("Student re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["student", id] });
-      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "students"] });
     },
     onError: () => message.error("Failed to re-associate student"),
   });
@@ -65,21 +65,21 @@ export default function StudentPaymentHistory() {
   const [promoteNotes, setPromoteNotes] = useState('');
 
   const promoteMutation = useMutation({
-    mutationFn: () => studentsService.promote(id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
+    mutationFn: () => studentsService.promote("uac", id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
     onSuccess: () => {
       message.success('Student promoted successfully');
       setPromoteOpen(false);
       setPromoteToClass(undefined);
       setPromoteNotes('');
-      queryClient.invalidateQueries({ queryKey: ['student', id] });
-      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['uac', 'student', id] });
+      queryClient.invalidateQueries({ queryKey: ['uac', 'students'] });
     },
     onError: () => message.error('Failed to promote student'),
   });
 
   const { data: studentData, isLoading: loadingStudent } = useQuery({
-    queryKey: ["student", id],
-    queryFn: () => studentsService.getOne(id!),
+    queryKey: ["uac", "student", id],
+    queryFn: () => studentsService.getOne("uac", id!),
     enabled: !!id,
   });
 

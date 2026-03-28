@@ -34,8 +34,8 @@ export default function PromoteStudents() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["students", { class: fromClass }],
-    queryFn: () => studentsService.getAll({ class: fromClass }, 1, 500),
+    queryKey: ["uac", "students", { class: fromClass }],
+    queryFn: () => studentsService.getAll("uac", { class: fromClass }, 1, 500),
     enabled: !!fromClass,
   });
 
@@ -43,7 +43,7 @@ export default function PromoteStudents() {
 
   const promoteMutation = useMutation({
     mutationFn: () =>
-      studentsService.promoteBulk({
+      studentsService.promoteBulk("uac", {
         fromClass: fromClass!,
         toClass: toClass!,
         studentIds: selectedRowKeys,

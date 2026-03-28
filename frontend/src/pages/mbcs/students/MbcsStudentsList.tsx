@@ -18,11 +18,11 @@ import {
   HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
 import type {
-  MbcsStudent,
-  FilterMbcsStudentDto,
-} from "../../../services/mbcsStudentsService";
+  Student,
+  FilterStudentDto,
+} from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import { MBCS_CLASSES, MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
@@ -32,22 +32,22 @@ const { Option } = Select;
 export default function MbcsStudentsList() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<FilterMbcsStudentDto>({});
+  const [filters, setFilters] = useState<FilterStudentDto>({});
   const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["mbcs-students", filters, page],
-    queryFn: () => mbcsStudentsService.getAll(filters, page),
+    queryKey: ["mbcs", "students", filters, page],
+    queryFn: () => studentsService.getAll("mbcs", filters, page),
   });
 
-  const students: MbcsStudent[] = data?.data?.data || [];
+  const students: Student[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mbcsStudentsService.delete(id),
+    mutationFn: (id: string) => studentsService.delete("mbcs", id),
     onSuccess: () => {
       message.success("Student deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "students"] });
     },
     onError: () => {
       message.error("Failed to delete student");
@@ -56,7 +56,7 @@ export default function MbcsStudentsList() {
 
   if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
-  const columns: ColumnsType<MbcsStudent> = [
+  const columns: ColumnsType<Student> = [
     {
       title: "Name",
       dataIndex: "name",
@@ -110,7 +110,7 @@ export default function MbcsStudentsList() {
       title: "Actions",
       key: "actions",
       width: 120,
-      render: (_: unknown, record: MbcsStudent) => (
+      render: (_: unknown, record: Student) => (
         <Space>
           <Button
             type="link"

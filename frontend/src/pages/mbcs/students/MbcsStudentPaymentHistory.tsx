@@ -13,7 +13,7 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import { paymentsService } from "../../../services/paymentsService";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
 import type { Payment } from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
@@ -42,21 +42,21 @@ export default function MbcsStudentPaymentHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => mbcsStudentsService.disassociate(id!),
+    mutationFn: () => studentsService.disassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Student marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-student", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "students"] });
     },
     onError: () => message.error("Failed to disassociate student"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => mbcsStudentsService.reassociate(id!),
+    mutationFn: () => studentsService.reassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Student re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-student", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "students"] });
     },
     onError: () => message.error("Failed to re-associate student"),
   });
@@ -66,21 +66,21 @@ export default function MbcsStudentPaymentHistory() {
   const [promoteNotes, setPromoteNotes] = useState('');
 
   const promoteMutation = useMutation({
-    mutationFn: () => mbcsStudentsService.promote(id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
+    mutationFn: () => studentsService.promote("mbcs", id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
     onSuccess: () => {
       message.success('Student promoted successfully');
       setPromoteOpen(false);
       setPromoteToClass(undefined);
       setPromoteNotes('');
-      queryClient.invalidateQueries({ queryKey: ['mbcs-student', id] });
-      queryClient.invalidateQueries({ queryKey: ['mbcs-students'] });
+      queryClient.invalidateQueries({ queryKey: ['mbcs', 'student', id] });
+      queryClient.invalidateQueries({ queryKey: ['mbcs', 'students'] });
     },
     onError: () => message.error('Failed to promote student'),
   });
 
   const { data: studentData, isLoading: loadingStudent } = useQuery({
-    queryKey: ["mbcs-student", id],
-    queryFn: () => mbcsStudentsService.getOne(id!),
+    queryKey: ["mbcs", "student", id],
+    queryFn: () => studentsService.getOne("mbcs", id!),
     enabled: !!id,
   });
 

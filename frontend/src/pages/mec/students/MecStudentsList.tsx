@@ -9,8 +9,8 @@ import {
   HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { MecStudent } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import { useDebouncedValue } from "../../../utils/useDebouncedValue";
@@ -24,25 +24,25 @@ export default function MecStudentsList() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["mec-students", debouncedSearch, page],
-    queryFn: () => mecStudentsService.getAll(debouncedSearch ? { search: debouncedSearch } : {}, page),
+    queryKey: ["mec", "students", debouncedSearch, page],
+    queryFn: () => studentsService.getAll("mec", debouncedSearch ? { search: debouncedSearch } : {}, page),
   });
 
-  const students: MecStudent[] = data?.data?.data || [];
+  const students: Student[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mecStudentsService.remove(id),
+    mutationFn: (id: string) => studentsService.delete("mec", id),
     onSuccess: () => {
       message.success("Student deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
     },
     onError: () => message.error("Failed to delete student"),
   });
 
   if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
-  const columns: ColumnsType<MecStudent> = [
+  const columns: ColumnsType<Student> = [
     {
       title: "Name",
       dataIndex: "name",
@@ -88,7 +88,7 @@ export default function MecStudentsList() {
       title: "Actions",
       key: "actions",
       width: 140,
-      render: (_: unknown, record: MecStudent) => (
+      render: (_: unknown, record: Student) => (
         <Space>
           <Button
             type="link"

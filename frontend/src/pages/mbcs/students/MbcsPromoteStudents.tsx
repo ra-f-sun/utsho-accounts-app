@@ -13,8 +13,8 @@ import {
   Alert,
 } from "antd";
 import { ArrowLeftOutlined, VerticalAlignTopOutlined } from "@ant-design/icons";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsStudent } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
@@ -37,16 +37,16 @@ export default function MbcsPromoteStudents() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-students", { class: fromClass }],
-    queryFn: () => mbcsStudentsService.getAll({ class: fromClass }, 1, 500),
+    queryKey: ["mbcs", "students", { class: fromClass }],
+    queryFn: () => studentsService.getAll("mbcs", { class: fromClass }, 1, 500),
     enabled: fromClass !== undefined,
   });
 
-  const students: MbcsStudent[] = data?.data?.data ?? [];
+  const students: Student[] = data?.data?.data ?? [];
 
   const promoteMutation = useMutation({
     mutationFn: () =>
-      mbcsStudentsService.promoteBulk({
+      studentsService.promoteBulk("mbcs", {
         fromClass: fromClass!,
         toClass: toClass!,
         notes: `Bulk promotion from ${classLabel(fromClass!)} to ${classLabel(toClass!)}`,
@@ -61,7 +61,7 @@ export default function MbcsPromoteStudents() {
     onError: () => message.error("Bulk promotion failed. Please try again."),
   });
 
-  const columns: ColumnsType<MbcsStudent> = [
+  const columns: ColumnsType<Student> = [
     {
       title: "Name",
       dataIndex: "name",

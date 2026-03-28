@@ -69,8 +69,8 @@ export default function UacPaymentHistory() {
 
   // Fetch all students
   const { data: studentsData } = useQuery({
-    queryKey: ["students"],
-    queryFn: () => studentsService.getAll(undefined, 1, 1000),
+    queryKey: ["uac", "students"],
+    queryFn: () => studentsService.getAll("uac", undefined, 1, 1000),
   });
   const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 

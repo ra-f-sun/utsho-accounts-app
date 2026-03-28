@@ -22,8 +22,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { paymentsService } from "../../../services/paymentsService";
 import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/paymentsService";
-import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { MecStudent } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import dayjs from "dayjs";
 
 const { TextArea } = Input;
@@ -49,10 +49,10 @@ export default function MecCollectDue() {
   const [successInvoice, setSuccessInvoice] = useState<string | null>(null);
 
   const { data: studentsData } = useQuery({
-    queryKey: ["mec-students"],
-    queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mec", "students"],
+    queryFn: () => studentsService.getAll("mec", undefined, 1, 1000),
   });
-  const allStudents = useMemo<MecStudent[]>(
+  const allStudents = useMemo<Student[]>(
     () => studentsData?.data?.data ?? [],
     [studentsData],
   );

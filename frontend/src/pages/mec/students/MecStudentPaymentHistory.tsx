@@ -14,9 +14,9 @@ import {
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { paymentsService } from "../../../services/paymentsService";
-import { mecStudentsService } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import type { Payment } from "../../../services/paymentsService";
-import type { MecStudent } from "../../../services/mecStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
@@ -43,21 +43,21 @@ export default function MecStudentPaymentHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => mecStudentsService.disassociate(id!),
+    mutationFn: () => studentsService.disassociate("mec", id!),
     onSuccess: () => {
       message.success("Student marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["mec-student", id] });
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
     },
     onError: () => message.error("Failed to disassociate student"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => mecStudentsService.reassociate(id!),
+    mutationFn: () => studentsService.reassociate("mec", id!),
     onSuccess: () => {
       message.success("Student re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mec-student", id] });
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "student", id] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
     },
     onError: () => message.error("Failed to re-associate student"),
   });
@@ -67,25 +67,25 @@ export default function MecStudentPaymentHistory() {
   const [promoteNotes, setPromoteNotes] = useState('');
 
   const promoteMutation = useMutation({
-    mutationFn: () => mecStudentsService.promote(id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
+    mutationFn: () => studentsService.promote("mec", id!, { toClass: promoteToClass!, notes: promoteNotes || undefined }),
     onSuccess: () => {
       message.success('Student promoted successfully');
       setPromoteOpen(false);
       setPromoteToClass(undefined);
       setPromoteNotes('');
-      queryClient.invalidateQueries({ queryKey: ['mec-student', id] });
-      queryClient.invalidateQueries({ queryKey: ['mec-students'] });
+      queryClient.invalidateQueries({ queryKey: ['mec', 'student', id] });
+      queryClient.invalidateQueries({ queryKey: ['mec', 'students'] });
     },
     onError: () => message.error('Failed to promote student'),
   });
 
   const { data: studentData, isLoading: loadingStudent } = useQuery({
-    queryKey: ["mec-student", id],
-    queryFn: () => mecStudentsService.getOne(id!),
+    queryKey: ["mec", "student", id],
+    queryFn: () => studentsService.getOne("mec", id!),
     enabled: !!id,
   });
 
-  const student = studentData?.data as MecStudent | undefined;
+  const student = studentData?.data as Student | undefined;
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mec", "payments", { studentId: id }],

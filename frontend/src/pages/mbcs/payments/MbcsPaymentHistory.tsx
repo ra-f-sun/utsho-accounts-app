@@ -27,8 +27,8 @@ import {
   MBCS_PAYMENT_TYPES,
 } from "../../../services/paymentsService";
 import type { Payment } from "../../../services/paymentsService";
-import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsStudent } from "../../../services/mbcsStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { MBCS_CLASS_MAP, MBCS_CLASSES } from "../../../constants/mbcsClasses";
@@ -58,7 +58,7 @@ interface Filters {
 }
 
 interface StudentStatus {
-  student: MbcsStudent;
+  student: Student;
   payment?: Payment;
   isPaid: boolean;
   isAvailable: boolean;
@@ -73,10 +73,10 @@ export default function PaymentHistory() {
   const [showDueOnly, setShowDueOnly] = useState(false);
 
   const { data: studentsData } = useQuery({
-    queryKey: ["mbcs-students"],
-    queryFn: () => mbcsStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mbcs", "students"],
+    queryFn: () => studentsService.getAll("mbcs", undefined, 1, 1000),
   });
-  const allStudents: MbcsStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
     queryKey: ["mbcs", "payment-history", filters],

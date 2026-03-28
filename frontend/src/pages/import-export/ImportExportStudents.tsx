@@ -25,14 +25,12 @@ import type { UploadFile } from "antd";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { studentsService, type Student } from "../../services/studentsService";
-import { mbcsStudentsService, type MbcsStudent } from "../../services/mbcsStudentsService";
-import { mecStudentsService, type MecStudent } from "../../services/mecStudentsService";
 import { downloadTemplate, parseImportFile } from "../../utils/studentImportExport";
 import { useAuthStore } from "../../stores/authStore";
 import type { ApiResponse, PaginatedResponse } from "../../lib/axios";
 import * as XLSX from "xlsx";
 
-type AnyStudent = Student | MbcsStudent | MecStudent;
+type AnyStudent = Student;
 type StudentRecord = Record<string, string | number | boolean | undefined | null>;
 
 type OrgType = "uac" | "mbcs" | "mec";
@@ -93,13 +91,11 @@ function ExportTab({ allowedOrgs }: { allowedOrgs: OrgType[] }) {
   const [exporting, setExporting] = useState(false);
 
   const { data: studentsData, isLoading } = useQuery<PaginatedResponse<AnyStudent>>({
-    queryKey: [`${org}-students-export`, classFilter],
+    queryKey: [org, "students-export", classFilter],
     queryFn: () => {
       const filters: Record<string, number> = {};
       if (classFilter) filters.class = classFilter;
-      if (org === "uac") return studentsService.getAll(filters, 1, 10000);
-      if (org === "mbcs") return mbcsStudentsService.getAll(filters, 1, 10000);
-      return mecStudentsService.getAll(filters, 1, 10000);
+      return studentsService.getAll(org, filters, 1, 10000);
     },
   });
 
@@ -131,10 +127,10 @@ function ExportTab({ allowedOrgs }: { allowedOrgs: OrgType[] }) {
           row["Group"] = (s as Student).group || "";
           row["School"] = (s as Student).school || "";
         } else if (org === "mbcs") {
-          row["Shift"] = (s as MbcsStudent).shift || "";
-          row["Branch"] = (s as MbcsStudent).branch || "";
+          row["Shift"] = s.shift || "";
+          row["Branch"] = s.branch || "";
         } else {
-          row["Group"] = (s as MecStudent).group || "";
+          row["Group"] = s.group || "";
         }
 
         Object.assign(row, {
@@ -236,22 +232,15 @@ function ImportTab({ allowedOrgs }: { allowedOrgs: OrgType[] }) {
   const queryClient = useQueryClient();
 
   const importMutation = useMutation<ApiResponse<AnyStudent[]>, Error, StudentRecord[]>({
-    mutationFn: async (students) => {
-      if (org === "uac") return studentsService.importStudents(students as unknown as Parameters<typeof studentsService.importStudents>[0]);
-      if (org === "mbcs") return mbcsStudentsService.importStudents(students as unknown as Parameters<typeof mbcsStudentsService.importStudents>[0]) as Promise<ApiResponse<AnyStudent[]>>;
-      return mecStudentsService.importStudents(students as unknown as Parameters<typeof mecStudentsService.importStudents>[0]) as Promise<ApiResponse<AnyStudent[]>>;
-    },
+    mutationFn: async (students) =>
+      studentsService.importStudents(org, students as unknown as Parameters<typeof studentsService.importStudents>[1]),
     onSuccess: (response) => {
       const count = Array.isArray(response?.data) ? response.data.length : parsedData.length;
       message.success(`Successfully imported ${count} students!`);
       setParsedData([]);
       setParseErrors([]);
       setFileList([]);
-      queryClient.invalidateQueries({ queryKey: [`${org}-students`] });
-      // Also invalidate common queries
-      queryClient.invalidateQueries({ queryKey: ["students"] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-students"] });
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: [org, "students"] });
     },
     onError: (error: Error) => {
       const msg = axios.isAxiosError(error) ? error.response?.data?.message : error.message;

@@ -36,8 +36,8 @@ export default function UacStudentDirectory() {
   const [admissionDateTo, setAdmissionDateTo] = useState<dayjs.Dayjs | null>(null);
 
   const { data: studentsData, isLoading } = useQuery({
-    queryKey: ["uac-students-directory"],
-    queryFn: () => studentsService.getAll(undefined, 1, 1000),
+    queryKey: ["uac", "students-directory"],
+    queryFn: () => studentsService.getAll("uac", undefined, 1, 1000),
   });
 
   const allStudents: Student[] = useMemo(

@@ -21,8 +21,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { paymentsService } from "../../../services/paymentsService";
 import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
-import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { MecStudent } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { Student } from "../../../services/studentsService";
 import axios from "axios";
 import settingsService from "../../../services/settingsService";
 import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
@@ -60,11 +60,11 @@ export default function MecRecordPayment() {
 
   // Fetch all students
   const { data: studentsData } = useQuery({
-    queryKey: ["mec-students"],
-    queryFn: () => mecStudentsService.getAll(undefined, 1, 1000),
+    queryKey: ["mec", "students"],
+    queryFn: () => studentsService.getAll("mec", undefined, 1, 1000),
   });
 
-  const allStudents: MecStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
+  const allStudents: Student[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   // Fetch invoice mode setting
   const { data: invoiceModeData } = useQuery({
@@ -113,7 +113,7 @@ export default function MecRecordPayment() {
       message.success(`Payment recorded! Invoice: ${invoice}`);
       queryClient.invalidateQueries({ queryKey: ["mec", "payment-history"] });
       queryClient.invalidateQueries({ queryKey: ["mec", "payments"] });
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
       setSelectedStudentId(undefined);
       form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
     },

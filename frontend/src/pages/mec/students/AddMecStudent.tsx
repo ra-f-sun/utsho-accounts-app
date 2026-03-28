@@ -16,8 +16,8 @@ import {
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { CreateMecStudentDto } from "../../../services/mecStudentsService";
+import { studentsService } from "../../../services/studentsService";
+import type { CreateStudentDto } from "../../../services/studentsService";
 import settingsService, {
   type OrgSetting,
 } from "../../../services/settingsService";
@@ -67,8 +67,8 @@ export default function AddMecStudent() {
   }, [form, isEditMode]);
 
   const { data: existingData } = useQuery({
-    queryKey: ["mec-student", id],
-    queryFn: () => mecStudentsService.getOne(id!),
+    queryKey: ["mec", "student", id],
+    queryFn: () => studentsService.getOne("mec", id!),
     enabled: isEditMode,
   });
 
@@ -89,27 +89,27 @@ export default function AddMecStudent() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMecStudentDto) => mecStudentsService.create(data),
+    mutationFn: (data: CreateStudentDto) => studentsService.create("mec", data),
     onSuccess: () => {
       message.success("Student added successfully");
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
       navigate("/mec/students");
     },
     onError: () => message.error("Failed to add student"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<CreateMecStudentDto>) =>
-      mecStudentsService.update(id!, data),
+    mutationFn: (data: Partial<CreateStudentDto>) =>
+      studentsService.update("mec", id!, data),
     onSuccess: () => {
       message.success("Student updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mec-students"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "students"] });
       navigate("/mec/students");
     },
     onError: () => message.error("Failed to update student"),
   });
 
-  const onFinish = (values: Omit<CreateMecStudentDto, 'dateOfBirth' | 'admissionDate'> & {
+  const onFinish = (values: Omit<CreateStudentDto, 'dateOfBirth' | 'admissionDate'> & {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
@@ -127,7 +127,7 @@ export default function AddMecStudent() {
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data as unknown as CreateMecStudentDto);
+      createMutation.mutate(data as unknown as CreateStudentDto);
     }
   };
 

@@ -94,8 +94,8 @@ export default function AddStudent() {
 
   // Fetch existing student for edit
   const { data: existingData } = useQuery({
-    queryKey: ["student", id],
-    queryFn: () => studentsService.getOne(id!),
+    queryKey: ["uac", "student", id],
+    queryFn: () => studentsService.getOne("uac", id!),
     enabled: isEditMode,
   });
 
@@ -120,10 +120,10 @@ export default function AddStudent() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateStudentDto) => studentsService.create(data),
+    mutationFn: (data: CreateStudentDto) => studentsService.create("uac", data),
     onSuccess: () => {
       message.success("Student added successfully");
-      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "students"] });
       navigate("/uac/students");
     },
     onError: () => {
@@ -133,10 +133,10 @@ export default function AddStudent() {
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<CreateStudentDto>) =>
-      studentsService.update(id!, data),
+      studentsService.update("uac", id!, data),
     onSuccess: () => {
       message.success("Student updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "students"] });
       navigate("/uac/students");
     },
     onError: () => {
