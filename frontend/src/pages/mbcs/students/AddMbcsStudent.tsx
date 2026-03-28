@@ -180,7 +180,7 @@ export default function AddMbcsStudent() {
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -245,17 +245,17 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={6}>
               <Form.Item label="Section" name="section">
-                <Input placeholder="e.g., A, B" />
+                <Input placeholder="e.g., A, B" maxLength={10} />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item label="Serial No" name="serialNo">
-                <Input placeholder="Institution roll" />
+                <Input placeholder="Institution roll" maxLength={50} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Branch" name="branch">
-                <Input placeholder="e.g., Basabo Branch" />
+                <Input placeholder="e.g., Basabo Branch" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -266,12 +266,12 @@ export default function AddMbcsStudent() {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item label="Nationality" name="nationality">
-                <Input placeholder="Nationality" />
+                <Input placeholder="Nationality" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="Religion" name="religion">
-                <Input placeholder="Religion" />
+                <Input placeholder="Religion" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -289,12 +289,12 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Health Condition" name="healthCondition">
-                <TextArea rows={2} placeholder="Any health notes" />
+                <TextArea rows={2} placeholder="Any health notes" maxLength={1000} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Present Address" name="presentAddress">
-                <TextArea rows={2} placeholder="Current address" />
+                <TextArea rows={2} placeholder="Current address" maxLength={500} />
               </Form.Item>
             </Col>
           </Row>
@@ -309,7 +309,7 @@ export default function AddMbcsStudent() {
                 name="fatherName"
                 rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input placeholder="Father's full name" />
+                <Input placeholder="Father's full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -319,7 +319,7 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Father's Occupation" name="fatherOccupation">
-                <Input placeholder="Occupation" />
+                <Input placeholder="Occupation" maxLength={255} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -328,7 +328,7 @@ export default function AddMbcsStudent() {
                 name="fatherEmail"
                 rules={[{ type: "email" }]}
               >
-                <Input placeholder="Email address" />
+                <Input placeholder="Email address" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -343,7 +343,7 @@ export default function AddMbcsStudent() {
                 name="motherName"
                 rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input placeholder="Mother's full name" />
+                <Input placeholder="Mother's full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -353,7 +353,7 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Mother's Occupation" name="motherOccupation">
-                <Input placeholder="Occupation" />
+                <Input placeholder="Occupation" maxLength={255} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -362,7 +362,7 @@ export default function AddMbcsStudent() {
                 name="motherEmail"
                 rules={[{ type: "email" }]}
               >
-                <Input placeholder="Email address" />
+                <Input placeholder="Email address" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -380,7 +380,7 @@ export default function AddMbcsStudent() {
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Primary contact person" />
+                <Input placeholder="Primary contact person" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>

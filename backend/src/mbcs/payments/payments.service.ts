@@ -53,25 +53,27 @@ function buildPriorityOrder(
   });
 }
 
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
 function allocatePaid<T extends { paymentType: string; amount: number }>(
   lineItems: T[],
   totalPaid: number,
   priorityOrder: { group: string; types: string[] }[],
 ): (T & { paidAmount: number; dueAmount: number })[] {
   const result: (T & { paidAmount: number; dueAmount: number })[] = [];
-  let remaining = totalPaid;
+  let remaining = round2(totalPaid);
 
   for (const pg of priorityOrder) {
     const items = lineItems.filter((i) => pg.types.includes(i.paymentType));
     for (const item of items) {
       if (remaining >= item.amount) {
         result.push({ ...item, paidAmount: item.amount, dueAmount: 0 });
-        remaining -= item.amount;
+        remaining = round2(remaining - item.amount);
       } else {
         result.push({
           ...item,
           paidAmount: remaining,
-          dueAmount: item.amount - remaining,
+          dueAmount: round2(item.amount - remaining),
         });
         remaining = 0;
       }
@@ -84,12 +86,12 @@ function allocatePaid<T extends { paymentType: string; amount: number }>(
   for (const item of unmatched) {
     if (remaining >= item.amount) {
       result.push({ ...item, paidAmount: item.amount, dueAmount: 0 });
-      remaining -= item.amount;
+      remaining = round2(remaining - item.amount);
     } else {
       result.push({
         ...item,
         paidAmount: remaining,
-        dueAmount: item.amount - remaining,
+        dueAmount: round2(item.amount - remaining),
       });
       remaining = 0;
     }
@@ -311,8 +313,8 @@ export class PaymentsService {
       (s, i) => s + i.guardianAmount,
       0,
     );
-    const officeGrandTotal = officeSubTotal - additionalDiscount;
-    const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+    const officeGrandTotal = round2(officeSubTotal - additionalDiscount);
+    const guardianGrandTotal = round2(guardianSubTotal - additionalDiscount);
 
     if (dueAmount > officeGrandTotal) {
       throw new BadRequestException(
@@ -320,8 +322,8 @@ export class PaymentsService {
       );
     }
 
-    const officePaid = officeGrandTotal - dueAmount;
-    const guardianPaid = guardianGrandTotal - dueAmount;
+    const officePaid = round2(officeGrandTotal - dueAmount);
+    const guardianPaid = round2(guardianGrandTotal - dueAmount);
 
     const invoiceNumber =
       await this.invoiceService.generateInvoiceNumber('mbcs');
@@ -493,7 +495,7 @@ export class PaymentsService {
       }
     }
 
-    const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+    const remainingDue = round2(Math.max(0, originalTotalDue - priorCollectedTotal));
     if (remainingDue <= 0) {
       throw new BadRequestException(
         `Invoice ${dto.parentInvoiceNumber} has no remaining due`,
@@ -534,7 +536,7 @@ export class PaymentsService {
     );
     const itemsToPay = newAllocation.filter((i) => i.paidAmount > 0);
 
-    const newDueAmount = Math.max(0, remainingDue - dto.paidAmount);
+    const newDueAmount = round2(Math.max(0, remainingDue - dto.paidAmount));
     const officeGrandTotal = remainingDue;
     const guardianGrandTotal = remainingDue;
     const officePaid = dto.paidAmount;

@@ -84,7 +84,7 @@ export default function AddMbcsStaff() {
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -104,7 +104,7 @@ export default function AddMbcsStaff() {
             </Col>
             <Col span={12}>
               <Form.Item label="Designation" name="designation">
-                <Input placeholder="e.g., Office Assistant, Driver" />
+                <Input placeholder="e.g., Office Assistant, Driver" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>

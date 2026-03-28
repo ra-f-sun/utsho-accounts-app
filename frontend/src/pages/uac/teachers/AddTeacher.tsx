@@ -101,7 +101,7 @@ export default function AddTeacher() {
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -124,6 +124,7 @@ export default function AddTeacher() {
                 <TextArea
                   rows={2}
                   placeholder="e.g., Math, Physics, Chemistry (comma-separated)"
+                  maxLength={500}
                 />
               </Form.Item>
             </Col>

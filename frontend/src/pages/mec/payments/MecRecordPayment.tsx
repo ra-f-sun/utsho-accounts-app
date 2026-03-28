@@ -118,12 +118,21 @@ export default function MecRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems: CreateMecMultiPaymentDto["lineItems"] = (values.lineItems || [])
-      .filter(
-        (item): item is MecPaymentFormLineItem & { amount: number } =>
-          typeof item?.amount === "number",
-      )
-      .map((item) => ({
+    const allItems = values.lineItems || [];
+    const validItems = allItems.filter(
+      (item): item is MecPaymentFormLineItem & { amount: number } =>
+        typeof item?.amount === "number",
+    );
+    const removedCount = allItems.length - validItems.length;
+    if (removedCount > 0) {
+      message.warning(`${removedCount} empty line item${removedCount > 1 ? "s" : ""} removed before submission.`);
+    }
+    if (validItems.length === 0) {
+      message.error("Please fill in at least one payment line item.");
+      return;
+    }
+
+    const lineItems: CreateMecMultiPaymentDto["lineItems"] = validItems.map((item) => ({
       amount: item.amount,
       paymentMonth: item.paymentMonth
         ? item.paymentMonth.startOf("month").toISOString()
@@ -338,7 +347,7 @@ export default function MecRecordPayment() {
                           label="Notes"
                           style={{ marginBottom: 0 }}
                         >
-                          <Input placeholder="Optional" />
+                          <Input placeholder="Optional" maxLength={500} />
                         </Form.Item>
                       </Col>
                       <Col flex="32px" style={{ paddingTop: 28 }}>

@@ -212,14 +212,23 @@ export default function RecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems: CreateMultiPaymentDto["lineItems"] = (values.lineItems || [])
-      .filter(
-        (
-          item,
-        ): item is UacPaymentFormLineItem & { paymentType: string; amount: number } =>
-          Boolean(item?.paymentType) && typeof item?.amount === "number",
-      )
-      .map((item) => ({
+    const allItems = values.lineItems || [];
+    const validItems = allItems.filter(
+      (
+        item,
+      ): item is UacPaymentFormLineItem & { paymentType: string; amount: number } =>
+        Boolean(item?.paymentType) && typeof item?.amount === "number",
+    );
+    const removedCount = allItems.length - validItems.length;
+    if (removedCount > 0) {
+      message.warning(`${removedCount} empty line item${removedCount > 1 ? "s" : ""} removed before submission.`);
+    }
+    if (validItems.length === 0) {
+      message.error("Please fill in at least one payment line item.");
+      return;
+    }
+
+    const lineItems: CreateMultiPaymentDto["lineItems"] = validItems.map((item) => ({
       paymentType: item.paymentType,
       amount: item.amount,
       paymentMonth:
@@ -527,7 +536,7 @@ export default function RecordPayment() {
                           label="Notes"
                           style={{ marginBottom: 0 }}
                         >
-                          <Input placeholder="Optional" />
+                          <Input placeholder="Optional" maxLength={500} />
                         </Form.Item>
                       </Col>
                       <Col flex="32px" style={{ paddingTop: 28 }}>

@@ -81,8 +81,7 @@ export class CreateMecStudentDto {
   religion?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(10)
+  @IsEnum(['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])
   bloodGroup?: string;
 
   @IsOptional()
@@ -96,8 +95,7 @@ export class CreateMecStudentDto {
   presentAddress?: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(50)
+  @IsEnum(['both_parents', 'father', 'mother', 'other'])
   studentLivingWith?: string;
 
   @IsOptional()
