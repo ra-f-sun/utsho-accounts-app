@@ -1,6 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, TeacherSalaryType } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
+import { SharedTeachersService } from '../../common/services/teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
 import { FilterTeacherDto } from './dto/filter-teacher.dto';
@@ -8,91 +7,13 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @Injectable()
 export class TeachersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private shared: SharedTeachersService) {}
 
-  async create(createTeacherDto: CreateTeacherDto) {
-    return this.prisma.mbcsTeacher.create({
-      data: {
-        ...createTeacherDto,
-        paymentType: createTeacherDto.paymentType as TeacherSalaryType,
-      },
-    });
-  }
-
-  async findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) {
-    const where: Prisma.MbcsTeacherWhereInput = {
-      isActive: true,
-      associationEndDate: null,
-    };
-
-    if (filters?.paymentType) {
-      where.paymentType = filters.paymentType as TeacherSalaryType;
-    }
-
-    const page = pagination?.page ?? 1;
-    const limit = pagination?.limit ?? 20;
-    const skip = (page - 1) * limit;
-
-    const [data, total] = await Promise.all([
-      this.prisma.mbcsTeacher.findMany({
-        where,
-        orderBy: { name: 'asc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.mbcsTeacher.count({ where }),
-    ]);
-
-    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
-  }
-
-  async findOne(id: string) {
-    const teacher = await this.prisma.mbcsTeacher.findUnique({ where: { id } });
-
-    if (!teacher) {
-      throw new NotFoundException(`Teacher with ID ${id} not found`);
-    }
-
-    return teacher;
-  }
-
-  async update(id: string, updateTeacherDto: UpdateTeacherDto) {
-    await this.findOne(id);
-
-    const { paymentType, ...rest } = updateTeacherDto;
-    return this.prisma.mbcsTeacher.update({
-      where: { id },
-      data: {
-        ...rest,
-        ...(paymentType && { paymentType: paymentType as TeacherSalaryType }),
-      },
-    });
-  }
-
-  async remove(id: string) {
-    await this.findOne(id);
-
-    return this.prisma.mbcsTeacher.update({
-      where: { id },
-      data: { isActive: false },
-    });
-  }
-
-  async disassociate(id: string) {
-    await this.findOne(id);
-    return this.prisma.mbcsTeacher.update({
-      where: { id },
-      data: { associationEndDate: new Date() },
-    });
-  }
-
-  async reassociate(id: string) {
-    const teacher = await this.prisma.mbcsTeacher.findUnique({ where: { id } });
-    if (!teacher)
-      throw new NotFoundException(`Teacher with ID ${id} not found`);
-    return this.prisma.mbcsTeacher.update({
-      where: { id },
-      data: { associationEndDate: null },
-    });
-  }
+  create(dto: CreateTeacherDto) { return this.shared.create('mbcs', dto); }
+  findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) { return this.shared.findAll('mbcs', filters, pagination); }
+  findOne(id: string) { return this.shared.findOne('mbcs', id); }
+  update(id: string, dto: UpdateTeacherDto) { return this.shared.update('mbcs', id, dto); }
+  remove(id: string) { return this.shared.remove('mbcs', id); }
+  disassociate(id: string) { return this.shared.disassociate('mbcs', id); }
+  reassociate(id: string) { return this.shared.reassociate('mbcs', id); }
 }
