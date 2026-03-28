@@ -38,7 +38,7 @@ export default function AddTeacherAttendance() {
   const mode = searchParams.get("mode") || "simplified";
 
   const { data: teachersData } = useQuery({
-    queryKey: ["teachers"],
+    queryKey: ["uac", "teachers"],
     queryFn: () => teachersService.getAll(undefined, 1, 1000),
   });
 
@@ -49,10 +49,10 @@ export default function AddTeacherAttendance() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAttendanceDto) =>
-      teacherAttendanceService.create(data),
+      teacherAttendanceService.create("uac", data),
     onSuccess: () => {
       message.success("Attendance recorded successfully");
-      queryClient.invalidateQueries({ queryKey: ["teacher-attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teacher-attendance"] });
       form.resetFields();
     },
     onError: (error: unknown) => {
@@ -71,10 +71,10 @@ export default function AddTeacherAttendance() {
       teacherId: string;
       month: string;
       totalLectures: number;
-    }) => teacherAttendanceService.createMonthlySummary(data),
+    }) => teacherAttendanceService.createMonthlySummary("uac", data),
     onSuccess: () => {
       message.success("Monthly attendance recorded successfully");
-      queryClient.invalidateQueries({ queryKey: ["teacher-attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teacher-attendance"] });
       form.resetFields();
     },
     onError: (error: unknown) => {

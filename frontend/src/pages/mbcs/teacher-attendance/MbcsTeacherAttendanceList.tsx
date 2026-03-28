@@ -13,8 +13,8 @@ import {
 } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { mbcsTeacherAttendanceService } from "../../../services/mbcsTeacherAttendanceService";
-import type { MbcsTeacherAttendance } from "../../../services/mbcsTeacherAttendanceService";
+import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
+import type { TeacherAttendance, FilterAttendanceDto } from "../../../services/teacherAttendanceService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
 import type { ColumnsType } from "antd/es/table";
@@ -26,41 +26,38 @@ export default function MbcsTeacherAttendanceList() {
   const [attendanceMode, setAttendanceMode] = useState<
     "simplified" | "detailed"
   >("simplified");
-  const [filters, setFilters] = useState<{
-    teacherId?: string;
-    month?: string;
-  }>({});
+  const [filters, setFilters] = useState<FilterAttendanceDto>({});
 
   const { data: teachersData } = useQuery({
-    queryKey: ["mbcs-teachers"],
+    queryKey: ["mbcs", "teachers"],
     queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
   const teachers = teachersData?.data?.data || [];
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-teacher-attendance", filters],
-    queryFn: () => mbcsTeacherAttendanceService.getAll(filters),
+    queryKey: ["mbcs", "teacher-attendance", filters],
+    queryFn: () => teacherAttendanceService.getAll("mbcs", filters),
   });
 
-  const attendances: MbcsTeacherAttendance[] = data?.data || [];
+  const attendances: TeacherAttendance[] = data?.data || [];
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mbcsTeacherAttendanceService.delete(id),
+    mutationFn: (id: string) => teacherAttendanceService.delete("mbcs", id),
     onSuccess: () => {
       message.success("Attendance record deleted");
       queryClient.invalidateQueries({
-        queryKey: ["mbcs-teacher-attendance"],
+        queryKey: ["mbcs", "teacher-attendance"],
       });
     },
     onError: () => message.error("Failed to delete record"),
   });
 
-  const columns: ColumnsType<MbcsTeacherAttendance> = [
+  const columns: ColumnsType<TeacherAttendance> = [
     {
       title: "Teacher",
       key: "teacher",
-      render: (_: unknown, record: MbcsTeacherAttendance) => (
+      render: (_: unknown, record: TeacherAttendance) => (
         <div>
           <strong>{record.teacher?.name || "Unknown"}</strong>
           <div style={{ fontSize: 12, color: "#888" }}>
@@ -106,7 +103,7 @@ export default function MbcsTeacherAttendanceList() {
       title: "Actions",
       key: "actions",
       width: 80,
-      render: (_: unknown, record: MbcsTeacherAttendance) => (
+      render: (_: unknown, record: TeacherAttendance) => (
         <Popconfirm
           title="Delete this attendance record?"
           onConfirm={() => deleteMutation.mutate(record.id)}

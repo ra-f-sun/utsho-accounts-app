@@ -14,7 +14,7 @@ import {
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
-import type { TeacherAttendance } from "../../../services/teacherAttendanceService";
+import type { TeacherAttendance, FilterAttendanceDto } from "../../../services/teacherAttendanceService";
 import { teachersService } from "../../../services/teachersService";
 import type { Teacher } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
@@ -26,31 +26,27 @@ export default function TeacherAttendanceList() {
   const [attendanceMode, setAttendanceMode] = useState<
     "simplified" | "detailed"
   >("simplified");
-  const [filters, setFilters] = useState<{
-    teacherId?: string;
-    startDate?: string;
-    endDate?: string;
-  }>({});
+  const [filters, setFilters] = useState<FilterAttendanceDto>({});
 
   const { data: teachersData } = useQuery({
-    queryKey: ["teachers"],
+    queryKey: ["uac", "teachers"],
     queryFn: () => teachersService.getAll(undefined, 1, 1000),
   });
 
   const teachers = teachersData?.data?.data || [];
 
   const { data, isLoading } = useQuery({
-    queryKey: ["teacher-attendance", filters],
-    queryFn: () => teacherAttendanceService.getAll(filters),
+    queryKey: ["uac", "teacher-attendance", filters],
+    queryFn: () => teacherAttendanceService.getAll("uac", filters),
   });
 
   const attendances: TeacherAttendance[] = data?.data || [];
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => teacherAttendanceService.delete(id),
+    mutationFn: (id: string) => teacherAttendanceService.delete("uac", id),
     onSuccess: () => {
       message.success("Attendance record deleted");
-      queryClient.invalidateQueries({ queryKey: ["teacher-attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teacher-attendance"] });
     },
     onError: () => message.error("Failed to delete record"),
   });

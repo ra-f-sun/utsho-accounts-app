@@ -1,5 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete } from "../lib/axios";
 
+export type AttendanceOrg = "uac" | "mbcs";
+
 export interface TeacherAttendance {
   id: string;
   teacherId: string;
@@ -24,23 +26,32 @@ export interface CreateAttendanceDto {
   lecturesTaken: number;
 }
 
+export interface FilterAttendanceDto {
+  teacherId?: string;
+  startDate?: string; // UAC: date range start
+  endDate?: string;   // UAC: date range end
+  month?: string;     // MBCS: "YYYY-MM"
+}
+
 export const teacherAttendanceService = {
-  getAll: (filters?: { teacherId?: string; startDate?: string; endDate?: string }) => {
+  getAll: (org: AttendanceOrg, filters?: FilterAttendanceDto) => {
     const params = new URLSearchParams();
     if (filters?.teacherId) params.append("teacherId", filters.teacherId);
     if (filters?.startDate) params.append("startDate", filters.startDate);
     if (filters?.endDate) params.append("endDate", filters.endDate);
-    return apiGet<TeacherAttendance[]>(`/uac/teacher-attendance?${params.toString()}`);
+    if (filters?.month) params.append("month", filters.month);
+    return apiGet<TeacherAttendance[]>(`/${org}/teacher-attendance?${params.toString()}`);
   },
-  getOne: (id: string) =>
-    apiGet<TeacherAttendance>(`/uac/teacher-attendance/${id}`),
-  getMonthlySummary: (teacherId: string, month: string) =>
-    apiGet<{ totalLectures: number }>(`/uac/teacher-attendance/summary/${teacherId}/${month}`),
-  create: (data: CreateAttendanceDto) =>
-    apiPost<TeacherAttendance>("/uac/teacher-attendance", data),
-  createMonthlySummary: (data: { teacherId: string; month: string; totalLectures: number }) =>
-    apiPost<TeacherAttendance>("/uac/teacher-attendance/monthly-summary", data),
-  update: (id: string, data: Partial<CreateAttendanceDto>) =>
-    apiPatch<TeacherAttendance>(`/uac/teacher-attendance/${id}`, data),
-  delete: (id: string) => apiDelete<TeacherAttendance>(`/uac/teacher-attendance/${id}`),
+  getOne: (org: AttendanceOrg, id: string) =>
+    apiGet<TeacherAttendance>(`/${org}/teacher-attendance/${id}`),
+  getMonthlySummary: (org: AttendanceOrg, teacherId: string, month: string) =>
+    apiGet<{ totalLectures: number }>(`/${org}/teacher-attendance/summary/${teacherId}/${month}`),
+  create: (org: AttendanceOrg, data: CreateAttendanceDto) =>
+    apiPost<TeacherAttendance>(`/${org}/teacher-attendance`, data),
+  createMonthlySummary: (org: AttendanceOrg, data: { teacherId: string; month: string; totalLectures: number }) =>
+    apiPost<TeacherAttendance>(`/${org}/teacher-attendance/monthly-summary`, data),
+  update: (org: AttendanceOrg, id: string, data: Partial<CreateAttendanceDto>) =>
+    apiPatch<TeacherAttendance>(`/${org}/teacher-attendance/${id}`, data),
+  delete: (org: AttendanceOrg, id: string) =>
+    apiDelete<TeacherAttendance>(`/${org}/teacher-attendance/${id}`),
 };

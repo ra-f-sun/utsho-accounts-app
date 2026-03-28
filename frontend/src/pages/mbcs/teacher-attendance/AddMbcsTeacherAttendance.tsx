@@ -13,8 +13,8 @@ import {
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { mbcsTeacherAttendanceService } from "../../../services/mbcsTeacherAttendanceService";
-import type { CreateMbcsAttendanceDto } from "../../../services/mbcsTeacherAttendanceService";
+import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
+import type { CreateAttendanceDto } from "../../../services/teacherAttendanceService";
 import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
 import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
 import axios from "axios";
@@ -38,7 +38,7 @@ export default function AddMbcsTeacherAttendance() {
   const mode = searchParams.get("mode") || "simplified";
 
   const { data: teachersData } = useQuery({
-    queryKey: ["mbcs-teachers"],
+    queryKey: ["mbcs", "teachers"],
     queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
   });
 
@@ -48,12 +48,12 @@ export default function AddMbcsTeacherAttendance() {
   );
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsAttendanceDto) =>
-      mbcsTeacherAttendanceService.create(data),
+    mutationFn: (data: CreateAttendanceDto) =>
+      teacherAttendanceService.create("mbcs", data),
     onSuccess: () => {
       message.success("Attendance recorded successfully");
       queryClient.invalidateQueries({
-        queryKey: ["mbcs-teacher-attendance"],
+        queryKey: ["mbcs", "teacher-attendance"],
       });
       form.resetFields();
     },
@@ -73,11 +73,11 @@ export default function AddMbcsTeacherAttendance() {
       teacherId: string;
       month: string;
       totalLectures: number;
-    }) => mbcsTeacherAttendanceService.createMonthlySummary(data),
+    }) => teacherAttendanceService.createMonthlySummary("mbcs", data),
     onSuccess: () => {
       message.success("Monthly attendance recorded successfully");
       queryClient.invalidateQueries({
-        queryKey: ["mbcs-teacher-attendance"],
+        queryKey: ["mbcs", "teacher-attendance"],
       });
       form.resetFields();
     },
@@ -100,7 +100,7 @@ export default function AddMbcsTeacherAttendance() {
         totalLectures: values.totalLectures,
       });
     } else {
-      const data: CreateMbcsAttendanceDto = {
+      const data: CreateAttendanceDto = {
         teacherId: values.teacherId,
         attendanceDate: values.attendanceDate.toISOString(),
         lecturesTaken: values.lecturesTaken,
