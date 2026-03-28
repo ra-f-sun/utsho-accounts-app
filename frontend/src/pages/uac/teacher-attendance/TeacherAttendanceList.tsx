@@ -30,7 +30,7 @@ export default function TeacherAttendanceList() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["uac", "teachers"],
-    queryFn: () => teachersService.getAll(undefined, 1, 1000),
+    queryFn: () => teachersService.getAll("uac", undefined, 1, 1000),
   });
 
   const teachers = teachersData?.data?.data || [];

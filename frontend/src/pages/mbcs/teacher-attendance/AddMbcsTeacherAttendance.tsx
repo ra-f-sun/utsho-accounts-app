@@ -127,7 +127,7 @@ export default function AddMbcsTeacherAttendance() {
       <h2>Record Teacher Attendance (MBCS)</h2>
 
       <Alert
-        message={
+        title={
           mode === "simplified"
             ? "Simplified Mode — Enter total lectures for the entire month"
             : "Detailed Mode — Record individual lecture attendance"
