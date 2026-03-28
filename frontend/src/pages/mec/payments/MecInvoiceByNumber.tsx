@@ -6,8 +6,8 @@ import {
   PrinterOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import type { MecPayment } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import MecStudentInvoice from "../../../components/invoices/MecStudentInvoice";
 import MecStudentOfficeInvoice from "../../../components/invoices/MecStudentOfficeInvoice";
 import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
@@ -32,12 +32,12 @@ export default function MecInvoiceByNumber() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mec-invoice", invoiceNumber],
-    queryFn: () => mecPaymentsService.getByInvoice(decodeURIComponent(invoiceNumber!)),
+    queryKey: ["mec", "invoice", invoiceNumber],
+    queryFn: () => paymentsService.getByInvoice("mec", decodeURIComponent(invoiceNumber!)),
     enabled: !!invoiceNumber,
   });
 
-  const payments: MecPayment[] = data?.data || [];
+  const payments: Payment[] = data?.data || [];
 
   if (isLoading) {
     return (
@@ -55,7 +55,7 @@ export default function MecInvoiceByNumber() {
 
   const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: first.invoiceNumber,
-    amount: first.officePaid ?? payments.reduce((sum: number, p: MecPayment) => sum + p.amount, 0),
+    amount: first.officePaid ?? payments.reduce((sum: number, p: Payment) => sum + p.amount, 0),
     paymentDate: first.paymentDate,
     paymentMonth: first.paymentMonth,
     paymentMethod: first.paymentMethod,
@@ -69,7 +69,7 @@ export default function MecInvoiceByNumber() {
     guardianPaid: first.guardianPaid ?? undefined,
     officePaid: first.officePaid ?? undefined,
     dueAmount: first.dueAmount ?? undefined,
-    lineItems: payments.map((p: MecPayment) => ({
+    lineItems: payments.map((p: Payment) => ({
       amount: p.amount,
       guardianAmount: p.guardianAmount ?? undefined,
       paymentMonth: p.paymentMonth,

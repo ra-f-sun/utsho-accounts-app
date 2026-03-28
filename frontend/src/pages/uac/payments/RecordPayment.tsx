@@ -187,13 +187,13 @@ export default function RecordPayment() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateMultiPaymentDto) =>
-      paymentsService.createMulti(data),
+      paymentsService.createMulti("uac", data),
     onSuccess: (response) => {
       const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["uac-payment-history"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payments"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payment-history"] });
       form.resetFields();
       form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
       setSelectedStudentId(undefined);

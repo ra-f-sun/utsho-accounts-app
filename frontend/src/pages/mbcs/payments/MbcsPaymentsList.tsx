@@ -4,13 +4,13 @@ import { Table, Button, Select, Space, App, Popconfirm, Tag } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
-  mbcsPaymentsService,
+  paymentsService,
   MBCS_PAYMENT_TYPES,
-} from "../../../services/mbcsPaymentsService";
+} from "../../../services/paymentsService";
 import type {
-  MbcsPayment,
-  FilterMbcsPaymentDto,
-} from "../../../services/mbcsPaymentsService";
+  Payment,
+  FilterPaymentDto,
+} from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import QueryError from "../../../components/QueryError";
@@ -38,7 +38,7 @@ const PAYMENT_TYPE_COLORS: Record<string, string> = {
 
 interface GroupedMbcsPayment {
   invoiceNumber: string;
-  student: MbcsPayment["student"];
+  student: Payment["student"];
   paymentTypes: string[];
   totalAmount: number;
   paymentMethod: string;
@@ -51,16 +51,16 @@ export default function MbcsPaymentsList() {
   const { message } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<FilterMbcsPaymentDto>({});
+  const [filters, setFilters] = useState<FilterPaymentDto>({});
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["mbcs-payments", filters],
-    queryFn: () => mbcsPaymentsService.getAll(filters, 1, 1000),
+    queryKey: ["mbcs", "payments", filters],
+    queryFn: () => paymentsService.getAll("mbcs", filters, 1, 1000),
   });
 
   const groupedPayments = useMemo((): GroupedMbcsPayment[] => {
-    const payments: MbcsPayment[] = data?.data?.data || [];
-    const invoiceMap = new Map<string, MbcsPayment[]>();
+    const payments: Payment[] = data?.data?.data || [];
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of payments) {
       if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
       invoiceMap.get(p.invoiceNumber)!.push(p);
@@ -82,10 +82,10 @@ export default function MbcsPaymentsList() {
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) =>
-      Promise.all(ids.map((id) => mbcsPaymentsService.delete(id))),
+      Promise.all(ids.map((id) => paymentsService.delete("mbcs", id))),
     onSuccess: () => {
       message.success("Payment deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payments"] });
     },
     onError: () => message.error("Failed to delete payment"),
   });

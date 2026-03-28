@@ -89,7 +89,7 @@ export default function CollectDue() {
   // Fetch due profile for selected student
   const { data: dueProfileData, isLoading: dueLoading } = useQuery({
     queryKey: ["due-profile", "uac", selectedStudentId],
-    queryFn: () => paymentsService.getDueProfile(selectedStudentId!),
+    queryFn: () => paymentsService.getDueProfile("uac", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
   const dueProfiles: DueProfile[] = dueProfileData?.data?.profiles ?? [];
@@ -97,7 +97,7 @@ export default function CollectDue() {
   // Also fetch due summary (includes unpaid months with no invoices)
   const { data: dueSummaryData } = useQuery({
     queryKey: ["due-summary", "uac", selectedStudentId],
-    queryFn: () => paymentsService.getDueSummary(selectedStudentId!),
+    queryFn: () => paymentsService.getDueSummary("uac", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
   const dueSummary = dueSummaryData?.data as DueSummary | undefined;
@@ -116,7 +116,7 @@ export default function CollectDue() {
     : 0;
 
   const { mutate: collectDue, isPending } = useMutation({
-    mutationFn: (dto: CollectDueDto) => paymentsService.collectDue(dto),
+    mutationFn: (dto: CollectDueDto) => paymentsService.collectDue("uac", dto),
     onSuccess: (result) => {
       setSuccessInvoice(result.data?.invoiceNumber);
       message.success(`Due collection recorded. Invoice: ${result.data?.invoiceNumber}`);

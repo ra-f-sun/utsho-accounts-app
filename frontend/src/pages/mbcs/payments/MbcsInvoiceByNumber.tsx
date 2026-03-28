@@ -6,8 +6,8 @@ import {
   PrinterOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
-import type { MbcsPayment } from "../../../services/mbcsPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import MbcsStudentInvoice from "../../../components/invoices/MbcsStudentInvoice";
 import MbcsStudentOfficeInvoice from "../../../components/invoices/MbcsStudentOfficeInvoice";
 import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
@@ -32,12 +32,12 @@ export default function MbcsInvoiceByNumber() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-invoice", invoiceNumber],
-    queryFn: () => mbcsPaymentsService.getByInvoice(decodeURIComponent(invoiceNumber!)),
+    queryKey: ["mbcs", "invoice", invoiceNumber],
+    queryFn: () => paymentsService.getByInvoice("mbcs", decodeURIComponent(invoiceNumber!)),
     enabled: !!invoiceNumber,
   });
 
-  const payments: MbcsPayment[] = data?.data || [];
+  const payments: Payment[] = data?.data || [];
 
   if (isLoading) {
     return (
@@ -55,7 +55,7 @@ export default function MbcsInvoiceByNumber() {
 
   const invoiceData: StudentPaymentInvoiceData = {
     invoiceNumber: first.invoiceNumber,
-    amount: first.officePaid ?? payments.reduce((sum: number, p: MbcsPayment) => sum + p.amount, 0),
+    amount: first.officePaid ?? payments.reduce((sum: number, p: Payment) => sum + p.amount, 0),
     paymentDate: first.paymentDate,
     paymentMonth: first.paymentMonth,
     paymentMethod: first.paymentMethod,
@@ -69,7 +69,7 @@ export default function MbcsInvoiceByNumber() {
     guardianPaid: first.guardianPaid ?? undefined,
     officePaid: first.officePaid ?? undefined,
     dueAmount: first.dueAmount ?? undefined,
-    lineItems: payments.map((p: MbcsPayment) => ({
+    lineItems: payments.map((p: Payment) => ({
       paymentType: p.paymentType,
       amount: p.amount,
       guardianAmount: p.guardianAmount ?? undefined,

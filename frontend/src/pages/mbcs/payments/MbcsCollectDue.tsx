@@ -25,10 +25,10 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
-  mbcsPaymentsService,
+  paymentsService,
   MBCS_PAYMENT_TYPES,
-} from "../../../services/mbcsPaymentsService";
-import type { MbcsDueProfile, MbcsCollectDueDto, DueSummary } from "../../../services/mbcsPaymentsService";
+} from "../../../services/paymentsService";
+import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/paymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import dayjs from "dayjs";
@@ -58,7 +58,7 @@ export default function MbcsCollectDue() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(
     () => searchParams.get("studentId") ?? undefined,
   );
-  const [selectedInvoice, setSelectedInvoice] = useState<MbcsDueProfile | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<DueProfile | null>(null);
   const [successInvoice, setSuccessInvoice] = useState<string | null>(null);
 
   const { data: studentsData } = useQuery({
@@ -87,15 +87,15 @@ export default function MbcsCollectDue() {
 
   const { data: dueProfileData, isLoading: dueLoading } = useQuery({
     queryKey: ["due-profile", "mbcs", selectedStudentId],
-    queryFn: () => mbcsPaymentsService.getDueProfile(selectedStudentId!),
+    queryFn: () => paymentsService.getDueProfile("mbcs", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
-  const dueProfiles: MbcsDueProfile[] = dueProfileData?.data?.profiles ?? [];
+  const dueProfiles: DueProfile[] = dueProfileData?.data?.profiles ?? [];
 
   // Also fetch due summary (includes unpaid months with no invoices)
   const { data: dueSummaryData } = useQuery({
     queryKey: ["due-summary", "mbcs", selectedStudentId],
-    queryFn: () => mbcsPaymentsService.getDueSummary(selectedStudentId!),
+    queryFn: () => paymentsService.getDueSummary("mbcs", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
   const dueSummary = dueSummaryData?.data as DueSummary | undefined;
@@ -112,7 +112,7 @@ export default function MbcsCollectDue() {
     : 0;
 
   const { mutate: collectDue, isPending } = useMutation({
-    mutationFn: (dto: MbcsCollectDueDto) => mbcsPaymentsService.collectDue(dto),
+    mutationFn: (dto: CollectDueDto) => paymentsService.collectDue("mbcs", dto),
     onSuccess: (result) => {
       setSuccessInvoice(result.data?.invoiceNumber);
       message.success(`Due collection recorded. Invoice: ${result.data?.invoiceNumber}`);

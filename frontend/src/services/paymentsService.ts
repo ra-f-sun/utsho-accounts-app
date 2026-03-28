@@ -1,16 +1,19 @@
 import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
+export type PaymentOrg = "uac" | "mbcs" | "mec";
+
 export interface Payment {
   id: string;
   studentId: string;
   student?: {
     id: string;
     name: string;
-    class: number;
-    group?: string;
+    class?: number;       // optional — MEC nullable class
+    group?: string;       // UAC only
+    shift?: string;       // MBCS only
     contactNumber: string;
   };
-  paymentType: string;
+  paymentType?: string;   // absent for MEC
   amount: number;
   paymentMethod: string;
   paymentMonth: string;
@@ -19,7 +22,7 @@ export interface Payment {
   notes?: string;
   createdBy?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
   // Dual invoice fields (Feature 6A)
   guardianAmount?: number;
   officeSubTotal?: number;
@@ -37,7 +40,7 @@ export interface Payment {
 
 export interface CreatePaymentDto {
   studentId: string;
-  paymentType: string;
+  paymentType?: string;   // optional — MEC omits it
   amount: number;
   paymentMethod: string;
   paymentMonth: string;
@@ -46,7 +49,7 @@ export interface CreatePaymentDto {
 }
 
 export interface PaymentLineItem {
-  paymentType: string;
+  paymentType?: string;   // optional — MEC omits it
   amount: number;
   paymentMonth: string;
   notes?: string;
@@ -63,7 +66,7 @@ export interface CreateMultiPaymentDto {
 
 export interface FilterPaymentDto {
   studentId?: string;
-  paymentType?: string;
+  paymentType?: string;   // not used by MEC
   paymentMonth?: string;
   paymentMethod?: string;
 }
@@ -80,44 +83,23 @@ export const UAC_PAYMENT_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-export const paymentsService = {
-  getAll: (filters?: FilterPaymentDto, page = 1, limit = 20): Promise<PaginatedResponse<Payment>> => {
-    const params = new URLSearchParams();
-    if (filters?.studentId) params.append("studentId", filters.studentId);
-    if (filters?.paymentType) params.append("paymentType", filters.paymentType);
-    if (filters?.paymentMonth)
-      params.append("paymentMonth", filters.paymentMonth);
-    if (filters?.paymentMethod)
-      params.append("paymentMethod", filters.paymentMethod);
-    params.append("page", page.toString());
-    params.append("limit", limit.toString());
-    return apiGet(`/uac/payments?${params.toString()}`);
-  },
-  getOne: (id: string) => apiGet<Payment>(`/uac/payments/${id}`),
-  getStudentSummary: (studentId: string) =>
-    apiGet<{ studentId: string; totalPaid: number; paymentCount: number; payments: Payment[] }>(
-      `/uac/payments/student/${studentId}/summary`,
-    ),
-  create: (data: CreatePaymentDto) => apiPost<Payment>("/uac/payments", data),
-  createMulti: (data: CreateMultiPaymentDto) =>
-    apiPost<{ invoiceNumber: string; payments: Payment[] }>("/uac/payments/multi", data),
-  getByInvoice: (invoiceNumber: string) =>
-    apiGet<Payment[]>(`/uac/payments/invoice/${invoiceNumber}`),
-  update: (id: string, data: Partial<CreatePaymentDto>) =>
-    apiPatch<Payment>(`/uac/payments/${id}`, data),
-  delete: (id: string) => apiDelete<Payment>(`/uac/payments/${id}`),
-  getDueProfile: (studentId: string) =>
-    apiGet<{ studentId: string; profiles: DueProfile[] }>(
-      `/uac/payments/student/${studentId}/due-profile`,
-    ),
-  collectDue: (data: CollectDueDto) =>
-    apiPost<{ invoiceNumber: string; payments: Payment[]; remainingDue: number }>(
-      "/uac/payments/collect-due",
-      data,
-    ),
-  getDueSummary: (studentId: string) =>
-    apiGet<DueSummary>(`/uac/payments/student/${studentId}/due-summary`),
-};
+export const MBCS_PAYMENT_TYPES = [
+  { value: "tuition", label: "Tuition" },
+  { value: "admission", label: "Admission" },
+  { value: "readmission", label: "Readmission" },
+  { value: "exam", label: "Exam" },
+  { value: "session_charge", label: "Session Charge" },
+  { value: "study_materials", label: "Study Materials" },
+  { value: "study_tour", label: "Study Tour" },
+  { value: "stationary", label: "Stationary" },
+  { value: "other", label: "Other" },
+];
+
+export const PAYMENT_TYPES_BY_ORG = {
+  uac: UAC_PAYMENT_TYPES,
+  mbcs: MBCS_PAYMENT_TYPES,
+  mec: [] as const,
+} as const;
 
 export interface DueProfileItem {
   paymentType: string;
@@ -145,7 +127,7 @@ export interface CollectDueDto {
 
 export interface DueSummaryItem {
   due: number;
-  status: 'due' | 'paid' | 'na';
+  status: "due" | "paid" | "na";
 }
 
 export interface DueSummary {
@@ -153,8 +135,45 @@ export interface DueSummary {
   totalDue: number;
   breakdown: {
     tuition: DueSummaryItem;
-    admission: DueSummaryItem;
-    readmission: DueSummaryItem;
-    others: DueSummaryItem;
+    admission?: DueSummaryItem;   // UAC/MBCS only
+    readmission?: DueSummaryItem; // UAC/MBCS only
+    others?: DueSummaryItem;      // UAC/MBCS only
   };
 }
+
+export const paymentsService = {
+  getAll: (org: PaymentOrg, filters?: FilterPaymentDto, page = 1, limit = 20): Promise<PaginatedResponse<Payment>> => {
+    const params = new URLSearchParams();
+    if (filters?.studentId) params.append("studentId", filters.studentId);
+    if (filters?.paymentType) params.append("paymentType", filters.paymentType);
+    if (filters?.paymentMonth) params.append("paymentMonth", filters.paymentMonth);
+    if (filters?.paymentMethod) params.append("paymentMethod", filters.paymentMethod);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    return apiGet(`/${org}/payments?${params.toString()}`);
+  },
+  getOne: (org: PaymentOrg, id: string) => apiGet<Payment>(`/${org}/payments/${id}`),
+  getStudentSummary: (org: PaymentOrg, studentId: string) =>
+    apiGet<{ studentId: string; totalPaid: number; paymentCount: number; payments: Payment[] }>(
+      `/${org}/payments/student/${studentId}/summary`,
+    ),
+  create: (org: PaymentOrg, data: CreatePaymentDto) => apiPost<Payment>(`/${org}/payments`, data),
+  createMulti: (org: PaymentOrg, data: CreateMultiPaymentDto) =>
+    apiPost<{ invoiceNumber: string; payments: Payment[] }>(`/${org}/payments/multi`, data),
+  getByInvoice: (org: PaymentOrg, invoiceNumber: string) =>
+    apiGet<Payment[]>(`/${org}/payments/invoice/${invoiceNumber}`),
+  update: (org: PaymentOrg, id: string, data: Partial<CreatePaymentDto>) =>
+    apiPatch<Payment>(`/${org}/payments/${id}`, data),
+  delete: (org: PaymentOrg, id: string) => apiDelete<Payment>(`/${org}/payments/${id}`),
+  getDueProfile: (org: PaymentOrg, studentId: string) =>
+    apiGet<{ studentId: string; profiles: DueProfile[] }>(
+      `/${org}/payments/student/${studentId}/due-profile`,
+    ),
+  collectDue: (org: PaymentOrg, data: CollectDueDto) =>
+    apiPost<{ invoiceNumber: string; payments: Payment[]; remainingDue: number }>(
+      `/${org}/payments/collect-due`,
+      data,
+    ),
+  getDueSummary: (org: PaymentOrg, studentId: string) =>
+    apiGet<DueSummary>(`/${org}/payments/student/${studentId}/due-summary`),
+};

@@ -20,8 +20,8 @@ import {
 import { SearchOutlined, DollarOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import type { MecDueProfile, MecCollectDueDto, MecDueSummary } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
+import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/paymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import dayjs from "dayjs";
@@ -45,7 +45,7 @@ export default function MecCollectDue() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(
     () => searchParams.get("studentId") ?? undefined,
   );
-  const [selectedInvoice, setSelectedInvoice] = useState<MecDueProfile | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<DueProfile | null>(null);
   const [successInvoice, setSuccessInvoice] = useState<string | null>(null);
 
   const { data: studentsData } = useQuery({
@@ -61,18 +61,18 @@ export default function MecCollectDue() {
 
   const { data: dueProfileData, isLoading: dueLoading } = useQuery({
     queryKey: ["due-profile", "mec", selectedStudentId],
-    queryFn: () => mecPaymentsService.getDueProfile(selectedStudentId!),
+    queryFn: () => paymentsService.getDueProfile("mec", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
-  const dueProfiles: MecDueProfile[] = dueProfileData?.data?.profiles ?? [];
+  const dueProfiles: DueProfile[] = dueProfileData?.data?.profiles ?? [];
 
   // Also fetch due summary (includes unpaid months with no invoices)
   const { data: dueSummaryData } = useQuery({
     queryKey: ["due-summary", "mec", selectedStudentId],
-    queryFn: () => mecPaymentsService.getDueSummary(selectedStudentId!),
+    queryFn: () => paymentsService.getDueSummary("mec", selectedStudentId!),
     enabled: !!selectedStudentId,
   });
-  const dueSummary = dueSummaryData?.data as MecDueSummary | undefined;
+  const dueSummary = dueSummaryData?.data as DueSummary | undefined;
 
   useEffect(() => {
     if (selectedInvoice) {
@@ -86,7 +86,7 @@ export default function MecCollectDue() {
     : 0;
 
   const { mutate: collectDue, isPending } = useMutation({
-    mutationFn: (dto: MecCollectDueDto) => mecPaymentsService.collectDue(dto),
+    mutationFn: (dto: CollectDueDto) => paymentsService.collectDue("mec", dto),
     onSuccess: (result) => {
       setSuccessInvoice(result.data?.invoiceNumber);
       message.success(`Due collection recorded. Invoice: ${result.data?.invoiceNumber}`);

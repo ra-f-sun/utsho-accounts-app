@@ -12,9 +12,9 @@ import {
   ExclamationCircleOutlined,
   DollarOutlined,
 } from "@ant-design/icons";
-import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
-import type { MbcsPayment } from "../../../services/mbcsPaymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
@@ -86,26 +86,26 @@ export default function MbcsStudentPaymentHistory() {
   const student = studentData?.data;
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["mbcs-payments", { studentId: id }],
-    queryFn: () => mbcsPaymentsService.getAll({ studentId: id }, 1, 1000),
+    queryKey: ["mbcs", "payments", { studentId: id }],
+    queryFn: () => paymentsService.getAll("mbcs", { studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
   const { data: dueSummaryData } = useQuery({
-    queryKey: ["mbcs-due-summary", id],
-    queryFn: () => mbcsPaymentsService.getDueSummary(id!),
+    queryKey: ["due-summary", "mbcs", id],
+    queryFn: () => paymentsService.getDueSummary("mbcs", id!),
     enabled: !!id,
   });
 
   const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
 
-  const payments: MbcsPayment[] = useMemo(
+  const payments: Payment[] = useMemo(
     () => paymentsData?.data?.data || [],
     [paymentsData],
   );
 
   // Group payments by invoice to get per-invoice totals
-  const invoiceMap = new Map<string, MbcsPayment[]>();
+  const invoiceMap = new Map<string, Payment[]>();
   for (const p of payments) {
     if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
     invoiceMap.get(p.invoiceNumber)!.push(p);
@@ -171,7 +171,7 @@ export default function MbcsStudentPaymentHistory() {
   }
 
   const groupedPayments = useMemo((): GroupedRow[] => {
-    const invoiceMap = new Map<string, MbcsPayment[]>();
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of payments) {
       if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
       invoiceMap.get(p.invoiceNumber)!.push(p);

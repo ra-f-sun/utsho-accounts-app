@@ -22,8 +22,8 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import QueryError from "../../../components/QueryError";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import type { MecPayment } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import type { ColumnsType } from "antd/es/table";
@@ -40,14 +40,14 @@ interface Filters {
 
 interface StudentStatus {
   student: MecStudent;
-  payment?: MecPayment;
+  payment?: Payment;
   isPaid: boolean;
   isAvailable: boolean;
 }
 
-interface GroupedMecPayment {
+interface GroupedPayment {
   invoiceNumber: string;
-  student: MecPayment["student"];
+  student: Payment["student"];
   paymentMonths: string[];
   totalAmount: number;
   paymentMethod: string;
@@ -55,7 +55,7 @@ interface GroupedMecPayment {
   ids: string[];
 }
 
-export default function MecPaymentHistory() {
+export default function PaymentHistory() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({
     paymentMonth: dayjs().startOf("month").toISOString(),
@@ -72,18 +72,18 @@ export default function MecPaymentHistory() {
 
   // Fetch all payments with active filters
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["mec-payment-history", filters],
+    queryKey: ["mec", "payment-history", filters],
     queryFn: () =>
-      mecPaymentsService.getAll({
+      paymentsService.getAll("mec", {
         paymentMethod: filters.paymentMethod,
         paymentMonth: filters.paymentMonth,
       }),
   });
-  const allPayments: MecPayment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
+  const allPayments: Payment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
 
-  const groupedMecPayments = useMemo((): GroupedMecPayment[] => {
-    const groups: Record<string, GroupedMecPayment> = {};
-    allPayments.forEach((p: MecPayment) => {
+  const groupedPayments = useMemo((): GroupedPayment[] => {
+    const groups: Record<string, GroupedPayment> = {};
+    allPayments.forEach((p: Payment) => {
       if (!groups[p.invoiceNumber]) {
         groups[p.invoiceNumber] = {
           invoiceNumber: p.invoiceNumber,
@@ -257,7 +257,7 @@ export default function MecPaymentHistory() {
   ];
 
   // --- All Payments columns ---
-  const paymentsColumns: ColumnsType<GroupedMecPayment> = [
+  const paymentsColumns: ColumnsType<GroupedPayment> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
@@ -268,7 +268,7 @@ export default function MecPaymentHistory() {
     {
       title: "Student",
       key: "student",
-      render: (_: unknown, record: GroupedMecPayment) => {
+      render: (_: unknown, record: GroupedPayment) => {
         const student = record.student;
         return (
           <div>
@@ -285,7 +285,7 @@ export default function MecPaymentHistory() {
     {
       title: "Month(s)",
       key: "paymentMonths",
-      render: (_: unknown, record: GroupedMecPayment) => (
+      render: (_: unknown, record: GroupedPayment) => (
         <Space size={[4, 4]} wrap>
           {record.paymentMonths.map((m, i) => (
             <Tag key={i} color="blue">{dayjs(m).format("MMM YYYY")}</Tag>
@@ -297,7 +297,7 @@ export default function MecPaymentHistory() {
       title: "Total",
       key: "totalAmount",
       width: 110,
-      render: (_: unknown, record: GroupedMecPayment) => (
+      render: (_: unknown, record: GroupedPayment) => (
         <strong style={{ color: "#2e7d32" }}>
           \u09f3{record.totalAmount.toLocaleString()}
         </strong>
@@ -335,7 +335,7 @@ export default function MecPaymentHistory() {
       title: "Invoice",
       key: "invoice",
       width: 80,
-      render: (_: unknown, record: GroupedMecPayment) => (
+      render: (_: unknown, record: GroupedPayment) => (
         <Button
           type="link"
           size="small"
@@ -428,7 +428,7 @@ export default function MecPaymentHistory() {
   interface OfficeRow {
     id: string;
     studentId: string;
-    student?: MecPayment["student"];
+    student?: Payment["student"];
     invoiceNumber: string;
     paymentMonths: string[];
     amount: number;
@@ -535,7 +535,7 @@ export default function MecPaymentHistory() {
   ];
 
   const officeRows = useMemo((): OfficeRow[] => {
-    const invoiceMap = new Map<string, MecPayment[]>();
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of allPayments) {
       const key = p.invoiceNumber;
       if (!invoiceMap.has(key)) invoiceMap.set(key, []);
@@ -644,11 +644,11 @@ export default function MecPaymentHistory() {
           },
           {
             key: "guardian-records",
-            label: `Guardian Records (${groupedMecPayments.length})`,
+            label: `Guardian Records (${groupedPayments.length})`,
             children: (
               <Table
                 columns={paymentsColumns}
-                dataSource={groupedMecPayments}
+                dataSource={groupedPayments}
                 rowKey="invoiceNumber"
                 loading={loadingPayments}
                 pagination={{

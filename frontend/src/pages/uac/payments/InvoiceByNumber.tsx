@@ -32,8 +32,8 @@ export default function InvoiceByNumber() {
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["uac-invoice", invoiceNumber],
-    queryFn: () => paymentsService.getByInvoice(decodeURIComponent(invoiceNumber!)),
+    queryKey: ["uac", "invoice", invoiceNumber],
+    queryFn: () => paymentsService.getByInvoice("uac", decodeURIComponent(invoiceNumber!)),
     enabled: !!invoiceNumber,
   });
 

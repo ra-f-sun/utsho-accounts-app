@@ -13,9 +13,9 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
-import type { MecPayment } from "../../../services/mecPaymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
@@ -88,26 +88,26 @@ export default function MecStudentPaymentHistory() {
   const student = (studentData as { data: MecStudent })?.data;
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["mec-payments", { studentId: id }],
-    queryFn: () => mecPaymentsService.getAll({ studentId: id }, 1, 1000),
+    queryKey: ["mec", "payments", { studentId: id }],
+    queryFn: () => paymentsService.getAll("mec", { studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
   const { data: dueSummaryData } = useQuery({
-    queryKey: ["mec-due-summary", id],
-    queryFn: () => mecPaymentsService.getDueSummary(id!),
+    queryKey: ["due-summary", "mec", id],
+    queryFn: () => paymentsService.getDueSummary("mec", id!),
     enabled: !!id,
   });
 
   const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
 
-  const payments: MecPayment[] = useMemo(
+  const payments: Payment[] = useMemo(
     () => paymentsData?.data?.data || [],
     [paymentsData],
   );
 
   // Group payments by invoice to get per-invoice totals
-  const invoiceMap = new Map<string, MecPayment[]>();
+  const invoiceMap = new Map<string, Payment[]>();
   for (const p of payments) {
     if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
     invoiceMap.get(p.invoiceNumber)!.push(p);
@@ -158,7 +158,7 @@ export default function MecStudentPaymentHistory() {
   }
 
   const groupedPayments = useMemo((): GroupedRow[] => {
-    const invoiceMap = new Map<string, MecPayment[]>();
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of payments) {
       if (!invoiceMap.has(p.invoiceNumber)) invoiceMap.set(p.invoiceNumber, []);
       invoiceMap.get(p.invoiceNumber)!.push(p);

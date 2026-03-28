@@ -76,9 +76,9 @@ export default function UacPaymentHistory() {
 
   // Fetch all payments (with any active filters for the records tab)
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["uac-payment-history", filters],
+    queryKey: ["uac", "payment-history", filters],
     queryFn: () =>
-      paymentsService.getAll({
+      paymentsService.getAll("uac", {
         paymentType: filters.paymentType,
         paymentMethod: filters.paymentMethod,
         paymentMonth: filters.paymentMonth,

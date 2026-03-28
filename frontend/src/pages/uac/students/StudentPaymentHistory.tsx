@@ -86,14 +86,14 @@ export default function StudentPaymentHistory() {
   const student = studentData?.data;
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["payments", { studentId: id }],
-    queryFn: () => paymentsService.getAll({ studentId: id }, 1, 1000),
+    queryKey: ["uac", "payments", { studentId: id }],
+    queryFn: () => paymentsService.getAll("uac", { studentId: id }, 1, 1000),
     enabled: !!id,
   });
 
   const { data: dueSummaryData } = useQuery({
     queryKey: ["uac-due-summary", id],
-    queryFn: () => paymentsService.getDueSummary(id!),
+    queryFn: () => paymentsService.getDueSummary("uac", id!),
     enabled: !!id,
   });
 

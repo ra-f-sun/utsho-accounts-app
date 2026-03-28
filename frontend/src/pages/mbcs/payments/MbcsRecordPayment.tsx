@@ -20,10 +20,10 @@ import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  mbcsPaymentsService,
+  paymentsService,
   MBCS_PAYMENT_TYPES,
-} from "../../../services/mbcsPaymentsService";
-import type { CreateMbcsMultiPaymentDto } from "../../../services/mbcsPaymentsService";
+} from "../../../services/paymentsService";
+import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import settingsService from "../../../services/settingsService";
@@ -160,14 +160,14 @@ export default function MbcsRecordPayment() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsMultiPaymentDto) =>
-      mbcsPaymentsService.createMulti(data),
+    mutationFn: (data: CreateMultiPaymentDto) =>
+      paymentsService.createMulti("mbcs", data),
     onSuccess: (response) => {
       const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payments"] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payment-history"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payments"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payment-history"] });
       form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
       setSelectedStudentId(undefined);
     },
@@ -201,7 +201,7 @@ export default function MbcsRecordPayment() {
       notes: item.notes,
     }));
 
-    const data: CreateMbcsMultiPaymentDto = {
+    const data: CreateMultiPaymentDto = {
       studentId: values.studentId,
       paymentDate,
       paymentMethod: values.paymentMethod,

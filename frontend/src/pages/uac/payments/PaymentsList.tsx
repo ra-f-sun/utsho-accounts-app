@@ -51,8 +51,8 @@ export default function PaymentsList() {
   const [filters, setFilters] = useState<FilterPaymentDto>({});
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["payments", filters],
-    queryFn: () => paymentsService.getAll(filters, 1, 1000),
+    queryKey: ["uac", "payments", filters],
+    queryFn: () => paymentsService.getAll("uac", filters, 1, 1000),
   });
 
   const groupedPayments = useMemo((): GroupedPayment[] => {
@@ -79,10 +79,10 @@ export default function PaymentsList() {
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) =>
-      Promise.all(ids.map((id) => paymentsService.delete(id))),
+      Promise.all(ids.map((id) => paymentsService.delete("uac", id))),
     onSuccess: () => {
       message.success("Payment deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payments"] });
     },
     onError: () => {
       message.error("Failed to delete payment");

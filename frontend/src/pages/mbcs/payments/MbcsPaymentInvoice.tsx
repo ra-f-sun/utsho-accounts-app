@@ -7,7 +7,7 @@ import {
   DownloadOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { mbcsPaymentsService } from "../../../services/mbcsPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
 import MbcsStudentInvoice from "../../../components/invoices/MbcsStudentInvoice";
 import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
@@ -17,8 +17,8 @@ export default function MbcsPaymentInvoice() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-payment", id],
-    queryFn: () => mbcsPaymentsService.getOne(id!),
+    queryKey: ["mbcs", "payment", id],
+    queryFn: () => paymentsService.getOne("mbcs", id!),
     enabled: !!id,
   });
 

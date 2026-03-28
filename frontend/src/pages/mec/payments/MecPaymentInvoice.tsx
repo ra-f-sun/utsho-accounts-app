@@ -7,7 +7,7 @@ import {
   DownloadOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
 import MecStudentInvoice from "../../../components/invoices/MecStudentInvoice";
 import type { StudentPaymentInvoiceData } from "../../../components/invoices/types";
 
@@ -17,8 +17,8 @@ export default function MecPaymentInvoice() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mec-payment", id],
-    queryFn: () => mecPaymentsService.getOne(id!),
+    queryKey: ["mec", "payment", id],
+    queryFn: () => paymentsService.getOne("mec", id!),
     enabled: !!id,
   });
 

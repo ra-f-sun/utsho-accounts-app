@@ -19,8 +19,8 @@ import {
 import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { mecPaymentsService } from "../../../services/mecPaymentsService";
-import type { CreateMecMultiPaymentDto } from "../../../services/mecPaymentsService";
+import { paymentsService } from "../../../services/paymentsService";
+import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import axios from "axios";
@@ -92,14 +92,14 @@ export default function MecRecordPayment() {
   }, [searchParams, allStudents, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMecMultiPaymentDto) =>
-      mecPaymentsService.createMulti(data),
+    mutationFn: (data: CreateMultiPaymentDto) =>
+      paymentsService.createMulti("mec", data),
     onSuccess: (response) => {
       const invoice = response?.data?.invoiceNumber;
       setInvoiceNumber(invoice || "");
       message.success(`Payment recorded! Invoice: ${invoice}`);
-      queryClient.invalidateQueries({ queryKey: ["mec-payment-history"] });
-      queryClient.invalidateQueries({ queryKey: ["mec-payments"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "payment-history"] });
+      queryClient.invalidateQueries({ queryKey: ["mec", "payments"] });
       queryClient.invalidateQueries({ queryKey: ["mec-students"] });
       setSelectedStudentId(undefined);
       form.setFieldsValue({ lineItems: [{}], paymentDate: dayjs(), additionalDiscount: 0, dueAmount: 0 });
@@ -132,7 +132,7 @@ export default function MecRecordPayment() {
       notes: item.notes,
     }));
 
-    const data: CreateMecMultiPaymentDto = {
+    const data: CreateMultiPaymentDto = {
       studentId: values.studentId,
       paymentDate,
       paymentMethod: values.paymentMethod,

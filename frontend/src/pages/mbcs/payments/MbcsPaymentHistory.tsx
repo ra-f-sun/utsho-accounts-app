@@ -23,10 +23,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import QueryError from "../../../components/QueryError";
 import {
-  mbcsPaymentsService,
+  paymentsService,
   MBCS_PAYMENT_TYPES,
-} from "../../../services/mbcsPaymentsService";
-import type { MbcsPayment } from "../../../services/mbcsPaymentsService";
+} from "../../../services/paymentsService";
+import type { Payment } from "../../../services/paymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
@@ -57,12 +57,12 @@ interface Filters {
 
 interface StudentStatus {
   student: MbcsStudent;
-  payment?: MbcsPayment;
+  payment?: Payment;
   isPaid: boolean;
   isAvailable: boolean;
 }
 
-export default function MbcsPaymentHistory() {
+export default function PaymentHistory() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>({
     paymentMonth: dayjs().startOf("month").toISOString(),
@@ -77,14 +77,14 @@ export default function MbcsPaymentHistory() {
   const allStudents: MbcsStudent[] = useMemo(() => studentsData?.data?.data || [], [studentsData]);
 
   const { data: paymentsData, isLoading: loadingPayments, isError: paymentsIsError, error: paymentsError, refetch: refetchPayments } = useQuery({
-    queryKey: ["mbcs-payment-history", filters],
+    queryKey: ["mbcs", "payment-history", filters],
     queryFn: () =>
-      mbcsPaymentsService.getAll({
+      paymentsService.getAll("mbcs", {
         paymentType: filters.paymentType,
         paymentMethod: filters.paymentMethod,
       }, 1, 1000),
   });
-  const allPayments: MbcsPayment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
+  const allPayments: Payment[] = useMemo(() => paymentsData?.data?.data || [], [paymentsData]);
 
   // Cross-reference students × tuition payments for selected month
   const tuitionStatusRows = useMemo((): StudentStatus[] => {
@@ -244,7 +244,7 @@ export default function MbcsPaymentHistory() {
   interface GuardianRow {
     id: string;
     studentId: string;
-    student?: MbcsPayment["student"];
+    student?: Payment["student"];
     invoiceNumber: string;
     paymentTypes: string[];
     amount: number;
@@ -254,7 +254,7 @@ export default function MbcsPaymentHistory() {
   }
 
   const guardianRows = useMemo((): GuardianRow[] => {
-    const invoiceMap = new Map<string, MbcsPayment[]>();
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of allPayments) {
       const key = p.invoiceNumber;
       if (!invoiceMap.has(key)) invoiceMap.set(key, []);
@@ -367,7 +367,7 @@ export default function MbcsPaymentHistory() {
   interface OfficeRow {
     id: string;
     studentId: string;
-    student?: MbcsPayment["student"];
+    student?: Payment["student"];
     invoiceNumber: string;
     paymentTypes: string[];
     amount: number;
@@ -585,7 +585,7 @@ export default function MbcsPaymentHistory() {
   );
 
   const officeRows = useMemo((): OfficeRow[] => {
-    const invoiceMap = new Map<string, MbcsPayment[]>();
+    const invoiceMap = new Map<string, Payment[]>();
     for (const p of allPayments) {
       const key = p.invoiceNumber;
       if (!invoiceMap.has(key)) invoiceMap.set(key, []);

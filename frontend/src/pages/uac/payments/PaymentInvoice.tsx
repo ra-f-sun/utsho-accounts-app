@@ -17,8 +17,8 @@ export default function PaymentInvoice() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["payment", id],
-    queryFn: () => paymentsService.getOne(id!),
+    queryKey: ["uac", "payment", id],
+    queryFn: () => paymentsService.getOne("uac", id!),
     enabled: !!id,
   });
 
