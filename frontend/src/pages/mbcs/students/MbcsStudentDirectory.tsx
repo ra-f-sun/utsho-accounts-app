@@ -86,7 +86,7 @@ export default function MbcsStudentDirectory() {
       );
     }
     return result.sort((a, b) => {
-      if (a.class !== b.class) return a.class - b.class;
+      if (a.class !== b.class) return (a.class ?? 0) - (b.class ?? 0);
       return a.name.localeCompare(b.name);
     });
   }, [allStudents, classFilter, shiftFilter, branchFilter, searchText, admissionDateFrom, admissionDateTo]);
@@ -130,7 +130,7 @@ export default function MbcsStudentDirectory() {
     const rows = filtered.map((s, idx) => [
       idx + 1,
       s.name,
-      MBCS_CLASS_MAP[s.class] ?? `Class ${s.class}`,
+      MBCS_CLASS_MAP[s.class!] ?? `Class ${s.class}`,
       s.shift ?? "",
       s.branch ?? "",
       s.gender ?? "",
@@ -190,7 +190,7 @@ export default function MbcsStudentDirectory() {
       dataIndex: "class",
       key: "class",
       width: 120,
-      sorter: (a, b) => a.class - b.class,
+      sorter: (a, b) => (a.class ?? 0) - (b.class ?? 0),
       render: (cls: number) => (
         <Tag color="blue">{MBCS_CLASS_MAP[cls] ?? `Class ${cls}`}</Tag>
       ),

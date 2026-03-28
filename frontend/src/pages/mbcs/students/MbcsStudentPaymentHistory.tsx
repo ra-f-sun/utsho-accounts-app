@@ -202,12 +202,14 @@ export default function MbcsStudentPaymentHistory() {
       const first = group[0];
       return {
         invoiceNumber: first.invoiceNumber,
-        paymentTypes: group.map((r) => r.paymentType),
-        typeLabels: group.map((r) =>
-          r.paymentType === "study_materials" && r.notes
-            ? `${r.paymentType}::${r.notes}`
-            : r.paymentType,
-        ),
+        paymentTypes: group.map((r) => r.paymentType).filter((t): t is string => t != null),
+        typeLabels: group
+          .map((r) =>
+            r.paymentType === "study_materials" && r.notes
+              ? `${r.paymentType}::${r.notes}`
+              : r.paymentType,
+          )
+          .filter((t): t is string => t != null),
         amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((s, r) => s + r.amount, 0),
         dueAmount: first.dueAmount ?? 0,
         paymentMonth: first.paymentMonth,
