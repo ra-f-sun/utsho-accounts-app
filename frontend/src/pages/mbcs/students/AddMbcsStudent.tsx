@@ -21,6 +21,11 @@ import type { CreateMbcsStudentDto } from "../../../services/mbcsStudentsService
 import settingsService, { type OrgSetting } from "../../../services/settingsService";
 import { MBCS_CLASSES } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
+import {
+  PERSON_NAME_MESSAGE,
+  PERSON_NAME_REGEX,
+  disableFutureDate,
+} from "../../../utils/validators";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -133,7 +138,7 @@ export default function AddMbcsStudent() {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
-    const data = {
+    const raw = {
       ...values,
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
@@ -141,10 +146,14 @@ export default function AddMbcsStudent() {
       discountAdmission: values.discountAdmission ?? 0,
       discountReadmission: values.discountReadmission ?? 0,
     };
+    // Strip empty strings to undefined so optional backend validators don't reject ""
+    const data = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, v === "" ? undefined : v]),
+    );
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data as CreateMbcsStudentDto);
+      createMutation.mutate(data as unknown as CreateMbcsStudentDto);
     }
   };
 
@@ -168,6 +177,7 @@ export default function AddMbcsStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter student name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Enter full name" />
@@ -194,7 +204,11 @@ export default function AddMbcsStudent() {
                   { required: true, message: "Please select date of birth" },
                 ]}
               >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabledDate={disableFutureDate}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -290,7 +304,11 @@ export default function AddMbcsStudent() {
         <Card title="Father Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Father's Name" name="fatherName">
+              <Form.Item
+                label="Father's Name"
+                name="fatherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input placeholder="Father's full name" />
               </Form.Item>
             </Col>
@@ -320,7 +338,11 @@ export default function AddMbcsStudent() {
         <Card title="Mother Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Mother's Name" name="motherName">
+              <Form.Item
+                label="Mother's Name"
+                name="motherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input placeholder="Mother's full name" />
               </Form.Item>
             </Col>
@@ -355,6 +377,7 @@ export default function AddMbcsStudent() {
                 name="guardianName"
                 rules={[
                   { required: true, message: "Please enter guardian name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Primary contact person" />

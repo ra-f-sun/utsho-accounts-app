@@ -182,7 +182,11 @@ export class PayrollService {
   /**
    * Collect outstanding due on an existing MBCS payroll record (Feature 6B)
    */
-  async collectDue(payrollId: string, dto: CollectPayrollDueDto, createdBy: string) {
+  async collectDue(
+    payrollId: string,
+    dto: CollectPayrollDueDto,
+    createdBy: string,
+  ) {
     const original = await this.prisma.mbcsPayroll.findFirst({
       where: { id: payrollId, isActive: true, isDueCollection: false },
     });

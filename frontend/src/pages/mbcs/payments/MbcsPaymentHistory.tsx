@@ -31,11 +31,13 @@ import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP, MBCS_CLASSES } from "../../../constants/mbcsClasses";
 
 const { Option } = Select;
 
 const PAYMENT_TYPE_COLORS: Record<string, string> = {
   tuition: "blue",
+  late_fee: "volcano",
   admission: "green",
   readmission: "cyan",
   exam: "orange",
@@ -106,27 +108,24 @@ export default function PaymentHistory() {
       students = students.filter((s) => s.shift === filters.shiftFilter);
 
     const rows: StudentStatus[] = students.map((student) => {
-      const admMonth = student.admissionDate
-        ? dayjs(student.admissionDate).format("YYYY-MM")
-        : null;
-      const isAvailable = admMonth === null || admMonth <= monthStr;
+      // MBCS rule: all months from January are always applicable regardless of admission date
       return {
         student,
         payment: tuitionPayments.find((p) => p.studentId === student.id),
-        isPaid: isAvailable && paidStudentIds.has(student.id),
-        isAvailable,
+        isPaid: paidStudentIds.has(student.id),
+        isAvailable: true,
       };
     });
 
     if (filters.statusFilter === "paid") return rows.filter((r) => r.isPaid);
     if (filters.statusFilter === "unpaid")
-      return rows.filter((r) => r.isAvailable && !r.isPaid);
+      return rows.filter((r) => !r.isPaid);
     return rows;
   }, [allStudents, allPayments, filters]);
 
   const paidCount = tuitionStatusRows.filter((r) => r.isPaid).length;
   const unpaidCount = tuitionStatusRows.filter(
-    (r) => r.isAvailable && !r.isPaid,
+    (r) => !r.isPaid,
   ).length;
 
   const statusColumns: ColumnsType<StudentStatus> = [
@@ -139,7 +138,7 @@ export default function PaymentHistory() {
             <strong>{record.student.name}</strong>
           </div>
           <div style={{ fontSize: 12, color: "#888" }}>
-            Class {record.student.class}
+            {MBCS_CLASS_MAP[record.student.class] ?? `Class ${record.student.class}`}
             {record.student.shift ? ` · ${record.student.shift}` : ""}
           </div>
         </div>
@@ -294,7 +293,7 @@ export default function PaymentHistory() {
           <div>
             <strong>{student?.name}</strong>
             <div style={{ fontSize: 12, color: "#888" }}>
-              Class {student?.class}
+              {MBCS_CLASS_MAP[student?.class ?? -1] ?? `Class ${student?.class}`}
               {student?.shift ? ` · ${student.shift}` : ""}
             </div>
           </div>
@@ -395,7 +394,7 @@ export default function PaymentHistory() {
           <div>
             <strong>{student?.name}</strong>
             <div style={{ fontSize: 12, color: "#888" }}>
-              Class {student?.class}
+              {MBCS_CLASS_MAP[student?.class ?? -1] ?? `Class ${student?.class}`}
               {student?.shift ? ` · ${student.shift}` : ""}
             </div>
           </div>
@@ -493,9 +492,9 @@ export default function PaymentHistory() {
         }
         allowClear
       >
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((cls) => (
+        {MBCS_CLASSES.map(({ value: cls, label }) => (
           <Option key={cls} value={cls}>
-            Class {cls}
+            {label}
           </Option>
         ))}
       </Select>

@@ -90,12 +90,20 @@ export default function AddTeacherAttendance() {
 
   const onFinish = (values: AttendanceFormValues) => {
     if (mode === "simplified") {
+      if (!values.month || values.totalLectures === undefined) {
+        message.error("Please select month and total lectures");
+        return;
+      }
       summaryMutation.mutate({
         teacherId: values.teacherId,
         month: values.month.format("YYYY-MM"),
         totalLectures: values.totalLectures,
       });
     } else {
+      if (!values.attendanceDate || values.lecturesTaken === undefined) {
+        message.error("Please select attendance date and lectures taken");
+        return;
+      }
       const data: CreateAttendanceDto = {
         teacherId: values.teacherId,
         attendanceDate: values.attendanceDate.toISOString(),

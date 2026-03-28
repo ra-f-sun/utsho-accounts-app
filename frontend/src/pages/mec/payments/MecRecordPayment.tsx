@@ -118,7 +118,12 @@ export default function MecRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems = (values.lineItems || []).map((item: MecPaymentFormLineItem) => ({
+    const lineItems: CreateMecMultiPaymentDto["lineItems"] = (values.lineItems || [])
+      .filter(
+        (item): item is MecPaymentFormLineItem & { amount: number } =>
+          typeof item?.amount === "number",
+      )
+      .map((item) => ({
       amount: item.amount,
       paymentMonth: item.paymentMonth
         ? item.paymentMonth.startOf("month").toISOString()
@@ -380,6 +385,26 @@ export default function MecRecordPayment() {
                   Guardian Copy
                 </div>
               )}
+              {Array.isArray(formLineItems) &&
+                formLineItems.map(
+                  (item: MecPaymentFormLineItem | undefined, i: number) => {
+                    if (!item) return null;
+                    const guardianAmt =
+                      invoiceMode !== "unified"
+                        ? (selectedStudent?.monthlyTuitionFee ?? item.amount ?? 0)
+                        : (item.amount ?? 0);
+                    return (
+                      <Row
+                        key={i}
+                        justify="space-between"
+                        style={{ marginBottom: 4, fontSize: 13 }}
+                      >
+                        <Col>Month {i + 1}</Col>
+                        <Col>৳{guardianAmt.toFixed(2)}</Col>
+                      </Row>
+                    );
+                  },
+                )}
               <Row justify="space-between" style={{ marginBottom: 8 }}>
                 <Col>Sub Total</Col>
                 <Col>৳{guardianSubTotal.toFixed(2)}</Col>

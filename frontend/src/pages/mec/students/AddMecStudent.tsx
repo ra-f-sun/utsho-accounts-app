@@ -22,6 +22,11 @@ import settingsService, {
   type OrgSetting,
 } from "../../../services/settingsService";
 import dayjs from "dayjs";
+import {
+  PERSON_NAME_MESSAGE,
+  PERSON_NAME_REGEX,
+  disableFutureDate,
+} from "../../../utils/validators";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -33,6 +38,14 @@ export default function AddMecStudent() {
   const queryClient = useQueryClient();
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
+  const selectedClass = Form.useWatch("class", form);
+  const isGroupDisabled = typeof selectedClass !== "number" || selectedClass < 9;
+
+  useEffect(() => {
+    if (typeof selectedClass === "number" && selectedClass < 9) {
+      form.setFieldValue("group", undefined);
+    }
+  }, [selectedClass, form]);
 
   // Settings state
   const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
@@ -100,16 +113,21 @@ export default function AddMecStudent() {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
-    const data = {
+    const raw = {
       ...values,
+      ...(typeof values.class === "number" && values.class < 9 ? { group: undefined } : {}),
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD") ?? undefined,
       discountTuition: values.discountTuition ?? 0,
     };
+    // Strip empty strings to undefined so optional backend validators don't reject ""
+    const data = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, v === "" ? undefined : v]),
+    );
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data as unknown as CreateMecStudentDto);
     }
   };
 
@@ -132,7 +150,10 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Full Name"
                 name="name"
-                rules={[{ required: true, message: "Name is required" }]}
+                rules={[
+                  { required: true, message: "Name is required" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
+                ]}
               >
                 <Input />
               </Form.Item>
@@ -156,7 +177,11 @@ export default function AddMecStudent() {
                 name="dateOfBirth"
                 rules={[{ required: true }]}
               >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabledDate={disableFutureDate}
+                />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -171,7 +196,14 @@ export default function AddMecStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Group" name="group">
-                <Input placeholder="e.g. Science, Arts..." />
+                <Input
+                  placeholder={
+                    isGroupDisabled
+                      ? "Available for class 9 and above"
+                      : "e.g. Science, Arts..."
+                  }
+                  disabled={isGroupDisabled}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -189,7 +221,10 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Guardian Name"
                 name="guardianName"
-                rules={[{ required: true }]}
+                rules={[
+                  { required: true },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
+                ]}
               >
                 <Input />
               </Form.Item>
@@ -325,7 +360,11 @@ export default function AddMecStudent() {
         >
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item label="Father Name" name="fatherName">
+              <Form.Item
+                label="Father Name"
+                name="fatherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input />
               </Form.Item>
             </Col>
@@ -349,7 +388,11 @@ export default function AddMecStudent() {
         >
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item label="Mother Name" name="motherName">
+              <Form.Item
+                label="Mother Name"
+                name="motherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input />
               </Form.Item>
             </Col>

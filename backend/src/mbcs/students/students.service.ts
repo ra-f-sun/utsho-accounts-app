@@ -5,7 +5,10 @@ import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { FilterStudentDto } from './dto/filter-student.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
-import { PromoteMbcsBulkDto, PromoteMbcsStudentDto } from './dto/promote-student.dto';
+import {
+  PromoteMbcsBulkDto,
+  PromoteMbcsStudentDto,
+} from './dto/promote-student.dto';
 
 @Injectable()
 export class StudentsService {
@@ -44,7 +47,10 @@ export class StudentsService {
   }
 
   async findAll(filters?: FilterStudentDto, pagination?: PaginationDto) {
-    const where: Prisma.MbcsStudentWhereInput = { isActive: true, associationEndDate: null };
+    const where: Prisma.MbcsStudentWhereInput = {
+      isActive: true,
+      associationEndDate: null,
+    };
 
     if (filters?.class) {
       where.class = filters.class;
@@ -135,7 +141,8 @@ export class StudentsService {
 
   async reassociate(id: string) {
     const student = await this.prisma.mbcsStudent.findUnique({ where: { id } });
-    if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
+    if (!student)
+      throw new NotFoundException(`Student with ID ${id} not found`);
     return this.prisma.mbcsStudent.update({
       where: { id },
       data: { associationEndDate: null },
@@ -157,13 +164,15 @@ export class StudentsService {
       }
     }
 
-    const resolveOrDefault = (overrideKey: string, defaultKey: string): number =>
-      settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
+    const resolveOrDefault = (
+      overrideKey: string,
+      defaultKey: string,
+    ): number => settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
     // Load all active students
     const students = await this.prisma.mbcsStudent.findMany({
       where: { isActive: true },
-      select: { id: true, class: true },
+      select: { id: true, class: true, isPromoted: true },
     });
 
     if (students.length === 0) return { updated: 0 };
@@ -180,10 +189,13 @@ export class StudentsService {
             `admission_override_${s.class}`,
             'admission_default',
           ),
-          readmissionFee: resolveOrDefault(
-            `readmission_override_${s.class}`,
-            'readmission_default',
-          ),
+          // Only promoted students get readmission fee; new admissions get 0
+          readmissionFee: s.isPromoted
+            ? resolveOrDefault(
+                `readmission_override_${s.class}`,
+                'readmission_default',
+              )
+            : 0,
         },
       }),
     );
@@ -195,7 +207,9 @@ export class StudentsService {
   async promote(id: string, dto: PromoteMbcsStudentDto, promotedBy: string) {
     const student = await this.findOne(id);
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'mbcs' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'mbcs' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
@@ -205,8 +219,13 @@ export class StudentsService {
     const resolve = (overrideKey: string, defaultKey: string) =>
       settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
-    const newTuition = resolve(`tuition_override_${dto.toClass}`, 'tuition_default') || student.monthlyTuitionFee;
-    const newReadmission = resolve(`readmission_override_${dto.toClass}`, 'readmission_default');
+    const newTuition =
+      resolve(`tuition_override_${dto.toClass}`, 'tuition_default') ||
+      student.monthlyTuitionFee;
+    const newReadmission = resolve(
+      `readmission_override_${dto.toClass}`,
+      'readmission_default',
+    );
 
     const [, updatedStudent] = await this.prisma.$transaction([
       this.prisma.promotionLog.create({
@@ -224,6 +243,7 @@ export class StudentsService {
         data: {
           class: dto.toClass,
           monthlyTuitionFee: newTuition,
+          isPromoted: true,
           ...(newReadmission > 0 && { readmissionFee: newReadmission }),
         },
       }),
@@ -231,14 +251,19 @@ export class StudentsService {
     return updatedStudent;
   }
 
-  async promoteBulk(dto: PromoteMbcsBulkDto, promotedBy: string): Promise<{ promoted: number }> {
+  async promoteBulk(
+    dto: PromoteMbcsBulkDto,
+    promotedBy: string,
+  ): Promise<{ promoted: number }> {
     const students = await this.prisma.mbcsStudent.findMany({
       where: { isActive: true, associationEndDate: null, class: dto.fromClass },
       select: { id: true, monthlyTuitionFee: true },
     });
     if (students.length === 0) return { promoted: 0 };
 
-    const rows = await this.prisma.orgSettings.findMany({ where: { organization: 'mbcs' } });
+    const rows = await this.prisma.orgSettings.findMany({
+      where: { organization: 'mbcs' },
+    });
     const settingMap = new Map<string, number>();
     for (const row of rows) {
       const val = row.settingValue as { value?: number } | null;
@@ -248,8 +273,14 @@ export class StudentsService {
     const resolve = (overrideKey: string, defaultKey: string) =>
       settingMap.get(overrideKey) ?? settingMap.get(defaultKey) ?? 0;
 
-    const newTuition = resolve(`tuition_override_${dto.toClass}`, 'tuition_default');
-    const newReadmission = resolve(`readmission_override_${dto.toClass}`, 'readmission_default');
+    const newTuition = resolve(
+      `tuition_override_${dto.toClass}`,
+      'tuition_default',
+    );
+    const newReadmission = resolve(
+      `readmission_override_${dto.toClass}`,
+      'readmission_default',
+    );
 
     const ops = students.flatMap((s) => [
       this.prisma.promotionLog.create({
@@ -266,6 +297,7 @@ export class StudentsService {
         where: { id: s.id },
         data: {
           class: dto.toClass,
+          isPromoted: true,
           ...(newTuition > 0 && { monthlyTuitionFee: newTuition }),
           ...(newReadmission > 0 && { readmissionFee: newReadmission }),
         },

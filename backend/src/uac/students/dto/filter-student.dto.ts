@@ -7,7 +7,7 @@ export class FilterStudentDto extends PaginationDto {
   @Type(() => Number)
   @IsInt()
   @Min(8)
-  @Max(12)
+  @Max(13)
   class?: number;
 
   @IsOptional()

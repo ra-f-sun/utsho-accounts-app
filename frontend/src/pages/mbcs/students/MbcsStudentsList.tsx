@@ -25,6 +25,7 @@ import type {
 } from "../../../services/mbcsStudentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
+import { MBCS_CLASSES, MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const { Option } = Select;
 
@@ -66,7 +67,8 @@ export default function MbcsStudentsList() {
       title: "Class",
       dataIndex: "class",
       key: "class",
-      width: 80,
+      width: 120,
+      render: (cls: number) => MBCS_CLASS_MAP[cls] ?? `Class ${cls}`,
     },
     {
       title: "Shift",
@@ -137,11 +139,7 @@ export default function MbcsStudentsList() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Space>
           <Input
@@ -164,9 +162,9 @@ export default function MbcsStudentsList() {
             }
             allowClear
           >
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((cls) => (
+            {MBCS_CLASSES.map(({ value: cls, label }) => (
               <Option key={cls} value={cls}>
-                Class {cls}
+                {label}
               </Option>
             ))}
           </Select>

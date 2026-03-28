@@ -161,11 +161,7 @@ export default function PayrollList() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Space>
           <DatePicker
@@ -192,8 +188,8 @@ export default function PayrollList() {
             }
             allowClear
           >
-            <Option value="teacher">Teacher</Option>
-            <Option value="staff">Staff</Option>
+            <Select.Option value="teacher">Teacher</Select.Option>
+            <Select.Option value="staff">Staff</Select.Option>
           </Select>
         </Space>
         <Button

@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.env.*
+*.md
+eslint-out.txt
+eslint-results.txt
+eslint-results2.txt
+.git

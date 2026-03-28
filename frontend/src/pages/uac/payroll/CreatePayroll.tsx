@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Form,
   Input,
@@ -50,6 +50,7 @@ export default function CreatePayroll() {
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [calculatedData, setCalculatedData] = useState<{
+    paymentType?: string;
     amount: number;
     totalLectures: number | null;
   } | null>(null);

@@ -372,7 +372,7 @@ function ImportTab({ allowedOrgs }: { allowedOrgs: OrgType[] }) {
 
       {parsedData.length > 0 && (
         <>
-          <div style={{ marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
             <Space>
               <Tag color="blue">{parsedData.length} students ready</Tag>
               {parseErrors.length === 0 && <Tag color="green">No errors</Tag>}

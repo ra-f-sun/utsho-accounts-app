@@ -19,6 +19,7 @@ import { teachersService } from "../../../services/teachersService";
 import type { Teacher } from "../../../services/teachersService";
 import axios from "axios";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 interface MbcsAttendanceFormValues {
   teacherId: string;
@@ -94,12 +95,20 @@ export default function AddMbcsTeacherAttendance() {
 
   const onFinish = (values: MbcsAttendanceFormValues) => {
     if (mode === "simplified") {
+      if (!values.month || values.totalLectures === undefined) {
+        message.error("Please select month and total lectures");
+        return;
+      }
       summaryMutation.mutate({
         teacherId: values.teacherId,
         month: values.month.format("YYYY-MM"),
         totalLectures: values.totalLectures,
       });
     } else {
+      if (!values.attendanceDate || values.lecturesTaken === undefined) {
+        message.error("Please select attendance date and lectures taken");
+        return;
+      }
       const data: CreateAttendanceDto = {
         teacherId: values.teacherId,
         attendanceDate: values.attendanceDate.toISOString(),
@@ -222,7 +231,7 @@ export default function AddMbcsTeacherAttendance() {
                     <Select placeholder="Which class (optional)" allowClear>
                       {[6, 7, 8, 9, 10].map((cls) => (
                         <Select.Option key={cls} value={cls}>
-                          Class {cls}
+                          {MBCS_CLASS_MAP[cls] ?? `Class ${cls}`}
                         </Select.Option>
                       ))}
                     </Select>

@@ -88,6 +88,8 @@ export default function PayrollInvoice() {
   const invoiceData: PayrollInvoiceData = {
     invoiceNumber: payroll.invoiceNumber,
     amount: payroll.amount,
+    paidAmount: payroll.paidAmount,
+    dueAmount: payroll.dueAmount,
     paymentDate: payroll.paymentDate,
     paymentMonth: payroll.paymentMonth,
     paymentMethod: payroll.paymentMethod,
@@ -101,11 +103,7 @@ export default function PayrollInvoice() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           Back

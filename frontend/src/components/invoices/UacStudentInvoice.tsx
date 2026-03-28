@@ -193,6 +193,9 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
                   <td style={{ padding: "8px 12px", color: "#888" }}>{i + 1}</td>
                   <td style={{ padding: "8px 12px", fontWeight: 600 }}>
                     {item.paymentType ? fmt(item.paymentType) : "Tuition"}
+                    {item.paymentType === "study_materials" && item.notes && (
+                      <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}> — {item.notes}</span>
+                    )}
                   </td>
                   <td style={{ padding: "8px 12px" }}>
                     {dayjs(item.paymentMonth).format("MMM YYYY")}
@@ -204,6 +207,20 @@ const UacStudentInvoice = forwardRef<HTMLDivElement, { data: StudentPaymentInvoi
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Additional Discount & Due */}
+      {(data.additionalDiscount ?? 0) > 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 24px", fontSize: 13, color: "#888" }}>
+          <span>Additional Discount</span>
+          <span>-৳{data.additionalDiscount?.toLocaleString()}</span>
+        </div>
+      )}
+      {(data.dueAmount ?? 0) > 0 && (
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 24px", fontSize: 14, color: "#ff4d4f", fontWeight: 600 }}>
+          <span>Due Amount</span>
+          <span>৳{data.dueAmount?.toLocaleString()}</span>
         </div>
       )}
 

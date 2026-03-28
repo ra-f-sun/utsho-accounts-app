@@ -8,6 +8,7 @@ import {
   type UpdateUserDto,
 } from "../../services/usersService";
 import { useEffect } from "react";
+import { PERSON_NAME_MESSAGE, PERSON_NAME_REGEX } from "../../utils/validators";
 
 function AddUser() {
   const { message } = App.useApp();
@@ -26,12 +27,13 @@ function AddUser() {
 
   // Populate form when user data is loaded
   useEffect(() => {
-    if (user) {
+    if (user?.data) {
+      const userData = user.data;
       form.setFieldsValue({
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        isActive: user.isActive,
+        email: userData.email,
+        fullName: userData.fullName,
+        role: userData.role,
+        isActive: userData.isActive,
       });
     }
   }, [user, form]);
@@ -100,6 +102,7 @@ function AddUser() {
             rules={[
               { required: true, message: "Please enter full name" },
               { min: 2, message: "Name must be at least 2 characters" },
+              { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
             ]}
           >
             <Input placeholder="Enter full name" />

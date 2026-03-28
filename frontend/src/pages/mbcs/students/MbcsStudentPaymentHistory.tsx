@@ -18,6 +18,7 @@ import type { Payment } from "../../../services/paymentsService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const MONTHS = [
   "January",
@@ -97,7 +98,7 @@ export default function MbcsStudentPaymentHistory() {
     enabled: !!id,
   });
 
-  const dueSummary = (dueSummaryData as { data?: typeof dueSummaryData })?.data ?? dueSummaryData;
+  const dueSummary = dueSummaryData?.data;
 
   const payments: Payment[] = useMemo(
     () => paymentsData?.data?.data || [],
@@ -124,12 +125,33 @@ export default function MbcsStudentPaymentHistory() {
   const monthlyTuition =
     (student?.monthlyTuitionFee ?? 0) - (student?.discountTuition ?? 0);
 
-  // Sum tuition amounts per month (works across original + due collection rows)
+  // Compute actual tuition paid per month, accounting for officePaid allocation
   const tuitionByMonth = new Map<string, number>();
+  // Group payments by invoiceNumber to allocate officePaid correctly
+  const invoiceGroups = new Map<string, typeof payments>();
   for (const p of payments) {
-    if (p.paymentType === "tuition") {
-      const key = dayjs(p.paymentMonth).format("YYYY-MM");
-      tuitionByMonth.set(key, (tuitionByMonth.get(key) ?? 0) + p.amount);
+    const inv = p.invoiceNumber ?? `__${p.id}`;
+    if (!invoiceGroups.has(inv)) invoiceGroups.set(inv, []);
+    invoiceGroups.get(inv)!.push(p);
+  }
+  for (const rows of invoiceGroups.values()) {
+    const { officePaid = 0, isDueCollection } = rows[0];
+    const tuitionRows = rows.filter((r) => r.paymentType === "tuition");
+    if (isDueCollection) {
+      // Due-collection: amount IS actual paid per type
+      for (const t of tuitionRows) {
+        const mk = dayjs(t.paymentMonth).format("YYYY-MM");
+        tuitionByMonth.set(mk, (tuitionByMonth.get(mk) ?? 0) + t.amount);
+      }
+    } else {
+      // Original invoice: tuition is first priority, allocate officePaid in order
+      let remaining = officePaid;
+      for (const t of tuitionRows) {
+        const paid = Math.min(remaining, t.amount);
+        remaining -= paid;
+        const mk = dayjs(t.paymentMonth).format("YYYY-MM");
+        tuitionByMonth.set(mk, (tuitionByMonth.get(mk) ?? 0) + paid);
+      }
     }
   }
 
@@ -143,13 +165,12 @@ export default function MbcsStudentPaymentHistory() {
     }
   }
 
-  // Admission month key — months before this are "N/A" (student not yet enrolled)
-  const admissionMonthKey = student?.admissionDate
-    ? dayjs(student.admissionDate).format("YYYY-MM")
-    : null;
+  // MBCS rule: all months from January are always applicable regardless of admission date
+  // (admissionMonthKey not used for MBCS tuition grid)
 
   const TYPE_COLORS: Record<string, string> = {
     tuition: "blue",
+    late_fee: "volcano",
     admission: "green",
     readmission: "cyan",
     exam: "orange",
@@ -163,6 +184,7 @@ export default function MbcsStudentPaymentHistory() {
   interface GroupedRow {
     invoiceNumber: string;
     paymentTypes: string[];
+    typeLabels: string[];
     amount: number;
     dueAmount: number;
     paymentMonth: string;
@@ -181,13 +203,19 @@ export default function MbcsStudentPaymentHistory() {
       return {
         invoiceNumber: first.invoiceNumber,
         paymentTypes: group.map((r) => r.paymentType),
+        typeLabels: group.map((r) =>
+          r.paymentType === "study_materials" && r.notes
+            ? `${r.paymentType}::${r.notes}`
+            : r.paymentType,
+        ),
         amount: first.officePaid ?? first.officeGrandTotal ?? group.reduce((s, r) => s + r.amount, 0),
         dueAmount: first.dueAmount ?? 0,
         paymentMonth: first.paymentMonth,
         paymentDate: first.paymentDate,
         paymentMethod: first.paymentMethod,
       };
-    });
+    })
+    .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
   }, [payments]);
 
   const columns: ColumnsType<GroupedRow> = [
@@ -204,11 +232,14 @@ export default function MbcsStudentPaymentHistory() {
       width: 180,
       render: (_: unknown, record: GroupedRow) => (
         <Space size={[0, 4]} wrap>
-          {record.paymentTypes.map((type, i) => (
-            <Tag key={i} color={TYPE_COLORS[type] || "default"}>
-              {type.replace(/_/g, " ").toUpperCase()}
-            </Tag>
-          ))}
+          {record.typeLabels.map((label, i) => {
+            const [type, note] = label.includes("::") ? label.split("::") : [label, ""];
+            return (
+              <Tag key={i} color={TYPE_COLORS[type] || "default"}>
+                {type.replace(/_/g, " ").toUpperCase()}{note ? ` — ${note}` : ""}
+              </Tag>
+            );
+          })}
         </Space>
       ),
     },
@@ -279,11 +310,7 @@ export default function MbcsStudentPaymentHistory() {
     <>
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Button
           icon={<ArrowLeftOutlined />}
@@ -357,7 +384,7 @@ export default function MbcsStudentPaymentHistory() {
               styles={{ content: { fontSize: 18 } }}
             />
             <div style={{ color: "#888", fontSize: 13 }}>
-              Class {student?.class}
+              {MBCS_CLASS_MAP[student?.class ?? -1] ?? `Class ${student?.class}`}
               {student?.shift ? ` — ${student.shift}` : ""}
             </div>
           </Col>
@@ -381,32 +408,25 @@ export default function MbcsStudentPaymentHistory() {
         <Row gutter={[8, 8]}>
           {MONTHS.map((month, idx) => {
             const monthKey = `${currentYear}-${String(idx + 1).padStart(2, "0")}`;
-            const isBeforeAdmission =
-              admissionMonthKey !== null && monthKey < admissionMonthKey;
-            const isPaid = !isBeforeAdmission && paidMonths.has(monthKey);
-            const isPartial = !isBeforeAdmission && !isPaid && partialMonths.has(monthKey);
-            const bg = isBeforeAdmission
-              ? "#f5f5f5"
-              : isPaid
-                ? "#f6ffed"
-                : isPartial
-                  ? "#fffbe6"
-                  : "#fff2f0";
-            const borderColor = isBeforeAdmission
-              ? "#d9d9d9"
-              : isPaid
-                ? "#b7eb8f"
-                : isPartial
-                  ? "#ffe58f"
-                  : "#ffccc7";
-            const tagText = isBeforeAdmission ? "N/A" : isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
-            const tagColor = isBeforeAdmission
-              ? "default"
-              : isPaid
-                ? "success"
-                : isPartial
-                  ? "warning"
-                  : "error";
+            // MBCS rule: all months always applicable — no N/A state
+            const isPaid = paidMonths.has(monthKey);
+            const isPartial = !isPaid && partialMonths.has(monthKey);
+            const bg = isPaid
+              ? "#f6ffed"
+              : isPartial
+                ? "#fffbe6"
+                : "#fff2f0";
+            const borderColor = isPaid
+              ? "#b7eb8f"
+              : isPartial
+                ? "#ffe58f"
+                : "#ffccc7";
+            const tagText = isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid";
+            const tagColor = isPaid
+              ? "success"
+              : isPartial
+                ? "warning"
+                : "error";
             return (
               <Col span={4} key={monthKey}>
                 <div
@@ -446,10 +466,11 @@ export default function MbcsStudentPaymentHistory() {
           <Row gutter={16}>
             {Object.entries((dueSummary as { breakdown?: Record<string, { due: number; status: string }> }).breakdown ?? {}).map(([type, info]) => {
               if (info.status === "na") return null;
+              const label = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
               return (
                 <Col span={6} key={type}>
                   <Statistic
-                    title={type.charAt(0).toUpperCase() + type.slice(1)}
+                    title={label}
                     value={info.due > 0 ? `৳${info.due.toLocaleString()}` : "No Due"}
                     styles={{ content: { color: info.due > 0 ? "#cf1322" : "#52c41a", fontSize: 16 } }}
                   />
@@ -502,7 +523,7 @@ export default function MbcsStudentPaymentHistory() {
           onChange={setPromoteToClass}
           options={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
             .filter((c) => c > (student?.class ?? -1))
-            .map((c) => ({ label: c === 11 ? 'Graduated (Class 11)' : c === 0 ? 'Nursery (Class 0)' : `Class ${c}`, value: c }))}
+            .map((c) => ({ label: c === 11 ? 'Graduated' : MBCS_CLASS_MAP[c] ?? `Class ${c}`, value: c }))}
         />
       </div>
       <div>

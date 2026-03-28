@@ -13,7 +13,10 @@ export class StaffService {
   }
 
   async findAll(pagination?: PaginationDto) {
-    const where: { isActive: boolean; associationEndDate: null } = { isActive: true, associationEndDate: null };
+    const where: { isActive: boolean; associationEndDate: null } = {
+      isActive: true,
+      associationEndDate: null,
+    };
     const page = pagination?.page ?? 1;
     const limit = pagination?.limit ?? 20;
     const skip = (page - 1) * limit;

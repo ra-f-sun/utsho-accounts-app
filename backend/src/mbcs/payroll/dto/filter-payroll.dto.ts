@@ -1,13 +1,13 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsEnum } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class FilterMbcsPayrollDto extends PaginationDto {
   @IsOptional()
-  @IsString()
+  @IsEnum(['teacher', 'staff'])
   payableType?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   payableId?: string;
 
   @IsOptional()

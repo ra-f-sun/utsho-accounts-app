@@ -150,7 +150,8 @@ export class TeachersService {
 
   async reassociate(id: string) {
     const teacher = await this.prisma.uacTeacher.findUnique({ where: { id } });
-    if (!teacher) throw new NotFoundException(`Teacher with ID ${id} not found`);
+    if (!teacher)
+      throw new NotFoundException(`Teacher with ID ${id} not found`);
     return this.prisma.uacTeacher.update({
       where: { id },
       data: { associationEndDate: null },

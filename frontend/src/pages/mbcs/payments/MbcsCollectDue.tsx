@@ -32,6 +32,7 @@ import type { DueProfile, CollectDueDto, DueSummary } from "../../../services/pa
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import dayjs from "dayjs";
+import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
@@ -239,15 +240,15 @@ export default function MbcsCollectDue() {
 
       <Card title="Step 1 — Select Student">
         <Row gutter={16}>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Class">
               <Select allowClear placeholder="All Classes" value={selectedClass}
                 onChange={(v) => { setSelectedClass(v); setSelectedShift(undefined); setSelectedStudentId(undefined); form.resetFields(); }}
-                options={availableClasses.map((c) => ({ value: c, label: `Class ${c}` }))}
+                options={availableClasses.map((c) => ({ value: c, label: MBCS_CLASS_MAP[c] ?? `Class ${c}` }))}
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Shift">
               <Select allowClear placeholder="All Shifts" value={selectedShift}
                 onChange={(v) => { setSelectedShift(v); setSelectedStudentId(undefined); form.resetFields(); }}
@@ -256,7 +257,7 @@ export default function MbcsCollectDue() {
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Student" required>
               <Select
                 showSearch
@@ -274,7 +275,7 @@ export default function MbcsCollectDue() {
                 suffixIcon={<SearchOutlined />}
                 options={filteredStudents.map((s) => ({
                   value: s.id,
-                  label: `${s.name} — Class ${s.class}${s.shift ? ` (${s.shift})` : ""}`,
+                  label: `${s.name} — ${MBCS_CLASS_MAP[s.class] ?? `Class ${s.class}`}${s.shift ? ` (${s.shift})` : ""}`,
                 }))}
               />
             </Form.Item>
@@ -319,7 +320,7 @@ export default function MbcsCollectDue() {
           <Divider />
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Row gutter={16}>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item label="Amount to Pay (৳)" name="paidAmount"
                   rules={[
                     { required: true, message: "Enter amount" },
@@ -328,17 +329,17 @@ export default function MbcsCollectDue() {
                   <InputNumber style={{ width: "100%" }} min={0.01} max={selectedInvoice.remainingDue} precision={2} prefix="৳" />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item label="Payment Method" name="paymentMethod" rules={[{ required: true }]}>
                   <Select placeholder="Select method" options={PAYMENT_METHODS} />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item label="Payment Date" name="paymentDate" rules={[{ required: true }]} initialValue={dayjs()}>
                   <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
               </Col>
-              <Col xs={24}>
+              <Col span={24}>
                 <Form.Item label="Notes" name="notes">
                   <TextArea rows={2} placeholder="Optional notes..." />
                 </Form.Item>

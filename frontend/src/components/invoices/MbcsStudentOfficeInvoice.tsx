@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import dayjs from "dayjs";
 import type { StudentPaymentInvoiceData } from "./types";
+import { MBCS_CLASS_MAP } from "../../constants/mbcsClasses";
 
 const COLOR = "#7c3aed";
 const COLOR_LIGHT = "#f5f0ff";
@@ -101,9 +102,9 @@ const MbcsStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPayme
                     🏫 Branch: {data.student.branch}
                   </p>
                 )}
-                {data.student.class && (
+                {data.student.class != null && (
                   <p style={{ margin: "2px 0 0", fontSize: 13, color: "#555" }}>
-                    Class {data.student.class}
+                    {MBCS_CLASS_MAP[data.student.class] ?? `Class ${data.student.class}`}
                     {data.student.group ? ` · ${data.student.group}` : ""}
                   </p>
                 )}
@@ -181,6 +182,9 @@ const MbcsStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPayme
                     <td style={{ padding: "8px 12px", color: "#888" }}>{i + 1}</td>
                     <td style={{ padding: "8px 12px", fontWeight: 600 }}>
                       {item.paymentType ? fmt(item.paymentType) : "Tuition"}
+                      {item.paymentType === "study_materials" && item.notes && (
+                        <span style={{ fontWeight: 400, color: "#888", fontSize: 12 }}> — {item.notes}</span>
+                      )}
                     </td>
                     <td style={{ padding: "8px 12px" }}>
                       {dayjs(item.paymentMonth).format("MMM YYYY")}
@@ -192,6 +196,20 @@ const MbcsStudentOfficeInvoice = forwardRef<HTMLDivElement, { data: StudentPayme
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Additional Discount & Due */}
+        {(data.additionalDiscount ?? 0) > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 24px", fontSize: 13, color: "#888" }}>
+            <span>Additional Discount</span>
+            <span>-৳{data.additionalDiscount?.toLocaleString()}</span>
+          </div>
+        )}
+        {(data.dueAmount ?? 0) > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 24px", fontSize: 14, color: "#ff4d4f", fontWeight: 600 }}>
+            <span>Due Amount</span>
+            <span>৳{data.dueAmount?.toLocaleString()}</span>
           </div>
         )}
 

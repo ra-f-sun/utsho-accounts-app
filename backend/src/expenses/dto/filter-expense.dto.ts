@@ -1,9 +1,9 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 export class FilterExpenseDto extends PaginationDto {
   @IsOptional()
-  @IsString()
+  @IsEnum(['uac', 'mbcs', 'mec'])
   organization?: string;
 
   @IsOptional()

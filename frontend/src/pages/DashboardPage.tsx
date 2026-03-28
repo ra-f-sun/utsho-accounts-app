@@ -21,6 +21,7 @@ import {
   DownloadOutlined,
   FilePdfOutlined,
   FileExcelOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import {
   LineChart,
@@ -37,7 +38,10 @@ import {
 } from "recharts";
 import { useAuthStore } from "../stores/authStore";
 import { analyticsService } from "../services/analyticsService";
-import { exportRevenueToExcel, exportDashboardToPDF } from "../utils/exportUtils";
+import {
+  exportRevenueToExcel,
+  exportDashboardToPDF,
+} from "../utils/exportUtils";
 import type {
   RevenueStats,
   MonthlyRevenue,
@@ -45,7 +49,10 @@ import type {
   OutstandingDueSummary,
 } from "../services/analyticsService";
 import dayjs from "dayjs";
-import { Button, App, Dropdown } from "antd";
+import isoWeek from "dayjs/plugin/isoWeek";
+import { Button, App, Dropdown, Radio } from "antd";
+
+dayjs.extend(isoWeek);
 import QueryError from "../components/QueryError";
 
 const { Title } = Typography;
@@ -62,27 +69,66 @@ const COLORS = {
 export default function DashboardPage() {
   const { message } = App.useApp();
   const user = useAuthStore((state) => state.user);
-  
+
   // Determine if user can see all orgs
-  const canSeeAllOrgs = user?.role === "SUPER_ADMIN" || user?.role === "DIRECTOR";
-  
+  const canSeeAllOrgs =
+    user?.role === "SUPER_ADMIN" || user?.role === "DIRECTOR";
+
   // Get default organization for accountants
-  const defaultOrg = user?.role === "ACCOUNTANT_UAC"
-    ? "uac"
-    : user?.role === "ACCOUNTANT_MBCS"
-      ? "mbcs"
-      : user?.role === "ACCOUNTANT_MEC"
-        ? "mec"
-        : undefined;
+  const defaultOrg =
+    user?.role === "ACCOUNTANT_UAC"
+      ? "uac"
+      : user?.role === "ACCOUNTANT_MBCS"
+        ? "mbcs"
+        : user?.role === "ACCOUNTANT_MEC"
+          ? "mec"
+          : undefined;
 
   const [orgFilter, setOrgFilter] = useState<string | undefined>(defaultOrg);
+  const [periodPreset, setPeriodPreset] = useState<string>("yearly");
   const [dateRange, setDateRange] = useState<[string, string]>([
     dayjs().startOf("year").format("YYYY-MM-DD"),
     dayjs().endOf("year").format("YYYY-MM-DD"),
   ]);
 
+  function applyPeriodPreset(preset: string) {
+    setPeriodPreset(preset);
+    const today = dayjs();
+    switch (preset) {
+      case "daily":
+        setDateRange([today.format("YYYY-MM-DD"), today.format("YYYY-MM-DD")]);
+        break;
+      case "weekly":
+        setDateRange([
+          today.startOf("isoWeek").format("YYYY-MM-DD"),
+          today.endOf("isoWeek").format("YYYY-MM-DD"),
+        ]);
+        break;
+      case "monthly":
+        setDateRange([
+          today.startOf("month").format("YYYY-MM-DD"),
+          today.endOf("month").format("YYYY-MM-DD"),
+        ]);
+        break;
+      case "yearly":
+        setDateRange([
+          today.startOf("year").format("YYYY-MM-DD"),
+          today.endOf("year").format("YYYY-MM-DD"),
+        ]);
+        break;
+      default:
+        break;
+    }
+  }
+
   // Fetch revenue stats
-  const { data: revenueData, isLoading: loadingRevenue, isError: revenueIsError, error: revenueError, refetch: refetchRevenue } = useQuery({
+  const {
+    data: revenueData,
+    isLoading: loadingRevenue,
+    isError: revenueIsError,
+    error: revenueError,
+    refetch: refetchRevenue,
+  } = useQuery({
     queryKey: ["analytics-revenue", orgFilter, dateRange],
     queryFn: () =>
       analyticsService.getRevenueStats({
@@ -130,10 +176,22 @@ export default function DashboardPage() {
       analyticsService.getOutstandingDueSummary({ organization: orgFilter }),
   });
 
-  const revenueStats: RevenueStats | RevenueStats[] = useMemo(() => revenueData?.data || [], [revenueData]);
-  const monthlyTrend: MonthlyRevenue[] = useMemo(() => trendData?.data || [], [trendData]);
-  const outstanding: OutstandingPayment[] = useMemo(() => outstandingData?.data || [], [outstandingData]);
-  const dueSummaries: OutstandingDueSummary[] = useMemo(() => dueSummaryData?.data || [], [dueSummaryData]);
+  const revenueStats: RevenueStats | RevenueStats[] = useMemo(
+    () => revenueData?.data || [],
+    [revenueData],
+  );
+  const monthlyTrend: MonthlyRevenue[] = useMemo(
+    () => trendData?.data || [],
+    [trendData],
+  );
+  const outstanding: OutstandingPayment[] = useMemo(
+    () => outstandingData?.data || [],
+    [outstandingData],
+  );
+  const dueSummaries: OutstandingDueSummary[] = useMemo(
+    () => dueSummaryData?.data || [],
+    [dueSummaryData],
+  );
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -175,11 +233,24 @@ export default function DashboardPage() {
         name: stat.organization.toUpperCase(),
         value: stat.studentPayments,
       }))
-    : [{ name: orgFilter?.toUpperCase() || "Total", value: totals.studentPayments }];
+    : [
+        {
+          name: orgFilter?.toUpperCase() || "Total",
+          value: totals.studentPayments,
+        },
+      ];
 
-  const loading = loadingRevenue || loadingTrend || loadingOutstanding || loadingExpense || loadingDueSummary;
+  const loading =
+    loadingRevenue ||
+    loadingTrend ||
+    loadingOutstanding ||
+    loadingExpense ||
+    loadingDueSummary;
 
-  if (revenueIsError) return <QueryError error={revenueError as Error} onRetry={refetchRevenue} />;
+  if (revenueIsError)
+    return (
+      <QueryError error={revenueError as Error} onRetry={refetchRevenue} />
+    );
 
   const outstandingColumns = [
     {
@@ -280,7 +351,10 @@ export default function DashboardPage() {
         <Col>
           <Row gutter={16}>
             <Col>
-              <Dropdown menu={{ items: exportMenuItems }} placement="bottomRight">
+              <Dropdown
+                menu={{ items: exportMenuItems }}
+                placement="bottomRight"
+              >
                 <Button type="primary" icon={<DownloadOutlined />}>
                   Export Report
                 </Button>
@@ -302,10 +376,27 @@ export default function DashboardPage() {
               </Col>
             )}
             <Col>
+              <Radio.Group
+                value={periodPreset}
+                onChange={(e) => applyPeriodPreset(e.target.value)}
+                optionType="button"
+                buttonStyle="solid"
+                size="middle"
+              >
+                <Radio.Button value="daily">
+                  <CalendarOutlined /> Daily
+                </Radio.Button>
+                <Radio.Button value="weekly">Weekly</Radio.Button>
+                <Radio.Button value="monthly">Monthly</Radio.Button>
+                <Radio.Button value="yearly">Yearly</Radio.Button>
+              </Radio.Group>
+            </Col>
+            <Col>
               <RangePicker
                 value={[dayjs(dateRange[0]), dayjs(dateRange[1])]}
                 onChange={(dates) => {
                   if (dates && dates[0] && dates[1]) {
+                    setPeriodPreset("");
                     setDateRange([
                       dates[0].format("YYYY-MM-DD"),
                       dates[1].format("YYYY-MM-DD"),
@@ -366,7 +457,14 @@ export default function DashboardPage() {
                   title="Net Profit"
                   value={totals.netRevenue}
                   prefix="৳"
-                  styles={{ content: { color: totals.netRevenue >= 0 ? COLORS.revenue : COLORS.expense } }}
+                  styles={{
+                    content: {
+                      color:
+                        totals.netRevenue >= 0
+                          ? COLORS.revenue
+                          : COLORS.expense,
+                    },
+                  }}
                   suffix={<DollarOutlined />}
                 />
               </Card>
@@ -375,12 +473,16 @@ export default function DashboardPage() {
 
           {/* Outstanding Due Card (office-only, from partial payments) */}
           {totalNetDue > 0 && (
-            <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
               <Col span={8}>
                 <Card
                   style={{ borderColor: "#ff4d4f", borderWidth: 1 }}
                   styles={{ header: { color: "#ff4d4f" } }}
-                  title={<span style={{ color: "#ff4d4f" }}><WarningOutlined /> Outstanding Dues (Office)</span>}
+                  title={
+                    <span style={{ color: "#ff4d4f" }}>
+                      <WarningOutlined /> Outstanding Dues (Office)
+                    </span>
+                  }
                   size="small"
                 >
                   <Statistic
@@ -388,8 +490,11 @@ export default function DashboardPage() {
                     prefix="৳"
                     styles={{ content: { color: "#ff4d4f", fontSize: 22 } }}
                     suffix={
-                      <span style={{ fontSize: 13, color: "#888", marginLeft: 6 }}>
-                        from {totalStudentsWithDue} student{totalStudentsWithDue !== 1 ? "s" : ""}
+                      <span
+                        style={{ fontSize: 13, color: "#888", marginLeft: 6 }}
+                      >
+                        from {totalStudentsWithDue} student
+                        {totalStudentsWithDue !== 1 ? "s" : ""}
                       </span>
                     }
                   />
@@ -402,7 +507,7 @@ export default function DashboardPage() {
           )}
 
           {/* Charts Row */}
-          <Row gutter={16} style={{ marginBottom: 24 }}>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
             <Col span={16}>
               <Card title="Revenue Trend (Monthly)">
                 <ResponsiveContainer width="100%" height={300}>
@@ -410,7 +515,11 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip formatter={(value) => `৳${Number(value).toLocaleString()}`} />
+                    <Tooltip
+                      formatter={(value) =>
+                        `৳${Number(value).toLocaleString()}`
+                      }
+                    />
                     <Legend />
                     <Line
                       type="monotone"
@@ -454,7 +563,7 @@ export default function DashboardPage() {
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) =>
-                        `${name}: ${(percent * 100).toFixed(0)}%`
+                        `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`
                       }
                       outerRadius={80}
                       fill="#8884d8"
@@ -463,11 +572,19 @@ export default function DashboardPage() {
                       {pieData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={COLORS[entry.name.toLowerCase() as keyof typeof COLORS] || "#8884d8"}
+                          fill={
+                            COLORS[
+                              entry.name.toLowerCase() as keyof typeof COLORS
+                            ] || "#8884d8"
+                          }
                         />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => `৳${Number(value).toLocaleString()}`} />
+                    <Tooltip
+                      formatter={(value) =>
+                        `৳${Number(value).toLocaleString()}`
+                      }
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </Card>
@@ -479,7 +596,9 @@ export default function DashboardPage() {
             <Card
               title={
                 <span>
-                  <WarningOutlined style={{ color: "#fa8c16", marginRight: 8 }} />
+                  <WarningOutlined
+                    style={{ color: "#fa8c16", marginRight: 8 }}
+                  />
                   Outstanding Payments ({outstanding.length} students)
                 </span>
               }
@@ -498,4 +617,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

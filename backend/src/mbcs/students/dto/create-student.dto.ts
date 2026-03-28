@@ -11,26 +11,31 @@ import {
   Matches,
   IsEmail,
 } from 'class-validator';
+import { IsPersonName } from '../../../common/validators/is-person-name.validator';
+import { IsNotFutureDateString } from '../../../common/validators/is-not-future-date-string.validator';
 
 export class CreateStudentDto {
   // === Required fields ===
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   name: string;
 
   @IsEnum(['male', 'female', 'other'])
   gender: string;
 
   @IsDateString()
+  @IsNotFutureDateString({ message: 'Date of birth cannot be in the future' })
   dateOfBirth: string;
 
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(10)
   class: number;
 
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   guardianName: string;
 
   @IsString()
@@ -93,6 +98,7 @@ export class CreateStudentDto {
   // === Optional father information ===
   @IsOptional()
   @IsString()
+  @IsPersonName()
   fatherName?: string;
 
   @IsOptional()
@@ -113,6 +119,7 @@ export class CreateStudentDto {
   // === Optional mother information ===
   @IsOptional()
   @IsString()
+  @IsPersonName()
   motherName?: string;
 
   @IsOptional()

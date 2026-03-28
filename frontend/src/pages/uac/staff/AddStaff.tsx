@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { staffService } from "../../../services/staffService";
 import type { CreateStaffDto } from "../../../services/staffService";
+import { PERSON_NAME_MESSAGE, PERSON_NAME_REGEX } from "../../../utils/validators";
 
 export default function AddStaff() {
   const [form] = Form.useForm();
@@ -82,7 +83,10 @@ export default function AddStaff() {
               <Form.Item
                 label="Full Name"
                 name="name"
-                rules={[{ required: true, message: "Please enter staff name" }]}
+                rules={[
+                  { required: true, message: "Please enter staff name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
+                ]}
               >
                 <Input placeholder="Enter full name" />
               </Form.Item>

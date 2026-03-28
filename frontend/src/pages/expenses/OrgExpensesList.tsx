@@ -144,12 +144,7 @@ export default function OrgExpensesList({ org, basePath, title }: Props) {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <h2 style={{ margin: 0 }}>{title}</h2>
         <Space>

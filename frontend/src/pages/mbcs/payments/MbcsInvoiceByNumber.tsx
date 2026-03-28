@@ -81,11 +81,7 @@ export default function MbcsInvoiceByNumber() {
   return (
     <div>
       <div
-        style={{
-          marginBottom: 16,
-          display: "flex",
-          justifyContent: "space-between",
-        }}
+        style={{ marginBottom: 16, display: "flex", justifyContent: "space-between" }}
       >
         <Button
           icon={<ArrowLeftOutlined />}

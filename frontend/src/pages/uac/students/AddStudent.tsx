@@ -21,8 +21,13 @@ import type { CreateStudentDto } from "../../../services/studentsService";
 import settingsService, {
   type OrgSetting,
 } from "../../../services/settingsService";
-import { UAC_CLASSES } from "../../../constants/uacClasses";
+import { UAC_ADMISSION_CLASSES } from "../../../constants/uacClasses";
 import dayjs from "dayjs";
+import {
+  PERSON_NAME_MESSAGE,
+  PERSON_NAME_REGEX,
+  disableFutureDate,
+} from "../../../utils/validators";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -40,6 +45,14 @@ export default function AddStudent() {
   const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
   const [admissionDiscounts, setAdmissionDiscounts] = useState<number[]>([]);
   const [readmissionDiscounts, setReadmissionDiscounts] = useState<number[]>([]);
+  const selectedClass = Form.useWatch("class", form);
+  const isGroupDisabled = typeof selectedClass !== "number" || selectedClass < 9;
+
+  useEffect(() => {
+    if (typeof selectedClass === "number" && selectedClass < 9) {
+      form.setFieldValue("group", undefined);
+    }
+  }, [selectedClass, form]);
 
   useEffect(() => {
     void settingsService.getAllSettings("uac").then((rows) => {
@@ -135,18 +148,23 @@ export default function AddStudent() {
     dateOfBirth?: ReturnType<typeof dayjs>;
     admissionDate?: ReturnType<typeof dayjs>;
   }) => {
-    const data = {
+    const raw = {
       ...values,
+      ...(typeof values.class === "number" && values.class < 9 ? { group: undefined } : {}),
       dateOfBirth: values.dateOfBirth?.format("YYYY-MM-DD"),
       admissionDate: values.admissionDate?.format("YYYY-MM-DD"),
       discountTuition: values.discountTuition ?? 0,
       discountAdmission: values.discountAdmission ?? 0,
       discountReadmission: values.discountReadmission ?? 0,
     };
+    // Strip empty strings to undefined so optional backend validators don't reject ""
+    const data = Object.fromEntries(
+      Object.entries(raw).map(([k, v]) => [k, v === "" ? undefined : v]),
+    );
     if (isEditMode) {
       updateMutation.mutate(data);
     } else {
-      createMutation.mutate(data as CreateStudentDto);
+      createMutation.mutate(data as unknown as CreateStudentDto);
     }
   };
 
@@ -173,6 +191,7 @@ export default function AddStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter student name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Enter full name" />
@@ -199,7 +218,11 @@ export default function AddStudent() {
                   { required: true, message: "Please select date of birth" },
                 ]}
               >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabledDate={disableFutureDate}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -218,7 +241,7 @@ export default function AddStudent() {
                   placeholder="Select class"
                   onChange={(cls: number) => onClassChange(cls)}
                 >
-                  {UAC_CLASSES.map(({ value: cls, label }) => (
+                  {UAC_ADMISSION_CLASSES.map(({ value: cls, label }) => (
                     <Option key={cls} value={cls}>
                       {label}
                     </Option>
@@ -228,7 +251,15 @@ export default function AddStudent() {
             </Col>
             <Col span={6}>
               <Form.Item label="Group" name="group">
-                <Select placeholder="Select group" allowClear>
+                <Select
+                  placeholder={
+                    isGroupDisabled
+                      ? "Available for class 9 and above"
+                      : "Select group"
+                  }
+                  allowClear
+                  disabled={isGroupDisabled}
+                >
                   <Option value="science">Science</Option>
                   <Option value="business">Business</Option>
                 </Select>
@@ -296,7 +327,11 @@ export default function AddStudent() {
         <Card title="Father Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Father's Name" name="fatherName">
+              <Form.Item
+                label="Father's Name"
+                name="fatherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input placeholder="Father's full name" />
               </Form.Item>
             </Col>
@@ -326,7 +361,11 @@ export default function AddStudent() {
         <Card title="Mother Information" style={{ marginBottom: 16 }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Mother's Name" name="motherName">
+              <Form.Item
+                label="Mother's Name"
+                name="motherName"
+                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+              >
                 <Input placeholder="Mother's full name" />
               </Form.Item>
             </Col>
@@ -361,6 +400,7 @@ export default function AddStudent() {
                 name="guardianName"
                 rules={[
                   { required: true, message: "Please enter guardian name" },
+                  { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
                 <Input placeholder="Primary contact person" />

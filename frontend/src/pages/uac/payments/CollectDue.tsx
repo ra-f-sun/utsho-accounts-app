@@ -259,7 +259,7 @@ export default function CollectDue() {
       {/* Step 1: Select Student */}
       <Card title="Step 1 — Select Student">
         <Row gutter={16}>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Class">
               <Select
                 allowClear
@@ -275,7 +275,7 @@ export default function CollectDue() {
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Group">
               <Select
                 allowClear
@@ -291,7 +291,7 @@ export default function CollectDue() {
               />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col span={8}>
             <Form.Item label="Student" required>
               <Select
                 placeholder="Search student..."
@@ -364,7 +364,7 @@ export default function CollectDue() {
 
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Row gutter={16}>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item
                   label="Amount to Pay (৳)"
                   name="paidAmount"
@@ -389,7 +389,7 @@ export default function CollectDue() {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item
                   label="Payment Method"
                   name="paymentMethod"
@@ -401,7 +401,7 @@ export default function CollectDue() {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={24} sm={8}>
+              <Col span={8}>
                 <Form.Item
                   label="Payment Date"
                   name="paymentDate"
@@ -411,7 +411,7 @@ export default function CollectDue() {
                   <DatePicker style={{ width: "100%" }} />
                 </Form.Item>
               </Col>
-              <Col xs={24}>
+              <Col span={24}>
                 <Form.Item label="Notes" name="notes">
                   <TextArea rows={2} placeholder="Optional notes..." />
                 </Form.Item>

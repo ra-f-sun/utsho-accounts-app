@@ -9,10 +9,13 @@ import {
   IsArray,
   ValidateIf,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsPersonName } from '../../../common/validators/is-person-name.validator';
 
 export class CreateTeacherDto {
   @IsString()
   @MinLength(2)
+  @IsPersonName()
   name: string;
 
   @IsString()
@@ -25,12 +28,14 @@ export class CreateTeacherDto {
   paymentType: string;
 
   @ValidateIf((o) => o.paymentType === 'fixed')
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({ allowNaN: false, allowInfinity: false })
   @Min(0)
   monthlySalary?: number;
 
   @ValidateIf((o) => o.paymentType === 'lecture_based')
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({ allowNaN: false, allowInfinity: false })
   @Min(0)
   perLectureRate?: number;
 

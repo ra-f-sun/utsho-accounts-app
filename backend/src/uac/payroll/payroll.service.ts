@@ -204,7 +204,11 @@ export class PayrollService {
   /**
    * Collect outstanding due on an existing payroll record (Feature 6B)
    */
-  async collectDue(payrollId: string, dto: CollectPayrollDueDto, createdBy: string) {
+  async collectDue(
+    payrollId: string,
+    dto: CollectPayrollDueDto,
+    createdBy: string,
+  ) {
     const original = await this.prisma.uacPayroll.findFirst({
       where: { id: payrollId, isActive: true, isDueCollection: false },
     });
