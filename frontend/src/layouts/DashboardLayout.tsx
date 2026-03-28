@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Layout, Menu, Avatar, Dropdown, Button, Tooltip, Badge } from "antd";
+import { Layout, Menu, Avatar, Dropdown, Button, Tooltip, Badge, Modal } from "antd";
 import {
   DashboardOutlined,
   UsergroupAddOutlined,
@@ -43,7 +43,7 @@ function roleColor(role = "") {
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, sessionExpired, clearSessionExpired } = useAuthStore();
   const searchRef = useRef<HTMLInputElement>(null);
 
   /* ── Collapse state ── */
@@ -514,6 +514,29 @@ export default function DashboardLayout() {
           </div>
         </Content>
       </Layout>
+
+      {/* Session-expired modal — shown instead of hard redirect so users don't lose form data */}
+      <Modal
+        open={sessionExpired}
+        title="Session Expired"
+        closable={false}
+        maskClosable={false}
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              clearSessionExpired();
+              logout();
+              navigate("/login");
+            }}
+          >
+            Log In Again
+          </Button>
+        }
+      >
+        Your session has expired. Please log in again to continue. Any unsaved
+        work on the current page will remain until you navigate away.
+      </Modal>
     </Layout>
   );
 }

@@ -13,8 +13,11 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  sessionExpired: boolean;
   setAuth: (user: User, token: string) => void;
   logout: () => void;
+  markSessionExpired: () => void;
+  clearSessionExpired: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,11 +26,18 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      sessionExpired: false,
       setAuth: (user, token) => {
-        set({ user, token, isAuthenticated: true });
+        set({ user, token, isAuthenticated: true, sessionExpired: false });
       },
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false, sessionExpired: false });
+      },
+      markSessionExpired: () => {
+        set({ sessionExpired: true });
+      },
+      clearSessionExpired: () => {
+        set({ sessionExpired: false });
       },
     }),
     {
@@ -36,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
+        // sessionExpired is intentionally not persisted — always starts false
       }),
     },
   ),

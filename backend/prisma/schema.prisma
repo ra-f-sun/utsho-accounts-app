@@ -14,16 +14,36 @@ datasource db {
 // ============================================
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  fullName     String
-  role         Role
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  role          Role
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+  uacPayments   UacPayment[]   @relation("UacPaymentCreator")
+  uacPayrolls   UacPayroll[]   @relation("UacPayrollCreator")
+  mbcsPayments  MbcsPayment[]  @relation("MbcsPaymentCreator")
+  mbcsPayrolls  MbcsPayroll[]  @relation("MbcsPayrollCreator")
+  mecPayments   MecPayment[]   @relation("MecPaymentCreator")
+  expenses      Expense[]      @relation("ExpenseCreator")
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 enum Role {
@@ -196,6 +216,7 @@ model UacPayment {
   invoiceNumber String     @unique
   notes         String? // Description when paymentType is 'other'
   createdBy     String // FK → users.id (audit trail)
+  createdByUser User       @relation("UacPaymentCreator", fields: [createdBy], references: [id])
   createdAt     DateTime   @default(now())
   isActive      Boolean    @default(true)
   updatedAt     DateTime   @updatedAt
@@ -245,6 +266,7 @@ model UacPayroll {
   invoiceNumber String   @unique
   notes         String?
   createdBy     String // FK → users.id (audit trail)
+  createdByUser User       @relation("UacPayrollCreator", fields: [createdBy], references: [id])
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
@@ -359,6 +381,7 @@ model MbcsPayment {
   invoiceNumber String      @unique
   notes         String?
   createdBy     String // FK → users.id
+  createdByUser User      @relation("MbcsPaymentCreator", fields: [createdBy], references: [id])
   createdAt     DateTime    @default(now())
   isActive      Boolean     @default(true)
   updatedAt     DateTime    @updatedAt
@@ -408,6 +431,7 @@ model MbcsPayroll {
   invoiceNumber String   @unique
   notes         String?
   createdBy     String // FK → users.id
+  createdByUser User      @relation("MbcsPayrollCreator", fields: [createdBy], references: [id])
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
@@ -487,6 +511,7 @@ model MecPayment {
   invoiceNumber String     @unique
   notes         String?
   createdBy     String // FK → users.id
+  createdByUser User       @relation("MecPaymentCreator", fields: [createdBy], references: [id])
   createdAt     DateTime   @default(now())
   isActive      Boolean    @default(true)
   updatedAt     DateTime   @updatedAt
@@ -543,6 +568,7 @@ model Expense {
   paymentMethod PaymentMethod
   notes         String?
   createdBy     String // FK → users.id
+  createdByUser User             @relation("ExpenseCreator", fields: [createdBy], references: [id])
   createdAt     DateTime @default(now())
   isActive      Boolean  @default(true)
   updatedAt     DateTime @updatedAt
