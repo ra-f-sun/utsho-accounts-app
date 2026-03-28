@@ -27,6 +27,7 @@ import type { CreateMbcsMultiPaymentDto } from "../../../services/mbcsPaymentsSe
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import axios from "axios";
 import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
@@ -90,6 +91,18 @@ export default function MbcsRecordPayment() {
   });
   const lateFeeAmount: number =
     (lateFeeData as { settingValue?: { value?: number } } | null)?.settingValue?.value ?? 0;
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["mbcs-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("mbcs", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   // Fetch all students
   const { data: studentsData } = useQuery({
@@ -396,10 +409,9 @@ export default function MbcsRecordPayment() {
                 ]}
               >
                 <Select placeholder="Select payment method">
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>

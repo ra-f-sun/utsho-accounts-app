@@ -27,6 +27,7 @@ import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { studentsService } from "../../../services/studentsService";
 import type { Student } from "../../../services/studentsService";
 import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -133,6 +134,18 @@ export default function RecordPayment() {
     queryFn: () => settingsService.getSetting("uac", "invoice_mode"),
   });
   const invoiceMode = (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["uac-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("uac", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   // Watch form values for live totals
   const formLineItems = Form.useWatch("lineItems", form);
@@ -382,10 +395,9 @@ export default function RecordPayment() {
                 ]}
               >
                 <Select placeholder="Select payment method">
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>

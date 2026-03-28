@@ -25,6 +25,7 @@ import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import axios from "axios";
 import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -72,6 +73,18 @@ export default function MecRecordPayment() {
   });
   const invoiceMode =
     (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["mec-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("mec", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   // Auto-populate from URL ?studentId=
   useEffect(() => {
@@ -276,10 +289,9 @@ export default function MecRecordPayment() {
                 rules={[{ required: true, message: "Required" }]}
               >
                 <Select>
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
