@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PayableType, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
@@ -61,6 +61,8 @@ export class PayrollService {
       return tx.mbcsPayroll.create({
         data: {
           ...createPayrollDto,
+          payableType: createPayrollDto.payableType as PayableType,
+          paymentMethod: createPayrollDto.paymentMethod as PaymentMethod,
           paymentMonth: new Date(createPayrollDto.paymentMonth),
           paymentDate: new Date(createPayrollDto.paymentDate),
           invoiceNumber,
@@ -80,7 +82,7 @@ export class PayrollService {
   ) {
     const where: Prisma.MbcsPayrollWhereInput = { isActive: true };
 
-    if (payableType) where.payableType = payableType;
+    if (payableType) where.payableType = payableType as PayableType;
     if (payableId) where.payableId = payableId;
     if (paymentMonth) where.paymentMonth = new Date(paymentMonth);
 
@@ -116,7 +118,12 @@ export class PayrollService {
   async update(id: string, updatePayrollDto: UpdatePayrollDto) {
     await this.findOne(id);
 
-    const data: Prisma.MbcsPayrollUpdateInput = { ...updatePayrollDto };
+    const { payableType, paymentMethod, ...rest } = updatePayrollDto;
+    const data: Prisma.MbcsPayrollUpdateInput = {
+      ...rest,
+      ...(payableType && { payableType: payableType as PayableType }),
+      ...(paymentMethod && { paymentMethod: paymentMethod as PaymentMethod }),
+    };
     if (updatePayrollDto.paymentMonth) {
       data.paymentMonth = new Date(updatePayrollDto.paymentMonth);
     }
@@ -229,7 +236,7 @@ export class PayrollService {
           amount: dto.paidAmount,
           totalLectures: null,
           paymentDate: new Date(dto.paymentDate),
-          paymentMethod: dto.paymentMethod,
+          paymentMethod: dto.paymentMethod as PaymentMethod,
           invoiceNumber: newInvoiceNumber,
           notes: dto.notes,
           createdBy,
@@ -248,7 +255,7 @@ export class PayrollService {
   ) {
     const existing = await this.prisma.mbcsPayroll.findFirst({
       where: {
-        payableType,
+        payableType: payableType as PayableType,
         payableId,
         paymentMonth: new Date(paymentMonth),
         isActive: true,

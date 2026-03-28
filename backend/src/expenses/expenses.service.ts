@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ExpenseType, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -13,6 +13,8 @@ export class ExpensesService {
     return this.prisma.expense.create({
       data: {
         ...createExpenseDto,
+        expenseType: createExpenseDto.expenseType as ExpenseType,
+        paymentMethod: createExpenseDto.paymentMethod as PaymentMethod,
         expenseMonth: new Date(createExpenseDto.expenseMonth),
         paymentDate: new Date(createExpenseDto.paymentDate),
         createdBy,
@@ -33,7 +35,7 @@ export class ExpensesService {
     }
 
     if (expenseType) {
-      where.expenseType = expenseType;
+      where.expenseType = expenseType as ExpenseType;
     }
 
     if (expenseMonth) {
@@ -88,7 +90,12 @@ export class ExpensesService {
     // Check if expense exists
     await this.findOne(id);
 
-    const data: Prisma.ExpenseUpdateInput = { ...updateExpenseDto };
+    const { expenseType, paymentMethod: pm, ...rest } = updateExpenseDto;
+    const data: Prisma.ExpenseUpdateInput = {
+      ...rest,
+      ...(expenseType && { expenseType: expenseType as ExpenseType }),
+      ...(pm && { paymentMethod: pm as PaymentMethod }),
+    };
     if (updateExpenseDto.expenseMonth) {
       data.expenseMonth = new Date(updateExpenseDto.expenseMonth);
     }

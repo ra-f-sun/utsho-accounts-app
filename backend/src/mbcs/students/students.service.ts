@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Gender, Shift } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -14,6 +14,8 @@ export class StudentsService {
   async create(createStudentDto: CreateStudentDto) {
     const data: Prisma.MbcsStudentCreateInput = {
       ...createStudentDto,
+      gender: createStudentDto.gender as Gender,
+      shift: createStudentDto.shift as Shift | undefined,
       dateOfBirth: new Date(createStudentDto.dateOfBirth),
       admissionDate: createStudentDto.admissionDate
         ? new Date(createStudentDto.admissionDate)
@@ -29,6 +31,8 @@ export class StudentsService {
         this.prisma.mbcsStudent.create({
           data: {
             ...dto,
+            gender: dto.gender as Gender,
+            shift: dto.shift as Shift | undefined,
             dateOfBirth: new Date(dto.dateOfBirth),
             admissionDate: dto.admissionDate
               ? new Date(dto.admissionDate)
@@ -47,7 +51,7 @@ export class StudentsService {
     }
 
     if (filters?.shift) {
-      where.shift = filters.shift;
+      where.shift = filters.shift as Shift;
     }
 
     if (filters?.branch) {
@@ -95,7 +99,12 @@ export class StudentsService {
   async update(id: string, updateStudentDto: UpdateStudentDto) {
     await this.findOne(id);
 
-    const data: Prisma.MbcsStudentUpdateInput = { ...updateStudentDto };
+    const { gender, shift, ...rest } = updateStudentDto;
+    const data: Prisma.MbcsStudentUpdateInput = {
+      ...rest,
+      ...(gender && { gender: gender as Gender }),
+      ...(shift && { shift: shift as Shift }),
+    };
 
     if (updateStudentDto.dateOfBirth) {
       data.dateOfBirth = new Date(updateStudentDto.dateOfBirth);

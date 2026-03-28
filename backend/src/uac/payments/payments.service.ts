@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, UacPaymentType, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -130,6 +130,8 @@ export class PaymentsService {
       const payment = await tx.uacPayment.create({
         data: {
           ...createPaymentDto,
+          paymentType: createPaymentDto.paymentType as UacPaymentType,
+          paymentMethod: createPaymentDto.paymentMethod as PaymentMethod,
           invoiceNumber,
           createdBy,
         },
@@ -157,7 +159,7 @@ export class PaymentsService {
     }
 
     if (filters?.paymentType) {
-      where.paymentType = filters.paymentType;
+      where.paymentType = filters.paymentType as UacPaymentType;
     }
 
     if (filters?.paymentMonth) {
@@ -165,7 +167,7 @@ export class PaymentsService {
     }
 
     if (filters?.paymentMethod) {
-      where.paymentMethod = filters.paymentMethod;
+      where.paymentMethod = filters.paymentMethod as PaymentMethod;
     }
 
     const page = pagination?.page ?? 1;
@@ -236,9 +238,14 @@ export class PaymentsService {
     // Check if payment exists
     await this.findOne(id);
 
+    const { paymentType, paymentMethod, ...rest } = updatePaymentDto;
     return this.prisma.uacPayment.update({
       where: { id },
-      data: updatePaymentDto,
+      data: {
+        ...rest,
+        ...(paymentType && { paymentType: paymentType as UacPaymentType }),
+        ...(paymentMethod && { paymentMethod: paymentMethod as PaymentMethod }),
+      },
       include: {
         student: {
           select: {
@@ -347,11 +354,11 @@ export class PaymentsService {
           tx.uacPayment.create({
             data: {
               studentId: dto.studentId,
-              paymentType: item.paymentType,
+              paymentType: item.paymentType as UacPaymentType,
               amount: item.amount,
               paymentMonth: new Date(item.paymentMonth),
               paymentDate: new Date(dto.paymentDate),
-              paymentMethod: dto.paymentMethod,
+              paymentMethod: dto.paymentMethod as PaymentMethod,
               notes: item.notes,
               invoiceNumber,
               createdBy,
@@ -568,11 +575,11 @@ export class PaymentsService {
           return tx.uacPayment.create({
             data: {
               studentId: originalRow.studentId,
-              paymentType: item.paymentType,
+              paymentType: item.paymentType as UacPaymentType,
               amount: item.paidAmount,
               paymentMonth: originalRow.paymentMonth,
               paymentDate: new Date(dto.paymentDate),
-              paymentMethod: dto.paymentMethod,
+              paymentMethod: dto.paymentMethod as PaymentMethod,
               notes: dto.notes,
               invoiceNumber: newInvoiceNumber,
               createdBy,

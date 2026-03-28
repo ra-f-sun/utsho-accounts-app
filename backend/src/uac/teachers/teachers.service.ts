@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TeacherSalaryType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -35,7 +35,10 @@ export class TeachersService {
     }
 
     return this.prisma.uacTeacher.create({
-      data: createTeacherDto,
+      data: {
+        ...createTeacherDto,
+        paymentType: createTeacherDto.paymentType as TeacherSalaryType,
+      },
     });
   }
 
@@ -47,7 +50,7 @@ export class TeachersService {
 
     // Filter by payment type
     if (filters?.paymentType) {
-      where.paymentType = filters.paymentType;
+      where.paymentType = filters.paymentType as TeacherSalaryType;
     }
 
     // Search by name or contact
@@ -116,9 +119,13 @@ export class TeachersService {
       );
     }
 
+    const { paymentType, ...rest } = updateTeacherDto;
     return this.prisma.uacTeacher.update({
       where: { id },
-      data: updateTeacherDto,
+      data: {
+        ...rest,
+        ...(paymentType && { paymentType: paymentType as TeacherSalaryType }),
+      },
     });
   }
 

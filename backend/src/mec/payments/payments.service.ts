@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { CreateMecPaymentDto } from './dto/create-payment.dto';
@@ -41,6 +41,7 @@ export class MecPaymentsService {
       const payment = await tx.mecPayment.create({
         data: {
           ...createPaymentDto,
+          paymentMethod: createPaymentDto.paymentMethod as PaymentMethod,
           paymentMonth: new Date(createPaymentDto.paymentMonth),
           paymentDate: new Date(createPaymentDto.paymentDate),
           invoiceNumber,
@@ -73,7 +74,7 @@ export class MecPaymentsService {
     }
 
     if (filters?.paymentMethod) {
-      where.paymentMethod = filters.paymentMethod;
+      where.paymentMethod = filters.paymentMethod as PaymentMethod;
     }
 
     const page = pagination?.page ?? 1;
@@ -140,7 +141,11 @@ export class MecPaymentsService {
   async update(id: string, updatePaymentDto: UpdateMecPaymentDto) {
     await this.findOne(id);
 
-    const data: Prisma.MecPaymentUpdateInput = { ...updatePaymentDto };
+    const { paymentMethod, ...rest } = updatePaymentDto;
+    const data: Prisma.MecPaymentUpdateInput = {
+      ...rest,
+      ...(paymentMethod && { paymentMethod: paymentMethod as PaymentMethod }),
+    };
     if (updatePaymentDto.paymentMonth) {
       data.paymentMonth = new Date(updatePaymentDto.paymentMonth);
     }
@@ -244,7 +249,7 @@ export class MecPaymentsService {
               amount: item.amount,
               paymentMonth: new Date(item.paymentMonth),
               paymentDate: new Date(dto.paymentDate),
-              paymentMethod: dto.paymentMethod,
+              paymentMethod: dto.paymentMethod as PaymentMethod,
               notes: item.notes,
               invoiceNumber,
               createdBy,
@@ -416,7 +421,7 @@ export class MecPaymentsService {
           amount: dto.paidAmount,
           paymentMonth: originalRow.paymentMonth,
           paymentDate: new Date(dto.paymentDate),
-          paymentMethod: dto.paymentMethod,
+          paymentMethod: dto.paymentMethod as PaymentMethod,
           notes: dto.notes,
           invoiceNumber: newInvoiceNumber,
           createdBy,

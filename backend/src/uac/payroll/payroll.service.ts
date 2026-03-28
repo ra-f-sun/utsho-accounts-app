@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PayableType, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
@@ -64,6 +64,8 @@ export class PayrollService {
       const payroll = await tx.uacPayroll.create({
         data: {
           ...createPayrollDto,
+          payableType: createPayrollDto.payableType as PayableType,
+          paymentMethod: createPayrollDto.paymentMethod as PaymentMethod,
           paymentMonth: new Date(createPayrollDto.paymentMonth),
           paymentDate: new Date(createPayrollDto.paymentDate),
           invoiceNumber,
@@ -86,7 +88,7 @@ export class PayrollService {
     const where: Prisma.UacPayrollWhereInput = { isActive: true };
 
     if (payableType) {
-      where.payableType = payableType;
+      where.payableType = payableType as PayableType;
     }
 
     if (payableId) {
@@ -130,7 +132,12 @@ export class PayrollService {
     // Check if payroll exists
     await this.findOne(id);
 
-    const data: Prisma.UacPayrollUpdateInput = { ...updatePayrollDto };
+    const { payableType, paymentMethod, ...rest } = updatePayrollDto;
+    const data: Prisma.UacPayrollUpdateInput = {
+      ...rest,
+      ...(payableType && { payableType: payableType as PayableType }),
+      ...(paymentMethod && { paymentMethod: paymentMethod as PaymentMethod }),
+    };
     if (updatePayrollDto.paymentMonth) {
       data.paymentMonth = new Date(updatePayrollDto.paymentMonth);
     }
@@ -252,7 +259,7 @@ export class PayrollService {
           amount: dto.paidAmount,
           totalLectures: null,
           paymentDate: new Date(dto.paymentDate),
-          paymentMethod: dto.paymentMethod,
+          paymentMethod: dto.paymentMethod as PaymentMethod,
           invoiceNumber: newInvoiceNumber,
           notes: dto.notes,
           createdBy,
@@ -275,7 +282,7 @@ export class PayrollService {
   ) {
     const existing = await this.prisma.uacPayroll.findFirst({
       where: {
-        payableType,
+        payableType: payableType as PayableType,
         payableId,
         paymentMonth: new Date(paymentMonth),
         isActive: true,

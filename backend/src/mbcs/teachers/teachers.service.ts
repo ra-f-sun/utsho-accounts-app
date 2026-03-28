@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TeacherSalaryType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -11,14 +11,19 @@ export class TeachersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createTeacherDto: CreateTeacherDto) {
-    return this.prisma.mbcsTeacher.create({ data: createTeacherDto });
+    return this.prisma.mbcsTeacher.create({
+      data: {
+        ...createTeacherDto,
+        paymentType: createTeacherDto.paymentType as TeacherSalaryType,
+      },
+    });
   }
 
   async findAll(filters?: FilterTeacherDto, pagination?: PaginationDto) {
     const where: Prisma.MbcsTeacherWhereInput = { isActive: true, associationEndDate: null };
 
     if (filters?.paymentType) {
-      where.paymentType = filters.paymentType;
+      where.paymentType = filters.paymentType as TeacherSalaryType;
     }
 
     const page = pagination?.page ?? 1;
@@ -51,9 +56,13 @@ export class TeachersService {
   async update(id: string, updateTeacherDto: UpdateTeacherDto) {
     await this.findOne(id);
 
+    const { paymentType, ...rest } = updateTeacherDto;
     return this.prisma.mbcsTeacher.update({
       where: { id },
-      data: updateTeacherDto,
+      data: {
+        ...rest,
+        ...(paymentType && { paymentType: paymentType as TeacherSalaryType }),
+      },
     });
   }
 

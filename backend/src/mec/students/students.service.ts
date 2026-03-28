@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Gender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateMecStudentDto } from './dto/create-student.dto';
 import { UpdateMecStudentDto } from './dto/update-student.dto';
@@ -14,6 +14,7 @@ export class MecStudentsService {
   async create(createStudentDto: CreateMecStudentDto) {
     const data: Prisma.MecStudentCreateInput = {
       ...createStudentDto,
+      gender: createStudentDto.gender as Gender,
       dateOfBirth: new Date(createStudentDto.dateOfBirth),
       admissionDate: createStudentDto.admissionDate
         ? new Date(createStudentDto.admissionDate)
@@ -29,6 +30,7 @@ export class MecStudentsService {
         this.prisma.mecStudent.create({
           data: {
             ...dto,
+            gender: dto.gender as Gender,
             dateOfBirth: new Date(dto.dateOfBirth),
             admissionDate: dto.admissionDate
               ? new Date(dto.admissionDate)
@@ -89,7 +91,11 @@ export class MecStudentsService {
   async update(id: string, updateStudentDto: UpdateMecStudentDto) {
     await this.findOne(id);
 
-    const data: Prisma.MecStudentUpdateInput = { ...updateStudentDto };
+    const { gender, ...rest } = updateStudentDto;
+    const data: Prisma.MecStudentUpdateInput = {
+      ...rest,
+      ...(gender && { gender: gender as Gender }),
+    };
 
     if (updateStudentDto.dateOfBirth) {
       data.dateOfBirth = new Date(updateStudentDto.dateOfBirth);

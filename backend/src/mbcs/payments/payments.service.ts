@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, MbcsPaymentType, PaymentMethod } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -129,6 +129,8 @@ export class PaymentsService {
       const payment = await tx.mbcsPayment.create({
         data: {
           ...createPaymentDto,
+          paymentType: createPaymentDto.paymentType as MbcsPaymentType,
+          paymentMethod: createPaymentDto.paymentMethod as PaymentMethod,
           invoiceNumber,
           createdBy,
         },
@@ -156,7 +158,7 @@ export class PaymentsService {
     }
 
     if (filters?.paymentType) {
-      where.paymentType = filters.paymentType;
+      where.paymentType = filters.paymentType as MbcsPaymentType;
     }
 
     if (filters?.paymentMonth) {
@@ -164,7 +166,7 @@ export class PaymentsService {
     }
 
     if (filters?.paymentMethod) {
-      where.paymentMethod = filters.paymentMethod;
+      where.paymentMethod = filters.paymentMethod as PaymentMethod;
     }
 
     const page = pagination?.page ?? 1;
@@ -232,9 +234,16 @@ export class PaymentsService {
   async update(id: string, updatePaymentDto: UpdatePaymentDto) {
     await this.findOne(id);
 
+    const { paymentType, paymentMethod, ...rest } = updatePaymentDto;
+    const data: Prisma.MbcsPaymentUpdateInput = {
+      ...rest,
+      ...(paymentType && { paymentType: paymentType as MbcsPaymentType }),
+      ...(paymentMethod && { paymentMethod: paymentMethod as PaymentMethod }),
+    };
+
     return this.prisma.mbcsPayment.update({
       where: { id },
-      data: updatePaymentDto,
+      data,
       include: {
         student: {
           select: { id: true, name: true, class: true, shift: true },
@@ -336,11 +345,11 @@ export class PaymentsService {
           tx.mbcsPayment.create({
             data: {
               studentId: dto.studentId,
-              paymentType: item.paymentType,
+              paymentType: item.paymentType as MbcsPaymentType,
               amount: item.amount,
               paymentMonth: new Date(item.paymentMonth),
               paymentDate: new Date(dto.paymentDate),
-              paymentMethod: dto.paymentMethod,
+              paymentMethod: dto.paymentMethod as PaymentMethod,
               notes: item.notes,
               invoiceNumber,
               createdBy,
@@ -549,11 +558,11 @@ export class PaymentsService {
           return tx.mbcsPayment.create({
             data: {
               studentId: originalRow.studentId,
-              paymentType: item.paymentType,
+              paymentType: item.paymentType as MbcsPaymentType,
               amount: item.paidAmount,
               paymentMonth: originalRow.paymentMonth,
               paymentDate: new Date(dto.paymentDate),
-              paymentMethod: dto.paymentMethod,
+              paymentMethod: dto.paymentMethod as PaymentMethod,
               notes: dto.notes,
               invoiceNumber: newInvoiceNumber,
               createdBy,
