@@ -69,9 +69,9 @@ export default function TeacherPayrollHistory() {
   const teacher = teacherData?.data;
 
   const { data: payrollData, isLoading: loadingPayroll, isError: payrollIsError, error: payrollError, refetch: refetchPayroll } = useQuery({
-    queryKey: ["payroll", { payableId: id, payableType: "teacher" }],
+    queryKey: ["uac", "payroll", { payableId: id, payableType: "teacher" }],
     queryFn: () =>
-      payrollService.getAll({
+      payrollService.getAll("uac", {
         payableId: id,
         payableType: "teacher",
       }, 1, 1000),
@@ -91,7 +91,7 @@ export default function TeacherPayrollHistory() {
     try {
       const values = await collectDueForm.validateFields();
       setCollectingDue(true);
-      await payrollService.collectDue(collectDueRecord!.id, {
+      await payrollService.collectDue("uac", collectDueRecord!.id, {
         paidAmount: values.paidAmount,
         paymentDate: values.paymentDate.toISOString(),
         paymentMethod: values.paymentMethod,
@@ -100,7 +100,7 @@ export default function TeacherPayrollHistory() {
       message.success("Due collected successfully!");
       setCollectDueRecord(null);
       collectDueForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payroll"] });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data?.message) message.error(err.response.data.message);
     } finally {

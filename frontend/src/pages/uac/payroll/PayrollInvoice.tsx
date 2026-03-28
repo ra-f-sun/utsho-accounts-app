@@ -20,8 +20,8 @@ export default function PayrollInvoice() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["payroll-record", id],
-    queryFn: () => payrollService.getOne(id!),
+    queryKey: ["uac", "payroll-record", id],
+    queryFn: () => payrollService.getOne("uac", id!),
     enabled: !!id,
   });
 

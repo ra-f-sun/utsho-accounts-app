@@ -36,8 +36,8 @@ export default function PayrollList() {
 
   // Fetch payroll with filters
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["payroll", filters, page],
-    queryFn: () => payrollService.getAll(filters, page),
+    queryKey: ["uac", "payroll", filters, page],
+    queryFn: () => payrollService.getAll("uac", filters, page),
   });
 
   const payrolls: Payroll[] = data?.data?.data || [];
@@ -45,10 +45,10 @@ export default function PayrollList() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => payrollService.delete(id),
+    mutationFn: (id: string) => payrollService.delete("uac", id),
     onSuccess: () => {
       msg.success("Payroll deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payroll"] });
     },
     onError: () => {
       msg.error("Failed to delete payroll");
@@ -58,12 +58,12 @@ export default function PayrollList() {
   // Collect due mutation
   const collectDueMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string } }) =>
-      payrollService.collectDue(id, data),
+      payrollService.collectDue("uac", id, data),
     onSuccess: () => {
       msg.success("Due collected successfully");
       setCollectDueTarget(null);
       dueForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payroll"] });
     },
     onError: (err: Error) => {
       msg.error(err.message || "Failed to collect due");

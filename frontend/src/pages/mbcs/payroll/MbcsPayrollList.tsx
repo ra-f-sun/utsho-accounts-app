@@ -16,13 +16,13 @@ import {
 } from "antd";
 import { PlusOutlined, DeleteOutlined, EyeOutlined, DollarOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
-import type { MbcsPayroll } from "../../../services/mbcsPayrollService";
+import { payrollService } from "../../../services/payrollService";
+import type { Payroll } from "../../../services/payrollService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import QueryError from "../../../components/QueryError";
 
-export default function MbcsPayrollList() {
+export default function PayrollList() {
   const { message: msg } = App.useApp();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -32,40 +32,40 @@ export default function MbcsPayrollList() {
     paymentMonth?: string;
   }>({});
   const [page, setPage] = useState(1);
-  const [collectDueTarget, setCollectDueTarget] = useState<MbcsPayroll | null>(null);
+  const [collectDueTarget, setCollectDueTarget] = useState<Payroll | null>(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["mbcs-payroll", filters, page],
-    queryFn: () => mbcsPayrollService.getAll(filters, page),
+    queryKey: ["mbcs", "payroll", filters, page],
+    queryFn: () => payrollService.getAll("mbcs", filters, page),
   });
 
-  const payrolls: MbcsPayroll[] = data?.data?.data || [];
+  const payrolls: Payroll[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mbcsPayrollService.delete(id),
+    mutationFn: (id: string) => payrollService.delete("mbcs", id),
     onSuccess: () => {
       msg.success("Payroll deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payroll"] });
     },
     onError: () => msg.error("Failed to delete payroll"),
   });
 
   const collectDueMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string } }) =>
-      mbcsPayrollService.collectDue(id, data),
+      payrollService.collectDue("mbcs", id, data),
     onSuccess: () => {
       msg.success("Due collected successfully");
       setCollectDueTarget(null);
       dueForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payroll"] });
     },
     onError: (err: Error) => msg.error(err.message || "Failed to collect due"),
   });
 
   if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
-  const columns: ColumnsType<MbcsPayroll> = [
+  const columns: ColumnsType<Payroll> = [
     {
       title: "Invoice #",
       dataIndex: "invoiceNumber",
@@ -119,7 +119,7 @@ export default function MbcsPayrollList() {
       title: "Due",
       key: "due",
       width: 90,
-      render: (_: unknown, record: MbcsPayroll) => {
+      render: (_: unknown, record: Payroll) => {
         if (!record.dueAmount || record.dueAmount <= 0) return null;
         return <Tag color="red">৳{record.dueAmount.toFixed(0)}</Tag>;
       },
@@ -128,7 +128,7 @@ export default function MbcsPayrollList() {
       title: "Actions",
       key: "actions",
       width: 110,
-      render: (_: unknown, record: MbcsPayroll) => (
+      render: (_: unknown, record: Payroll) => (
         <Space>
           <Button
             type="link"

@@ -15,8 +15,8 @@ import {
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
-import type { CreateMbcsPayrollDto } from "../../../services/mbcsPayrollService";
+import { payrollService } from "../../../services/payrollService";
+import type { CreatePayrollDto } from "../../../services/payrollService";
 import { teachersService } from "../../../services/teachersService";
 import type { Teacher } from "../../../services/teachersService";
 import { staffService } from "../../../services/staffService";
@@ -107,7 +107,7 @@ export default function MbcsCreatePayroll() {
   // Calculate payroll from attendance
   const calculateMutation = useMutation({
     mutationFn: ({ teacherId, month }: { teacherId: string; month: string }) =>
-      mbcsPayrollService.calculateTeacherPayroll(teacherId, month),
+      payrollService.calculateTeacherPayroll("mbcs", teacherId, month),
     onSuccess: (response) => {
       const calc = response?.data;
       setCalculatedData(calc);
@@ -127,14 +127,14 @@ export default function MbcsCreatePayroll() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsPayrollDto) => mbcsPayrollService.create(data),
+    mutationFn: (data: CreatePayrollDto) => payrollService.create("mbcs", data),
     onSuccess: (response) => {
       const created = response?.data;
       const invoice = created?.invoiceNumber;
       setCreatedPayrollId(created?.id || "");
       setInvoiceNumber(invoice);
       message.success(`Payroll created! Invoice: ${invoice}`);
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payroll"] });
       setSelectedTeacher(null);
       form.resetFields();
       setCalculatedData(null);
@@ -158,7 +158,7 @@ export default function MbcsCreatePayroll() {
   };
 
   const onFinish = (values: MbcsPayrollFormValues) => {
-    const data: CreateMbcsPayrollDto = {
+    const data: CreatePayrollDto = {
       payableType: values.payableType,
       payableId:
         values.payableType === "teacher" ? values.teacherId : values.staffId,

@@ -7,7 +7,7 @@ import {
   DownloadOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
-import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
+import { payrollService } from "../../../services/payrollService";
 import { teachersService } from "../../../services/teachersService";
 import { staffService } from "../../../services/staffService";
 import MbcsTeacherPayrollInvoice from "../../../components/invoices/MbcsTeacherPayrollInvoice";
@@ -20,8 +20,8 @@ export default function MbcsPayrollInvoice() {
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["mbcs-payroll-record", id],
-    queryFn: () => mbcsPayrollService.getOne(id!),
+    queryKey: ["mbcs", "payroll-record", id],
+    queryFn: () => payrollService.getOne("mbcs", id!),
     enabled: !!id,
   });
 

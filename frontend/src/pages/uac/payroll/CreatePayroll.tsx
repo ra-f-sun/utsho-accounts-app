@@ -106,7 +106,7 @@ export default function CreatePayroll() {
   // Calculate payroll from attendance
   const calculateMutation = useMutation({
     mutationFn: ({ teacherId, month }: { teacherId: string; month: string }) =>
-      payrollService.calculateTeacherPayroll(teacherId, month),
+      payrollService.calculateTeacherPayroll("uac", teacherId, month),
     onSuccess: (response) => {
       const calc = response?.data;
       setCalculatedData(calc);
@@ -129,14 +129,14 @@ export default function CreatePayroll() {
 
   // Create payroll mutation
   const createMutation = useMutation({
-    mutationFn: (data: CreatePayrollDto) => payrollService.create(data),
+    mutationFn: (data: CreatePayrollDto) => payrollService.create("uac", data),
     onSuccess: (response) => {
       const created = response?.data;
       const invoice = created?.invoiceNumber;
       setCreatedPayrollId(created?.id || "");
       setInvoiceNumber(invoice);
       message.success(`Payroll created! Invoice: ${invoice}`);
-      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "payroll"] });
       setSelectedTeacher(null);
       form.resetFields();
       setCalculatedData(null);

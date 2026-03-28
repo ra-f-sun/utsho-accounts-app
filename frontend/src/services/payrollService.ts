@@ -1,5 +1,7 @@
 import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
+export type PayrollOrg = "uac" | "mbcs";
+
 export interface Payroll {
   id: string;
   payableType: string; // 'teacher' | 'staff'
@@ -13,7 +15,7 @@ export interface Payroll {
   notes?: string;
   createdBy?: string;
   createdAt: string;
-  // Due fields (Feature 6F)
+  // Due fields
   paidAmount?: number;
   dueAmount?: number;
   isDueCollection?: boolean;
@@ -28,12 +30,13 @@ export interface CreatePayrollDto {
   paidAmount?: number; // If not set, defaults to amount (full payment)
   totalLectures?: number;
   paymentDate: string; // ISO DateString
-  paymentMethod: string; // 'cash' | 'bkash' | 'nagad' | 'bank_transfer'
+  paymentMethod: string;
   notes?: string;
 }
 
 export const payrollService = {
   getAll: (
+    org: PayrollOrg,
     filters?: { payableType?: string; payableId?: string; paymentMonth?: string },
     page = 1,
     limit = 20,
@@ -41,21 +44,20 @@ export const payrollService = {
     const params = new URLSearchParams();
     if (filters?.payableType) params.append("payableType", filters.payableType);
     if (filters?.payableId) params.append("payableId", filters.payableId);
-    if (filters?.paymentMonth)
-      params.append("paymentMonth", filters.paymentMonth);
+    if (filters?.paymentMonth) params.append("paymentMonth", filters.paymentMonth);
     params.append("page", page.toString());
     params.append("limit", limit.toString());
-    return apiGet(`/uac/payroll?${params.toString()}`);
+    return apiGet(`/${org}/payroll?${params.toString()}`);
   },
-  getOne: (id: string) => apiGet<Payroll>(`/uac/payroll/${id}`),
-  calculateTeacherPayroll: (teacherId: string, month: string) =>
+  getOne: (org: PayrollOrg, id: string) => apiGet<Payroll>(`/${org}/payroll/${id}`),
+  calculateTeacherPayroll: (org: PayrollOrg, teacherId: string, month: string) =>
     apiGet<{ teacherId: string; month: string; paymentType: string; amount: number; totalLectures: number | null }>(
-      `/uac/payroll/calculate/teacher/${teacherId}/${month}`,
+      `/${org}/payroll/calculate/teacher/${teacherId}/${month}`,
     ),
-  create: (data: CreatePayrollDto) => apiPost<Payroll>("/uac/payroll", data),
-  update: (id: string, data: Partial<CreatePayrollDto>) =>
-    apiPatch<Payroll>(`/uac/payroll/${id}`, data),
-  delete: (id: string) => apiDelete<Payroll>(`/uac/payroll/${id}`),
-  collectDue: (id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
-    apiPost<Payroll>(`/uac/payroll/${id}/collect-due`, data),
+  create: (org: PayrollOrg, data: CreatePayrollDto) => apiPost<Payroll>(`/${org}/payroll`, data),
+  update: (org: PayrollOrg, id: string, data: Partial<CreatePayrollDto>) =>
+    apiPatch<Payroll>(`/${org}/payroll/${id}`, data),
+  delete: (org: PayrollOrg, id: string) => apiDelete<Payroll>(`/${org}/payroll/${id}`),
+  collectDue: (org: PayrollOrg, id: string, data: { paidAmount: number; paymentDate: string; paymentMethod: string; notes?: string }) =>
+    apiPost<Payroll>(`/${org}/payroll/${id}/collect-due`, data),
 };

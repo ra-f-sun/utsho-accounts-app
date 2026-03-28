@@ -11,7 +11,7 @@ import {
   UserDeleteOutlined,
   UserAddOutlined,
 } from "@ant-design/icons";
-import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
+import { payrollService } from "../../../services/payrollService";
 import { staffService } from "../../../services/staffService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
@@ -67,9 +67,9 @@ export default function MbcsStaffPayrollHistory() {
   const staff = staffData?.data;
 
   const { data: payrollData, isLoading: loadingPayroll, isError: payrollIsError, error: payrollError, refetch: refetchPayroll } = useQuery({
-    queryKey: ["mbcs-payroll", { payableId: id, payableType: "staff" }],
+    queryKey: ["mbcs", "payroll", { payableId: id, payableType: "staff" }],
     queryFn: () =>
-      mbcsPayrollService.getAll({
+      payrollService.getAll("mbcs", {
         payableId: id,
         payableType: "staff",
       }, 1, 1000),
@@ -89,7 +89,7 @@ export default function MbcsStaffPayrollHistory() {
     try {
       const values = await collectDueForm.validateFields();
       setCollectingDue(true);
-      await mbcsPayrollService.collectDue(collectDueRecord!.id, {
+      await payrollService.collectDue("mbcs", collectDueRecord!.id, {
         paidAmount: values.paidAmount,
         paymentDate: values.paymentDate.toISOString(),
         paymentMethod: values.paymentMethod,
@@ -98,7 +98,7 @@ export default function MbcsStaffPayrollHistory() {
       message.success("Due collected successfully!");
       setCollectDueRecord(null);
       collectDueForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ["mbcs-payroll"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "payroll"] });
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.data?.message) message.error(err.response.data.message);
     } finally {
