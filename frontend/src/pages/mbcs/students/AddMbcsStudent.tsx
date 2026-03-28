@@ -533,7 +533,7 @@ export default function AddMbcsStudent() {
             </Form.Item>
             <Col span={8}>
               <Form.Item label="Admission Date" name="admissionDate">
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" disabledDate={disableFutureDate} />
               </Form.Item>
             </Col>
           </Row>

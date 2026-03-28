@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsOptional,
   Min,
+  Max,
   IsUUID,
 } from 'class-validator';
 
@@ -15,6 +16,7 @@ export class CreateMecPaymentDto {
   // MEC only has tuition payments — no paymentType needed
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()

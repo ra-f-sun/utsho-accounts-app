@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
 } from 'class-validator';
 
 // MBCS payment types include 'stationary' (not present in UAC)
@@ -29,6 +30,7 @@ export class CreatePaymentDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()

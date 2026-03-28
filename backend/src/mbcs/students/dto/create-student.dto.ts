@@ -46,6 +46,7 @@ export class CreateStudentDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   monthlyTuitionFee: number;
 
   // === MBCS-specific: shift (morning/day) instead of group ===
@@ -141,29 +142,35 @@ export class CreateStudentDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   admissionFee?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   readmissionFee?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   discountTuition?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   discountAdmission?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   discountReadmission?: number;
 
   @IsOptional()
   @IsDateString()
+  @IsNotFutureDateString({ message: 'Admission date cannot be in the future' })
   admissionDate?: string;
 }

@@ -4,7 +4,27 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
+const DEV_JWT_DEFAULT =
+  'utsho-secret-key-development-only-change-in-production-2026';
+
+function validateEnv() {
+  const isProd = process.env.NODE_ENV === 'production';
+  if (!isProd) return;
+
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === DEV_JWT_DEFAULT) {
+    console.error(
+      'FATAL: JWT_SECRET is not set or uses the dev default in production',
+    );
+    process.exit(1);
+  }
+  if (!process.env.FRONTEND_URL) {
+    console.error('FATAL: FRONTEND_URL is not set in production');
+    process.exit(1);
+  }
+}
+
 async function bootstrap() {
+  validateEnv();
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS

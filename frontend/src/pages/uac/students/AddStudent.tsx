@@ -602,7 +602,7 @@ export default function AddStudent() {
                 name="admissionDate"
                 rules={[{ required: true, message: "Please select admission date" }]}
               >
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" disabledDate={disableFutureDate} />
               </Form.Item>
             </Col>
           </Row>

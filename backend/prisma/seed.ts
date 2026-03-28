@@ -12,7 +12,11 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // 1. Create users for all roles
-  const passwordHash = await bcrypt.hash('admin123', 10);
+  const seedPassword = process.env.SEED_PASSWORD || 'admin123';
+  if (process.env.NODE_ENV === 'production' && !process.env.SEED_PASSWORD) {
+    throw new Error('SEED_PASSWORD env var is required in production');
+  }
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   const users = await Promise.all([
     prisma.user.upsert({

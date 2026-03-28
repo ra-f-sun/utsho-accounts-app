@@ -4,6 +4,7 @@
 .agent/
 .gemini/
 .cortex/
+.claude/
 browser_recordings/
 .tmp/
 brain/

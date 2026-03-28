@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsOptional,
   Min,
+  Max,
   IsUUID,
 } from 'class-validator';
 
@@ -27,6 +28,7 @@ export class CreatePaymentDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()

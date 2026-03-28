@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsUUID,
   Min,
+  Max,
   ValidateIf,
 } from 'class-validator';
 
@@ -22,6 +23,7 @@ export class CreatePayrollDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsOptional()
@@ -42,5 +44,6 @@ export class CreatePayrollDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   paidAmount?: number; // If not set, defaults to amount (full payment)
 }

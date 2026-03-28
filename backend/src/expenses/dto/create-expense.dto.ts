@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsOptional,
   Min,
+  Max,
 } from 'class-validator';
 
 export class CreateExpenseDto {
@@ -16,6 +17,7 @@ export class CreateExpenseDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()
