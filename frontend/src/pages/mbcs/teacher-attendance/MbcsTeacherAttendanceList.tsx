@@ -15,8 +15,8 @@ import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
 import type { TeacherAttendance, FilterAttendanceDto } from "../../../services/teacherAttendanceService";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
-import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 
@@ -30,7 +30,7 @@ export default function MbcsTeacherAttendanceList() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs", "teachers"],
-    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
+    queryFn: () => teachersService.getAll("mbcs", undefined, 1, 1000),
   });
 
   const teachers = teachersData?.data?.data || [];
@@ -135,7 +135,7 @@ export default function MbcsTeacherAttendanceList() {
             }
             allowClear
             showSearch
-            options={teachers.map((t: MbcsTeacher) => ({
+            options={teachers.map((t: Teacher) => ({
               value: t.id,
               label: t.name,
             }))}

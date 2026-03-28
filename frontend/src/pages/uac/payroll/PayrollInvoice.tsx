@@ -29,8 +29,8 @@ export default function PayrollInvoice() {
 
   // Fetch the teacher or staff details to show name on invoice
   const { data: teacherData } = useQuery({
-    queryKey: ["teacher", payroll?.payableId],
-    queryFn: () => teachersService.getOne(payroll!.payableId),
+    queryKey: ["uac", "teacher", payroll?.payableId],
+    queryFn: () => teachersService.getOne("uac", payroll!.payableId),
     enabled: !!payroll?.payableId && payroll?.payableType === "teacher",
   });
 

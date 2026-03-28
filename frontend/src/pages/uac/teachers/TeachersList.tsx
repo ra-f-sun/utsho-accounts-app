@@ -40,8 +40,8 @@ export default function TeachersList() {
 
   // Fetch teachers with filters
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["teachers", { ...filters, search: debouncedSearch || undefined }, page],
-    queryFn: () => teachersService.getAll({ ...filters, search: debouncedSearch || undefined }, page),
+    queryKey: ["uac", "teachers", { ...filters, search: debouncedSearch || undefined }, page],
+    queryFn: () => teachersService.getAll("uac", { ...filters, search: debouncedSearch || undefined }, page),
   });
 
   const teachers = data?.data?.data || [];
@@ -49,10 +49,10 @@ export default function TeachersList() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => teachersService.delete(id),
+    mutationFn: (id: string) => teachersService.delete("uac", id),
     onSuccess: () => {
       message.success("Teacher deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teachers"] });
     },
     onError: () => {
       message.error("Failed to delete teacher");

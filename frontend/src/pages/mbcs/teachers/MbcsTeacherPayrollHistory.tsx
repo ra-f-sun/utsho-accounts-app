@@ -13,7 +13,7 @@ import {
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
@@ -41,28 +41,28 @@ export default function MbcsTeacherPayrollHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => mbcsTeachersService.disassociate(id!),
+    mutationFn: () => teachersService.disassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Teacher marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teachers"] });
     },
     onError: () => message.error("Failed to disassociate teacher"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => mbcsTeachersService.reassociate(id!),
+    mutationFn: () => teachersService.reassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Teacher re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teachers"] });
     },
     onError: () => message.error("Failed to re-associate teacher"),
   });
 
   const { data: teacherData, isLoading: loadingTeacher } = useQuery({
-    queryKey: ["mbcs-teacher", id],
-    queryFn: () => mbcsTeachersService.getOne(id!),
+    queryKey: ["mbcs", "teacher", id],
+    queryFn: () => teachersService.getOne("mbcs", id!),
     enabled: !!id,
   });
 

@@ -41,28 +41,28 @@ export default function TeacherPayrollHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => teachersService.disassociate(id!),
+    mutationFn: () => teachersService.disassociate("uac", id!),
     onSuccess: () => {
       message.success("Teacher marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teachers"] });
     },
     onError: () => message.error("Failed to disassociate teacher"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => teachersService.reassociate(id!),
+    mutationFn: () => teachersService.reassociate("uac", id!),
     onSuccess: () => {
       message.success("Teacher re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["teacher", id] });
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teacher", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teachers"] });
     },
     onError: () => message.error("Failed to re-associate teacher"),
   });
 
   const { data: teacherData, isLoading: loadingTeacher } = useQuery({
-    queryKey: ["teacher", id],
-    queryFn: () => teachersService.getOne(id!),
+    queryKey: ["uac", "teacher", id],
+    queryFn: () => teachersService.getOne("uac", id!),
     enabled: !!id,
   });
 

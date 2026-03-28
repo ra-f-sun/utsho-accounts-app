@@ -69,8 +69,8 @@ export default function CreatePayroll() {
 
   // Fetch teachers
   const { data: teachersData } = useQuery({
-    queryKey: ["teachers"],
-    queryFn: () => teachersService.getAll(undefined, 1, 1000),
+    queryKey: ["uac", "teachers"],
+    queryFn: () => teachersService.getAll("uac", undefined, 1, 1000),
   });
 
   // Fetch staff

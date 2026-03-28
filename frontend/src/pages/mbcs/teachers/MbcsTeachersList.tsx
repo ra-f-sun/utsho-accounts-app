@@ -8,8 +8,8 @@ import {
   HistoryOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
-import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 
@@ -25,25 +25,25 @@ export default function MbcsTeachersList() {
   const [page, setPage] = useState(1);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["mbcs-teachers", paymentTypeFilter, page],
-    queryFn: () => mbcsTeachersService.getAll(paymentTypeFilter, page),
+    queryKey: ["mbcs", "teachers", paymentTypeFilter, page],
+    queryFn: () => teachersService.getAll("mbcs", { paymentType: paymentTypeFilter }, page),
   });
 
-  const teachers: MbcsTeacher[] = data?.data?.data || [];
+  const teachers: Teacher[] = data?.data?.data || [];
   const total = data?.data?.total ?? 0;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => mbcsTeachersService.delete(id),
+    mutationFn: (id: string) => teachersService.delete("mbcs", id),
     onSuccess: () => {
       message.success("Teacher deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teachers"] });
     },
     onError: () => message.error("Failed to delete teacher"),
   });
 
   if (isError) return <QueryError error={error as Error} onRetry={refetch} />;
 
-  const columns: ColumnsType<MbcsTeacher> = [
+  const columns: ColumnsType<Teacher> = [
     {
       title: "Name",
       dataIndex: "name",
@@ -70,7 +70,7 @@ export default function MbcsTeachersList() {
       title: "Salary/Rate",
       key: "payment",
       width: 160,
-      render: (_: unknown, record: MbcsTeacher) => {
+      render: (_: unknown, record: Teacher) => {
         if (record.paymentType === "fixed") {
           return `৳${record.monthlySalary?.toLocaleString()}/month`;
         }
@@ -81,7 +81,7 @@ export default function MbcsTeachersList() {
       title: "Actions",
       key: "actions",
       width: 120,
-      render: (_: unknown, record: MbcsTeacher) => (
+      render: (_: unknown, record: Teacher) => (
         <Space>
           <Button
             type="link"

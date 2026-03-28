@@ -31,8 +31,8 @@ export default function AddTeacher() {
 
   // Fetch existing teacher for edit
   const { data: existingData } = useQuery({
-    queryKey: ["teacher", id],
-    queryFn: () => teachersService.getOne(id!),
+    queryKey: ["uac", "teacher", id],
+    queryFn: () => teachersService.getOne("uac", id!),
     enabled: isEditMode,
   });
 
@@ -50,10 +50,10 @@ export default function AddTeacher() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateTeacherDto) => teachersService.create(data),
+    mutationFn: (data: CreateTeacherDto) => teachersService.create("uac", data),
     onSuccess: () => {
       message.success("Teacher added successfully");
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teachers"] });
       navigate("/uac/teachers");
     },
     onError: () => {
@@ -63,10 +63,10 @@ export default function AddTeacher() {
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<CreateTeacherDto>) =>
-      teachersService.update(id!, data),
+      teachersService.update("uac", id!, data),
     onSuccess: () => {
       message.success("Teacher updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "teachers"] });
       navigate("/uac/teachers");
     },
     onError: () => {

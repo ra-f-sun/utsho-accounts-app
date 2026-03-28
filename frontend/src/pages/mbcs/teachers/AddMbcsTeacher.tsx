@@ -12,8 +12,8 @@ import {
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
-import type { CreateMbcsTeacherDto } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
+import type { CreateTeacherDto } from "../../../services/teachersService";
 
 const { Option } = Select;
 
@@ -30,8 +30,8 @@ export default function AddMbcsTeacher() {
 
   // Fetch existing teacher for edit
   const { data: existingData } = useQuery({
-    queryKey: ["mbcs-teacher", id],
-    queryFn: () => mbcsTeachersService.getOne(id!),
+    queryKey: ["mbcs", "teacher", id],
+    queryFn: () => teachersService.getOne("mbcs", id!),
     enabled: isEditMode,
   });
 
@@ -49,28 +49,28 @@ export default function AddMbcsTeacher() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsTeacherDto) =>
-      mbcsTeachersService.create(data),
+    mutationFn: (data: CreateTeacherDto) =>
+      teachersService.create("mbcs", data),
     onSuccess: () => {
       message.success("Teacher added successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teachers"] });
       navigate("/mbcs/teachers");
     },
     onError: () => message.error("Failed to add teacher"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<CreateMbcsTeacherDto>) =>
-      mbcsTeachersService.update(id!, data),
+    mutationFn: (data: Partial<CreateTeacherDto>) =>
+      teachersService.update("mbcs", id!, data),
     onSuccess: () => {
       message.success("Teacher updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-teachers"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "teachers"] });
       navigate("/mbcs/teachers");
     },
     onError: () => message.error("Failed to update teacher"),
   });
 
-  const onFinish = (values: CreateMbcsTeacherDto) => {
+  const onFinish = (values: CreateTeacherDto) => {
     if (isEditMode) {
       updateMutation.mutate(values);
     } else {

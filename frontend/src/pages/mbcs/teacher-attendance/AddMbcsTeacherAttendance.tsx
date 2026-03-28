@@ -15,8 +15,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { teacherAttendanceService } from "../../../services/teacherAttendanceService";
 import type { CreateAttendanceDto } from "../../../services/teacherAttendanceService";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
-import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -39,10 +39,10 @@ export default function AddMbcsTeacherAttendance() {
 
   const { data: teachersData } = useQuery({
     queryKey: ["mbcs", "teachers"],
-    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
+    queryFn: () => teachersService.getAll("mbcs", undefined, 1, 1000),
   });
 
-  const teachers: MbcsTeacher[] = teachersData?.data?.data || [];
+  const teachers: Teacher[] = teachersData?.data?.data || [];
   const lectureBased = teachers.filter(
     (t) => t.paymentType === "lecture_based",
   );

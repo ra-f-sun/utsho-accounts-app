@@ -17,8 +17,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import type { CreateMbcsPayrollDto } from "../../../services/mbcsPayrollService";
-import { mbcsTeachersService } from "../../../services/mbcsTeachersService";
-import type { MbcsTeacher } from "../../../services/mbcsTeachersService";
+import { teachersService } from "../../../services/teachersService";
+import type { Teacher } from "../../../services/teachersService";
 import { mbcsStaffService } from "../../../services/mbcsStaffService";
 import type { MbcsStaff } from "../../../services/mbcsStaffService";
 import axios from "axios";
@@ -48,7 +48,7 @@ export default function MbcsCreatePayroll() {
   const [payableType, setPayableType] = useState<"teacher" | "staff">(
     "teacher",
   );
-  const [selectedTeacher, setSelectedTeacher] = useState<MbcsTeacher | null>(null);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [calculatedData, setCalculatedData] = useState<{
     paymentType?: string;
@@ -70,8 +70,8 @@ export default function MbcsCreatePayroll() {
   }, [watchedAmount, form]);
 
   const { data: teachersData } = useQuery({
-    queryKey: ["mbcs-teachers"],
-    queryFn: () => mbcsTeachersService.getAll(undefined, 1, 1000),
+    queryKey: ["mbcs", "teachers"],
+    queryFn: () => teachersService.getAll("mbcs", undefined, 1, 1000),
   });
 
   const { data: staffData } = useQuery({
@@ -79,7 +79,7 @@ export default function MbcsCreatePayroll() {
     queryFn: () => mbcsStaffService.getAll(1, 1000),
   });
 
-  const teachers: MbcsTeacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);
+  const teachers: Teacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);
   const staff: MbcsStaff[] = useMemo(() => staffData?.data?.data || [], [staffData]);
 
   const initialTeacherApplied = useRef(false);
@@ -89,7 +89,7 @@ export default function MbcsCreatePayroll() {
     if (initialTeacherApplied.current) return;
     const teacherId = searchParams.get("teacherId");
     if (teacherId && teachers.length > 0) {
-      const teacher = teachers.find((t: MbcsTeacher) => t.id === teacherId);
+      const teacher = teachers.find((t: Teacher) => t.id === teacherId);
       if (teacher) {
         initialTeacherApplied.current = true;
         // eslint-disable-next-line react-hooks/set-state-in-effect -- URL param auto-population
@@ -251,7 +251,7 @@ export default function MbcsCreatePayroll() {
                 placeholder="Search and select teacher"
                 showSearch
                 onChange={(value) => {
-                  const teacher = teachers.find((t: MbcsTeacher) => t.id === value);
+                  const teacher = teachers.find((t: Teacher) => t.id === value);
                   setSelectedTeacher(teacher || null);
                   setCalculatedData(null);
                   // Auto-fill salary for fixed-salary teachers
@@ -264,7 +264,7 @@ export default function MbcsCreatePayroll() {
                     form.setFieldValue("amount", undefined);
                   }
                 }}
-                options={teachers.map((t: MbcsTeacher) => ({
+                options={teachers.map((t: Teacher) => ({
                   value: t.id,
                   label: `${t.name} - ${t.paymentType === "fixed" ? "Fixed Salary" : "Lecture Based"}`,
                 }))}

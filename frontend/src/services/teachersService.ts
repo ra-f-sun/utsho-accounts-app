@@ -1,13 +1,15 @@
 import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from "../lib/axios";
 
+export type TeacherOrg = "uac" | "mbcs";
+
 export interface Teacher {
   id: string;
   name: string;
   contactNumber: string;
-  paymentType: "fixed" | "lecture_based";
+  paymentType: string;
   monthlySalary?: number;
   perLectureRate?: number;
-  subjects?: string;
+  subjects?: string | { class: number; subject: string }[];
   isActive: boolean;
   associationEndDate?: string | null;
   createdAt: string;
@@ -17,31 +19,31 @@ export interface Teacher {
 export interface CreateTeacherDto {
   name: string;
   contactNumber: string;
-  paymentType: "fixed" | "lecture_based";
+  paymentType: string;
   monthlySalary?: number;
   perLectureRate?: number;
-  subjects?: string;
+  subjects?: string | { class: number; subject: string }[];
 }
 
 export interface FilterTeacherDto {
-  paymentType?: "fixed" | "lecture_based";
+  paymentType?: string;
   search?: string;
 }
 
 export const teachersService = {
-  getAll: (filters?: FilterTeacherDto, page = 1, limit = 20): Promise<PaginatedResponse<Teacher>> => {
+  getAll: (org: TeacherOrg, filters?: FilterTeacherDto, page = 1, limit = 20): Promise<PaginatedResponse<Teacher>> => {
     const params = new URLSearchParams();
     if (filters?.paymentType) params.append("paymentType", filters.paymentType);
     if (filters?.search) params.append("search", filters.search);
     params.append("page", page.toString());
     params.append("limit", limit.toString());
-    return apiGet(`/uac/teachers?${params.toString()}`);
+    return apiGet(`/${org}/teachers?${params.toString()}`);
   },
-  getOne: (id: string) => apiGet<Teacher>(`/uac/teachers/${id}`),
-  create: (data: CreateTeacherDto) => apiPost<Teacher>("/uac/teachers", data),
-  update: (id: string, data: Partial<CreateTeacherDto>) =>
-    apiPatch<Teacher>(`/uac/teachers/${id}`, data),
-  delete: (id: string) => apiDelete<Teacher>(`/uac/teachers/${id}`),
-  disassociate: (id: string) => apiPatch<Teacher>(`/uac/teachers/${id}/disassociate`, {}),
-  reassociate: (id: string) => apiPatch<Teacher>(`/uac/teachers/${id}/reassociate`, {}),
+  getOne: (org: TeacherOrg, id: string) => apiGet<Teacher>(`/${org}/teachers/${id}`),
+  create: (org: TeacherOrg, data: CreateTeacherDto) => apiPost<Teacher>(`/${org}/teachers`, data),
+  update: (org: TeacherOrg, id: string, data: Partial<CreateTeacherDto>) =>
+    apiPatch<Teacher>(`/${org}/teachers/${id}`, data),
+  delete: (org: TeacherOrg, id: string) => apiDelete<Teacher>(`/${org}/teachers/${id}`),
+  disassociate: (org: TeacherOrg, id: string) => apiPatch<Teacher>(`/${org}/teachers/${id}/disassociate`, {}),
+  reassociate: (org: TeacherOrg, id: string) => apiPatch<Teacher>(`/${org}/teachers/${id}/reassociate`, {}),
 };
