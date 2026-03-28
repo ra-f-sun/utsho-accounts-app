@@ -5,28 +5,22 @@ import {
   IsDateString,
   IsOptional,
   Min,
+  Max,
+  MaxLength,
   IsUUID,
 } from 'class-validator';
+import { UacPaymentType, PaymentMethod } from '@prisma/client';
 
 export class CreatePaymentDto {
   @IsUUID()
   studentId: string;
 
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'exam',
-    'sheet',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'other',
-  ])
-  paymentType: string;
+  @IsEnum(UacPaymentType)
+  paymentType: UacPaymentType;
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()
@@ -35,10 +29,11 @@ export class CreatePaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string; // Required when paymentType is 'other'
 }

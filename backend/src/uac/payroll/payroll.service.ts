@@ -80,7 +80,7 @@ export class PayrollService {
   }
 
   async findAll(
-    payableType?: string,
+    payableType?: PayableType,
     payableId?: string,
     paymentMonth?: string,
     pagination?: PaginationDto,
@@ -151,13 +151,13 @@ export class PayrollService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     // Check if payroll exists
     await this.findOne(id);
 
     return this.prisma.uacPayroll.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 
@@ -280,7 +280,7 @@ export class PayrollService {
    * Prevents duplicate payments
    */
   private async checkDuplicate(
-    payableType: string,
+    payableType: PayableType,
     payableId: string,
     paymentMonth: string,
   ) {

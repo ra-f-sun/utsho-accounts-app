@@ -85,10 +85,11 @@ export default function AddStaff() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter staff name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -114,7 +115,7 @@ export default function AddStaff() {
                   { required: true, message: "Please enter designation" },
                 ]}
               >
-                <Input placeholder="e.g., Librarian, Lab Assistant" />
+                <Input placeholder="e.g., Librarian, Lab Assistant" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>

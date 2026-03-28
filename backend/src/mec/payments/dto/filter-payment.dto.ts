@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsEnum } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { PaymentMethod } from '@prisma/client';
 
 export class FilterMecPaymentDto extends PaginationDto {
   @IsOptional()
@@ -11,6 +12,6 @@ export class FilterMecPaymentDto extends PaginationDto {
   paymentMonth?: string;
 
   @IsOptional()
-  @IsString()
-  paymentMethod?: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 }

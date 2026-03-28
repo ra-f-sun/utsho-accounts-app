@@ -24,7 +24,7 @@ export class ExpensesService {
 
   async findAll(
     organization?: string,
-    expenseType?: string,
+    expenseType?: ExpenseType,
     expenseMonth?: string,
     pagination?: PaginationDto,
   ) {
@@ -109,13 +109,13 @@ export class ExpensesService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     // Check if expense exists
     await this.findOne(id);
 
     return this.prisma.expense.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 

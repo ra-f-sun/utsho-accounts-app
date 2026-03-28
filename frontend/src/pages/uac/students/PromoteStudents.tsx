@@ -27,7 +27,7 @@ const classLabel = (c: number) => uacClassLabel(c);
 
 export default function PromoteStudents() {
   const navigate = useNavigate();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
 
   const [fromClass, setFromClass] = useState<number | undefined>(undefined);
   const [toClass, setToClass] = useState<number | undefined>(undefined);
@@ -148,7 +148,15 @@ export default function PromoteStudents() {
               icon={<VerticalAlignTopOutlined />}
               disabled={!canPromote}
               loading={promoteMutation.isPending}
-              onClick={() => promoteMutation.mutate()}
+              onClick={() =>
+                modal.confirm({
+                  title: "Confirm Bulk Promotion",
+                  content: `You are about to promote ${selectedRowKeys.length} student${selectedRowKeys.length > 1 ? "s" : ""} from ${classLabel(fromClass!)} to ${classLabel(toClass!)}. This action cannot be undone. Continue?`,
+                  okText: "Promote",
+                  okType: "primary",
+                  onOk: () => promoteMutation.mutate(),
+                })
+              }
             >
               Promote Selected ({selectedRowKeys.length})
             </Button>

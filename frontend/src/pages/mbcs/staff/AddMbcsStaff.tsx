@@ -81,10 +81,11 @@ export default function AddMbcsStaff() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter staff name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -104,7 +105,7 @@ export default function AddMbcsStaff() {
             </Col>
             <Col span={12}>
               <Form.Item label="Designation" name="designation">
-                <Input placeholder="e.g., Office Assistant, Driver" />
+                <Input placeholder="e.g., Office Assistant, Driver" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>

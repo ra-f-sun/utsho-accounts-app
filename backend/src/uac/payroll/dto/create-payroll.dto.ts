@@ -7,12 +7,15 @@ import {
   IsOptional,
   IsUUID,
   Min,
+  Max,
+  MaxLength,
   ValidateIf,
 } from 'class-validator';
+import { PayableType, PaymentMethod } from '@prisma/client';
 
 export class CreatePayrollDto {
-  @IsEnum(['teacher', 'staff'])
-  payableType: string;
+  @IsEnum(PayableType)
+  payableType: PayableType;
 
   @IsUUID()
   payableId: string; // Teacher ID or Staff ID
@@ -22,6 +25,7 @@ export class CreatePayrollDto {
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsOptional()
@@ -32,15 +36,17 @@ export class CreatePayrollDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   paidAmount?: number; // If not set, defaults to amount (full payment)
 }

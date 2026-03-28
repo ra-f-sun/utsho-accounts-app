@@ -75,7 +75,7 @@ export class PayrollService {
   }
 
   async findAll(
-    payableType?: string,
+    payableType?: PayableType,
     payableId?: string,
     paymentMonth?: string,
     pagination?: PaginationDto,
@@ -134,11 +134,11 @@ export class PayrollService {
     return this.prisma.mbcsPayroll.update({ where: { id }, data });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     await this.findOne(id);
     return this.prisma.mbcsPayroll.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 
@@ -253,7 +253,7 @@ export class PayrollService {
   }
 
   private async checkDuplicate(
-    payableType: string,
+    payableType: PayableType,
     payableId: string,
     paymentMonth: string,
   ) {

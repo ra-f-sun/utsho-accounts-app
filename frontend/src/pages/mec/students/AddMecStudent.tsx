@@ -152,10 +152,11 @@ export default function AddMecStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Name is required" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input />
+                <Input maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -191,7 +192,7 @@ export default function AddMecStudent() {
             </Col>
             <Col span={6}>
               <Form.Item label="Section" name="section">
-                <Input placeholder="A, B, C..." />
+                <Input placeholder="A, B, C..." maxLength={10} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -203,12 +204,13 @@ export default function AddMecStudent() {
                       : "e.g. Science, Arts..."
                   }
                   disabled={isGroupDisabled}
+                  maxLength={100}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Serial No" name="serialNo">
-                <Input />
+                <Input maxLength={50} />
               </Form.Item>
             </Col>
           </Row>
@@ -223,10 +225,11 @@ export default function AddMecStudent() {
                 name="guardianName"
                 rules={[
                   { required: true },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input />
+                <Input maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -267,7 +270,7 @@ export default function AddMecStudent() {
             </Col>
             <Col span={8}>
               <Form.Item label="Admission Date" name="admissionDate">
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" disabledDate={disableFutureDate} />
               </Form.Item>
             </Col>
           </Row>
@@ -319,12 +322,12 @@ export default function AddMecStudent() {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item label="Nationality" name="nationality">
-                <Input defaultValue="Bangladeshi" />
+                <Input defaultValue="Bangladeshi" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="Religion" name="religion">
-                <Input />
+                <Input maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -342,12 +345,12 @@ export default function AddMecStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Present Address" name="presentAddress">
-                <TextArea rows={2} />
+                <TextArea rows={2} maxLength={500} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Health Condition" name="healthCondition">
-                <TextArea rows={2} />
+                <TextArea rows={2} maxLength={1000} />
               </Form.Item>
             </Col>
           </Row>
@@ -363,9 +366,9 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Father Name"
                 name="fatherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input />
+                <Input maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -375,7 +378,7 @@ export default function AddMecStudent() {
             </Col>
             <Col span={8}>
               <Form.Item label="Father Occupation" name="fatherOccupation">
-                <Input />
+                <Input maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -391,9 +394,9 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Mother Name"
                 name="motherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input />
+                <Input maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -403,7 +406,7 @@ export default function AddMecStudent() {
             </Col>
             <Col span={8}>
               <Form.Item label="Mother Occupation" name="motherOccupation">
-                <Input />
+                <Input maxLength={255} />
               </Form.Item>
             </Col>
           </Row>

@@ -3,6 +3,7 @@ import MecTuitionSettings from "./MecTuitionSettings";
 import MecDiscountSettings from "./MecDiscountSettings";
 import MecInvoiceSettings from "./MecInvoiceSettings";
 import MecPaymentPrioritySettings from "./MecPaymentPrioritySettings";
+import MecPaymentMethodSettings from "./MecPaymentMethodSettings";
 
 const tabItems = [
   {
@@ -24,6 +25,11 @@ const tabItems = [
     key: "payment_priority",
     label: "Payment Priority",
     children: <MecPaymentPrioritySettings />,
+  },
+  {
+    key: "payment_methods",
+    label: "Payment Methods",
+    children: <MecPaymentMethodSettings />,
   },
 ];
 

@@ -27,6 +27,7 @@ import type { CreateMultiPaymentDto } from "../../../services/paymentsService";
 import { mbcsStudentsService } from "../../../services/mbcsStudentsService";
 import type { MbcsStudent } from "../../../services/mbcsStudentsService";
 import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import axios from "axios";
 import { MBCS_CLASS_MAP } from "../../../constants/mbcsClasses";
 import dayjs from "dayjs";
@@ -90,6 +91,18 @@ export default function MbcsRecordPayment() {
   });
   const lateFeeAmount: number =
     (lateFeeData as { settingValue?: { value?: number } } | null)?.settingValue?.value ?? 0;
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["mbcs-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("mbcs", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   // Fetch all students
   const { data: studentsData } = useQuery({
@@ -196,14 +209,23 @@ export default function MbcsRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems: CreateMbcsMultiPaymentDto["lineItems"] = (values.lineItems || [])
-      .filter(
-        (
-          item,
-        ): item is MbcsPaymentFormLineItem & { paymentType: string; amount: number } =>
-          Boolean(item?.paymentType) && typeof item?.amount === "number",
-      )
-      .map((item) => ({
+    const allItems = values.lineItems || [];
+    const validItems = allItems.filter(
+      (
+        item,
+      ): item is MbcsPaymentFormLineItem & { paymentType: string; amount: number } =>
+        Boolean(item?.paymentType) && typeof item?.amount === "number",
+    );
+    const removedCount = allItems.length - validItems.length;
+    if (removedCount > 0) {
+      message.warning(`${removedCount} empty line item${removedCount > 1 ? "s" : ""} removed before submission.`);
+    }
+    if (validItems.length === 0) {
+      message.error("Please fill in at least one payment line item.");
+      return;
+    }
+
+    const lineItems: CreateMbcsMultiPaymentDto["lineItems"] = validItems.map((item) => ({
       paymentType: item.paymentType,
       amount: item.amount,
       paymentMonth:
@@ -387,10 +409,9 @@ export default function MbcsRecordPayment() {
                 ]}
               >
                 <Select placeholder="Select payment method">
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -543,7 +564,7 @@ export default function MbcsRecordPayment() {
                           label="Notes"
                           style={{ marginBottom: 0 }}
                         >
-                          <Input placeholder="Optional" />
+                          <Input placeholder="Optional" maxLength={500} />
                         </Form.Item>
                       </Col>
                       <Col flex="32px" style={{ paddingTop: 28 }}>

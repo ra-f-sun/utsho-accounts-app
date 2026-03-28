@@ -14,6 +14,8 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { CreateMecMultiPaymentDto } from './dto/create-multi-payment.dto';
 import { CollectMecDueDto } from './dto/collect-due.dto';
 
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
 @Injectable()
 export class MecPaymentsService {
   constructor(
@@ -162,11 +164,11 @@ export class MecPaymentsService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     await this.findOne(id);
     return this.prisma.mecPayment.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 
@@ -225,8 +227,8 @@ export class MecPaymentsService {
       (s, i) => s + i.guardianAmount,
       0,
     );
-    const officeGrandTotal = officeSubTotal - additionalDiscount;
-    const guardianGrandTotal = guardianSubTotal - additionalDiscount;
+    const officeGrandTotal = round2(officeSubTotal - additionalDiscount);
+    const guardianGrandTotal = round2(guardianSubTotal - additionalDiscount);
 
     if (dueAmount > officeGrandTotal) {
       throw new BadRequestException(
@@ -234,8 +236,8 @@ export class MecPaymentsService {
       );
     }
 
-    const officePaid = officeGrandTotal - dueAmount;
-    const guardianPaid = guardianGrandTotal - dueAmount;
+    const officePaid = round2(officeGrandTotal - dueAmount);
+    const guardianPaid = round2(guardianGrandTotal - dueAmount);
 
     const invoiceNumber =
       await this.invoiceService.generateInvoiceNumber('mec');
@@ -389,7 +391,7 @@ export class MecPaymentsService {
       }
     }
 
-    const remainingDue = Math.max(0, originalTotalDue - priorCollectedTotal);
+    const remainingDue = round2(Math.max(0, originalTotalDue - priorCollectedTotal));
     if (remainingDue <= 0) {
       throw new BadRequestException(
         `Invoice ${dto.parentInvoiceNumber} has no remaining due`,
@@ -402,7 +404,7 @@ export class MecPaymentsService {
       );
     }
 
-    const newDueAmount = Math.max(0, remainingDue - dto.paidAmount);
+    const newDueAmount = round2(Math.max(0, remainingDue - dto.paidAmount));
     const officeGrandTotal = remainingDue;
     const guardianGrandTotal = remainingDue;
     const officePaid = dto.paidAmount;

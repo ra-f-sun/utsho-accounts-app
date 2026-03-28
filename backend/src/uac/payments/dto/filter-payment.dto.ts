@@ -1,5 +1,6 @@
 import { IsOptional, IsEnum, IsUUID, IsDateString } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { UacPaymentType, PaymentMethod } from '@prisma/client';
 
 export class FilterPaymentDto extends PaginationDto {
   @IsOptional()
@@ -7,24 +8,14 @@ export class FilterPaymentDto extends PaginationDto {
   studentId?: string;
 
   @IsOptional()
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'exam',
-    'sheet',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'other',
-  ])
-  paymentType?: string;
+  @IsEnum(UacPaymentType)
+  paymentType?: UacPaymentType;
 
   @IsOptional()
   @IsDateString()
   paymentMonth?: string; // Filter by month (YYYY-MM-01)
 
   @IsOptional()
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod?: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 }

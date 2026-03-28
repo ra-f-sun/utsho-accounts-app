@@ -9,6 +9,7 @@ export const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // send httpOnly refresh_token cookie on every request
 });
 
 // Request interceptor to add auth token
@@ -25,14 +26,69 @@ api.interceptors.request.use(
   },
 );
 
+// Flag to avoid multiple concurrent refresh attempts
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      window.location.href = "/login";
+  async (error) => {
+    const originalRequest = error.config as typeof error.config & {
+      _retry?: boolean;
+    };
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        // Wait for the ongoing refresh then retry
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((newToken) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+          // If refresh ultimately fails this subscriber will never fire —
+          // the catch below will call markSessionExpired instead.
+          void reject; // satisfy linter; rejection handled by the outer catch
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        // Attempt silent refresh — cookie is sent automatically via withCredentials
+        const response = await axios.post<{
+          data: { accessToken: string; user: { id: string; email: string; fullName: string; role: string; isActive: boolean } };
+        }>(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          { withCredentials: true },
+        );
+
+        const { accessToken, user } = (response.data as unknown as { data: { accessToken: string; user: { id: string; email: string; fullName: string; role: string; isActive: boolean } } }).data;
+        useAuthStore.getState().setAuth(user, accessToken);
+        onRefreshed(accessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      } catch {
+        // Refresh failed — show modal, keep current page intact
+        refreshSubscribers = [];
+        useAuthStore.getState().markSessionExpired();
+        return Promise.reject(error);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     // Normalize validation error arrays into a single string
     if (
       error.response?.data?.message &&

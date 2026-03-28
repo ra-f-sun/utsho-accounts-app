@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma, Gender } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -220,6 +220,14 @@ export class StudentsService {
   async promote(id: string, dto: PromoteStudentDto, promotedBy: string) {
     const student = await this.findOne(id);
 
+    const UAC_MAX_CLASS = 12;
+    if (dto.toClass > UAC_MAX_CLASS) {
+      throw new BadRequestException(`Cannot promote beyond class ${UAC_MAX_CLASS}`);
+    }
+    if (dto.toClass <= student.class) {
+      throw new BadRequestException(`Target class (${dto.toClass}) must be higher than current class (${student.class})`);
+    }
+
     const rows = await this.prisma.orgSettings.findMany({
       where: { organization: 'uac' },
     });
@@ -268,6 +276,14 @@ export class StudentsService {
     dto: PromoteBulkDto,
     promotedBy: string,
   ): Promise<{ promoted: number }> {
+    const UAC_MAX_CLASS = 12;
+    if (dto.toClass > UAC_MAX_CLASS) {
+      throw new BadRequestException(`Cannot promote beyond class ${UAC_MAX_CLASS}`);
+    }
+    if (dto.toClass <= dto.fromClass) {
+      throw new BadRequestException(`Target class (${dto.toClass}) must be higher than source class (${dto.fromClass})`);
+    }
+
     const selectedIds = dto.studentIds?.length
       ? Array.from(new Set(dto.studentIds))
       : undefined;

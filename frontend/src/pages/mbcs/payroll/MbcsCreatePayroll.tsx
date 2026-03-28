@@ -21,6 +21,8 @@ import { teachersService } from "../../../services/teachersService";
 import type { Teacher } from "../../../services/teachersService";
 import { staffService } from "../../../services/staffService";
 import type { Staff } from "../../../services/staffService";
+import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -81,6 +83,18 @@ export default function MbcsCreatePayroll() {
 
   const teachers: Teacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);
   const staff: Staff[] = useMemo(() => staffData?.data?.data || [], [staffData]);
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["mbcs-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("mbcs", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   const initialTeacherApplied = useRef(false);
 
@@ -346,10 +360,9 @@ export default function MbcsCreatePayroll() {
                 ]}
               >
                 <Select placeholder="Select method">
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>

@@ -5,6 +5,7 @@ import UacStudyMaterialsSettings from "./UacStudyMaterialsSettings";
 import UacDiscountSettings from "./UacDiscountSettings";
 import UacInvoiceSettings from "./UacInvoiceSettings";
 import UacPaymentPrioritySettings from "./UacPaymentPrioritySettings";
+import UacPaymentMethodSettings from "./UacPaymentMethodSettings";
 
 const tabItems = [
   {
@@ -36,6 +37,11 @@ const tabItems = [
     key: "payment_priority",
     label: "Payment Priority",
     children: <UacPaymentPrioritySettings />,
+  },
+  {
+    key: "payment_methods",
+    label: "Payment Methods",
+    children: <UacPaymentMethodSettings />,
   },
 ];
 

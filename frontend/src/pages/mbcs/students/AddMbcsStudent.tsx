@@ -56,6 +56,7 @@ export default function AddMbcsStudent() {
   const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
   const [admissionDiscounts, setAdmissionDiscounts] = useState<number[]>([]);
   const [readmissionDiscounts, setReadmissionDiscounts] = useState<number[]>([]);
+  const selectedClass = Form.useWatch("class", form);
 
   useEffect(() => {
     void settingsService.getAllSettings("mbcs").then((rows) => {
@@ -177,10 +178,11 @@ export default function AddMbcsStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter student name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Enter full name" />
+                <Input placeholder="Enter full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -245,17 +247,17 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={6}>
               <Form.Item label="Section" name="section">
-                <Input placeholder="e.g., A, B" />
+                <Input placeholder="e.g., A, B" maxLength={10} />
               </Form.Item>
             </Col>
             <Col span={6}>
               <Form.Item label="Serial No" name="serialNo">
-                <Input placeholder="Institution roll" />
+                <Input placeholder="Institution roll" maxLength={50} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Branch" name="branch">
-                <Input placeholder="e.g., Basabo Branch" />
+                <Input placeholder="e.g., Basabo Branch" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -266,12 +268,12 @@ export default function AddMbcsStudent() {
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item label="Nationality" name="nationality">
-                <Input placeholder="Nationality" />
+                <Input placeholder="Nationality" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="Religion" name="religion">
-                <Input placeholder="Religion" />
+                <Input placeholder="Religion" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -289,12 +291,12 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Health Condition" name="healthCondition">
-                <TextArea rows={2} placeholder="Any health notes" />
+                <TextArea rows={2} placeholder="Any health notes" maxLength={1000} />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Present Address" name="presentAddress">
-                <TextArea rows={2} placeholder="Current address" />
+                <TextArea rows={2} placeholder="Current address" maxLength={500} />
               </Form.Item>
             </Col>
           </Row>
@@ -307,9 +309,9 @@ export default function AddMbcsStudent() {
               <Form.Item
                 label="Father's Name"
                 name="fatherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input placeholder="Father's full name" />
+                <Input placeholder="Father's full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -319,7 +321,7 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Father's Occupation" name="fatherOccupation">
-                <Input placeholder="Occupation" />
+                <Input placeholder="Occupation" maxLength={255} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -328,7 +330,7 @@ export default function AddMbcsStudent() {
                 name="fatherEmail"
                 rules={[{ type: "email" }]}
               >
-                <Input placeholder="Email address" />
+                <Input placeholder="Email address" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -341,9 +343,9 @@ export default function AddMbcsStudent() {
               <Form.Item
                 label="Mother's Name"
                 name="motherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
-                <Input placeholder="Mother's full name" />
+                <Input placeholder="Mother's full name" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -353,7 +355,7 @@ export default function AddMbcsStudent() {
             </Col>
             <Col span={12}>
               <Form.Item label="Mother's Occupation" name="motherOccupation">
-                <Input placeholder="Occupation" />
+                <Input placeholder="Occupation" maxLength={255} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -362,7 +364,7 @@ export default function AddMbcsStudent() {
                 name="motherEmail"
                 rules={[{ type: "email" }]}
               >
-                <Input placeholder="Email address" />
+                <Input placeholder="Email address" maxLength={255} />
               </Form.Item>
             </Col>
           </Row>
@@ -377,10 +379,11 @@ export default function AddMbcsStudent() {
                 name="guardianName"
                 rules={[
                   { required: true, message: "Please enter guardian name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
-                <Input placeholder="Primary contact person" />
+                <Input placeholder="Primary contact person" maxLength={100} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -398,12 +401,19 @@ export default function AddMbcsStudent() {
                 <Input placeholder="+8801XXXXXXXXX" />
               </Form.Item>
             </Col>
+          </Row>
+          {typeof selectedClass !== "number" && (
+            <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+              Select a class above to auto-fill default fees from settings.
+            </Text>
+          )}
+          <Row gutter={16}>
             <Col span={8}>
               <Form.Item
                 label={
                   <span>
                     Monthly Tuition Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS. Change class to update.">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -416,8 +426,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select a class first"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -438,7 +447,7 @@ export default function AddMbcsStudent() {
                 label={
                   <span>
                     Admission Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -448,8 +457,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select a class first"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -470,7 +478,7 @@ export default function AddMbcsStudent() {
                 label={
                   <span>
                     Re-Admission Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -480,8 +488,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="N/A"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -533,7 +540,7 @@ export default function AddMbcsStudent() {
             </Form.Item>
             <Col span={8}>
               <Form.Item label="Admission Date" name="admissionDate">
-                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" disabledDate={disableFutureDate} />
               </Form.Item>
             </Col>
           </Row>

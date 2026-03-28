@@ -25,6 +25,7 @@ import { mecStudentsService } from "../../../services/mecStudentsService";
 import type { MecStudent } from "../../../services/mecStudentsService";
 import axios from "axios";
 import settingsService from "../../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../../constants/paymentMethods";
 import dayjs from "dayjs";
 
 const { Option } = Select;
@@ -73,6 +74,18 @@ export default function MecRecordPayment() {
   const invoiceMode =
     (invoiceModeData as { settingValue?: string } | null)?.settingValue ?? "dual";
 
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: ["mec-settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting("mec", "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
+
   // Auto-populate from URL ?studentId=
   useEffect(() => {
     if (initialStudentApplied.current) return;
@@ -118,12 +131,21 @@ export default function MecRecordPayment() {
       ? values.paymentDate.toISOString()
       : new Date().toISOString();
 
-    const lineItems: CreateMecMultiPaymentDto["lineItems"] = (values.lineItems || [])
-      .filter(
-        (item): item is MecPaymentFormLineItem & { amount: number } =>
-          typeof item?.amount === "number",
-      )
-      .map((item) => ({
+    const allItems = values.lineItems || [];
+    const validItems = allItems.filter(
+      (item): item is MecPaymentFormLineItem & { amount: number } =>
+        typeof item?.amount === "number",
+    );
+    const removedCount = allItems.length - validItems.length;
+    if (removedCount > 0) {
+      message.warning(`${removedCount} empty line item${removedCount > 1 ? "s" : ""} removed before submission.`);
+    }
+    if (validItems.length === 0) {
+      message.error("Please fill in at least one payment line item.");
+      return;
+    }
+
+    const lineItems: CreateMecMultiPaymentDto["lineItems"] = validItems.map((item) => ({
       amount: item.amount,
       paymentMonth: item.paymentMonth
         ? item.paymentMonth.startOf("month").toISOString()
@@ -267,10 +289,9 @@ export default function MecRecordPayment() {
                 rules={[{ required: true, message: "Required" }]}
               >
                 <Select>
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>
@@ -338,7 +359,7 @@ export default function MecRecordPayment() {
                           label="Notes"
                           style={{ marginBottom: 0 }}
                         >
-                          <Input placeholder="Optional" />
+                          <Input placeholder="Optional" maxLength={500} />
                         </Form.Item>
                       </Col>
                       <Col flex="32px" style={{ paddingTop: 28 }}>

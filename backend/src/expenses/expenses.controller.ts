@@ -68,7 +68,7 @@ export class ExpensesController {
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.expensesService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtUser) {
+    return this.expensesService.remove(id, user.id);
   }
 }

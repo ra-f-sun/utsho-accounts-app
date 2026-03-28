@@ -3,6 +3,7 @@ import {
   IsNumber,
   Min,
   MinLength,
+  MaxLength,
   IsOptional,
   Matches,
 } from 'class-validator';
@@ -11,6 +12,7 @@ import { IsPersonName } from '../../../common/validators/is-person-name.validato
 export class CreateStaffDto {
   @IsString()
   @MinLength(2)
+  @MaxLength(100)
   @IsPersonName()
   name: string;
 
@@ -22,6 +24,7 @@ export class CreateStaffDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   designation?: string;
 
   @IsNumber()

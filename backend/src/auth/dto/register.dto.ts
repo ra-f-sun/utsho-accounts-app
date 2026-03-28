@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, IsEnum } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsEnum, Matches } from 'class-validator';
 import { Role } from '@prisma/client';
 import { IsPersonName } from '../../common/validators/is-person-name.validator';
 
@@ -7,7 +7,11 @@ export class RegisterDto {
   email: string;
 
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/, {
+    message:
+      'Password must be at least 8 characters and contain uppercase, lowercase, and a number',
+  })
   password: string;
 
   @IsString()

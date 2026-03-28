@@ -6,29 +6,22 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
+  MaxLength,
 } from 'class-validator';
+import { MbcsPaymentType, PaymentMethod } from '@prisma/client';
 
 // MBCS payment types include 'stationary' (not present in UAC)
 export class CreatePaymentDto {
   @IsUUID()
   studentId: string;
 
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'late_fee',
-    'exam',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'stationary',
-    'other',
-  ])
-  paymentType: string;
+  @IsEnum(MbcsPaymentType)
+  paymentType: MbcsPaymentType;
 
   @IsNumber()
   @Min(0)
+  @Max(10000000)
   amount: number;
 
   @IsDateString()
@@ -37,10 +30,11 @@ export class CreatePaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

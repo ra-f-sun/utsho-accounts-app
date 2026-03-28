@@ -14,6 +14,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { expensesService } from "../../services/expensesService";
 import type { CreateExpenseDto, Expense, ExpenseType, Organization, PaymentMethod } from "../../services/expensesService";
+import settingsService from "../../services/settingsService";
+import { ALL_PAYMENT_METHODS } from "../../constants/paymentMethods";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
 
@@ -48,6 +50,18 @@ export default function OrgAddExpense({ org, basePath, title }: Props) {
     queryFn: () => expensesService.getOne(org, id!),
     enabled: isEdit,
   });
+
+  // Fetch enabled payment methods
+  const { data: pmSetting } = useQuery({
+    queryKey: [org, "settings", "payment_methods"],
+    queryFn: () => settingsService.getSetting(org, "payment_methods"),
+  });
+  const enabledPaymentMethods = (() => {
+    const vals = (pmSetting?.settingValue as { values?: string[] } | null)?.values;
+    return Array.isArray(vals) && vals.length > 0
+      ? ALL_PAYMENT_METHODS.filter((m) => vals.includes(m.value))
+      : ALL_PAYMENT_METHODS;
+  })();
 
   const existingObj: Expense | undefined = existingData?.data;
 
@@ -191,10 +205,9 @@ export default function OrgAddExpense({ org, basePath, title }: Props) {
                 ]}
               >
                 <Select placeholder="Select payment method">
-                  <Option value="cash">Cash</Option>
-                  <Option value="bkash">bKash</Option>
-                  <Option value="nagad">Nagad</Option>
-                  <Option value="bank_transfer">Bank Transfer</Option>
+                  {enabledPaymentMethods.map((m) => (
+                    <Option key={m.value} value={m.value}>{m.label}</Option>
+                  ))}
                 </Select>
               </Form.Item>
             </Col>

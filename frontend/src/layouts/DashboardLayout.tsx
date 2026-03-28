@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Layout, Menu, Avatar, Dropdown, Button, Tooltip, Badge } from "antd";
+import { Layout, Menu, Avatar, Dropdown, Button, Tooltip, Badge, Modal } from "antd";
 import {
   DashboardOutlined,
   UsergroupAddOutlined,
@@ -18,7 +18,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  SearchOutlined,
   DownOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
@@ -43,8 +42,7 @@ function roleColor(role = "") {
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
-  const searchRef = useRef<HTMLInputElement>(null);
+  const { user, logout, sessionExpired, clearSessionExpired } = useAuthStore();
 
   /* ── Collapse state ── */
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -464,13 +462,6 @@ export default function DashboardLayout() {
               />
             </Tooltip>
 
-            <div
-              className="header-search"
-              onClick={() => searchRef.current?.focus()}
-            >
-              <SearchOutlined className="header-search-icon" />
-              <input ref={searchRef} placeholder="Search…" />
-            </div>
           </div>
 
           <div className="topbar-right">
@@ -490,7 +481,7 @@ export default function DashboardLayout() {
               trigger={["click"]}
             >
               <div className="user-card">
-                <Avatar size={32} className="user-avatar">
+                <Avatar size={32} className="user-avatar" aria-label={`User avatar for ${user?.fullName ?? "user"}`}>
                   {initials}
                 </Avatar>
                 <div className="user-info">
@@ -514,6 +505,29 @@ export default function DashboardLayout() {
           </div>
         </Content>
       </Layout>
+
+      {/* Session-expired modal — shown instead of hard redirect so users don't lose form data */}
+      <Modal
+        open={sessionExpired}
+        title="Session Expired"
+        closable={false}
+        maskClosable={false}
+        footer={
+          <Button
+            type="primary"
+            onClick={() => {
+              clearSessionExpired();
+              logout();
+              navigate("/login");
+            }}
+          >
+            Log In Again
+          </Button>
+        }
+      >
+        Your session has expired. Please log in again to continue. Any unsaved
+        work on the current page will remain until you navigate away.
+      </Modal>
     </Layout>
   );
 }

@@ -1,6 +1,7 @@
 import { IsOptional, IsString, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { Shift } from '@prisma/client';
 
 export class FilterStudentDto extends PaginationDto {
   @IsOptional()
@@ -11,8 +12,8 @@ export class FilterStudentDto extends PaginationDto {
   class?: number;
 
   @IsOptional()
-  @IsEnum(['morning', 'day'])
-  shift?: string;
+  @IsEnum(Shift)
+  shift?: Shift;
 
   @IsOptional()
   @IsString()
