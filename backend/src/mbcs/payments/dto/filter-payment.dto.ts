@@ -1,5 +1,6 @@
 import { IsOptional, IsString, IsEnum } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { MbcsPaymentType, PaymentMethod } from '@prisma/client';
 
 export class FilterPaymentDto extends PaginationDto {
   @IsOptional()
@@ -7,24 +8,14 @@ export class FilterPaymentDto extends PaginationDto {
   studentId?: string;
 
   @IsOptional()
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'exam',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'stationary',
-    'other',
-  ])
-  paymentType?: string;
+  @IsEnum(MbcsPaymentType)
+  paymentType?: MbcsPaymentType;
 
   @IsOptional()
   @IsString()
   paymentMonth?: string;
 
   @IsOptional()
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod?: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
 }

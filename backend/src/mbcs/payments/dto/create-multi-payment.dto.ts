@@ -11,21 +11,11 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { MbcsPaymentType, PaymentMethod } from '@prisma/client';
 
 export class MbcsPaymentLineItemDto {
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'late_fee',
-    'exam',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'stationary',
-    'other',
-  ])
-  paymentType: string;
+  @IsEnum(MbcsPaymentType)
+  paymentType: MbcsPaymentType;
 
   @IsNumber()
   @Min(0)
@@ -46,8 +36,8 @@ export class CreateMbcsMultiPaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsArray()
   @ArrayMinSize(1)

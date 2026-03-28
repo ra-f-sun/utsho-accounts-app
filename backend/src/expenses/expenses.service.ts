@@ -3,7 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, ExpenseType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -26,7 +26,7 @@ export class ExpensesService {
 
   async findAll(
     organization?: string,
-    expenseType?: string,
+    expenseType?: ExpenseType,
     expenseMonth?: string,
     pagination?: PaginationDto,
   ) {

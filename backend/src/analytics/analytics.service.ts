@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PayableType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AnalyticsQueryDto, Organization } from './dto/analytics-query.dto';
 import dayjs from 'dayjs';
@@ -465,7 +465,7 @@ export class AnalyticsService {
         gte: startDate,
         lte: endDate,
       },
-      payableType: 'teacher',
+      payableType: PayableType.teacher,
     };
 
     let total = 0;
@@ -475,13 +475,13 @@ export class AnalyticsService {
         where,
         _sum: { amount: true },
       });
-      total = result._sum.amount || 0;
+      total = result._sum?.amount || 0;
     } else if (org === Organization.MBCS) {
       const result = await this.prisma.mbcsPayroll.aggregate({
         where,
         _sum: { amount: true },
       });
-      total = result._sum.amount || 0;
+      total = result._sum?.amount || 0;
     }
 
     return total;
@@ -498,7 +498,7 @@ export class AnalyticsService {
         gte: startDate,
         lte: endDate,
       },
-      payableType: 'staff',
+      payableType: PayableType.staff,
     };
 
     let total = 0;
@@ -508,13 +508,13 @@ export class AnalyticsService {
         where,
         _sum: { amount: true },
       });
-      total = result._sum.amount || 0;
+      total = result._sum?.amount || 0;
     } else if (org === Organization.MBCS) {
       const result = await this.prisma.mbcsPayroll.aggregate({
         where,
         _sum: { amount: true },
       });
-      total = result._sum.amount || 0;
+      total = result._sum?.amount || 0;
     }
 
     return total;

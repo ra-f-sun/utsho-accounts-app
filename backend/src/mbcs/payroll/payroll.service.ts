@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PayableType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InvoiceService } from '../../common/services/invoice.service';
 import { TeacherAttendanceService } from '../teacher-attendance/teacher-attendance.service';
@@ -73,7 +73,7 @@ export class PayrollService {
   }
 
   async findAll(
-    payableType?: string,
+    payableType?: PayableType,
     payableId?: string,
     paymentMonth?: string,
     pagination?: PaginationDto,
@@ -246,7 +246,7 @@ export class PayrollService {
   }
 
   private async checkDuplicate(
-    payableType: string,
+    payableType: PayableType,
     payableId: string,
     paymentMonth: string,
   ) {

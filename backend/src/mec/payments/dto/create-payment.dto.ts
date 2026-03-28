@@ -6,8 +6,10 @@ import {
   IsOptional,
   Min,
   Max,
+  MaxLength,
   IsUUID,
 } from 'class-validator';
+import { PaymentMethod } from '@prisma/client';
 
 export class CreateMecPaymentDto {
   @IsUUID()
@@ -25,10 +27,11 @@ export class CreateMecPaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

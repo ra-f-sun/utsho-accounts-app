@@ -11,6 +11,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PaymentMethod } from '@prisma/client';
 
 export class MecPaymentLineItemDto {
   @IsNumber()
@@ -32,8 +33,8 @@ export class CreateMecMultiPaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsArray()
   @ArrayMinSize(1)

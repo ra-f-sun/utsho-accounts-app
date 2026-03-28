@@ -17,12 +17,14 @@ export class InvoiceService {
   async generateInvoiceNumber(
     organization: 'uac' | 'mbcs' | 'mec',
   ): Promise<string> {
-    const year = new Date().getFullYear();
     const prefix = organization.toUpperCase();
 
-    // Use transaction to atomically increment counter
+    // Compute year inside the transaction so the year used for counter lookup
+    // and the year embedded in the invoice number are always consistent, even
+    // across the Dec 31 → Jan 1 boundary.
     const result = await this.prisma.$transaction(async (tx) => {
-      // Upsert counter for current year + organization
+      const year = new Date().getFullYear();
+
       const counter = await tx.invoiceCounter.upsert({
         where: { year_organization: { year, organization } },
         create: { year, organization, sequence: 1 },
@@ -34,6 +36,6 @@ export class InvoiceService {
 
     // Format: UAC-2024-0001
     const sequence = result.sequence.toString().padStart(4, '0');
-    return `${prefix}-${year}-${sequence}`;
+    return `${prefix}-${result.year}-${sequence}`;
   }
 }

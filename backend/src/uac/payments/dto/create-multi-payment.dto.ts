@@ -11,20 +11,11 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { UacPaymentType, PaymentMethod } from '@prisma/client';
 
 export class UacPaymentLineItemDto {
-  @IsEnum([
-    'tuition',
-    'admission',
-    'readmission',
-    'exam',
-    'sheet',
-    'session_charge',
-    'study_materials',
-    'study_tour',
-    'other',
-  ])
-  paymentType: string;
+  @IsEnum(UacPaymentType)
+  paymentType: UacPaymentType;
 
   @IsNumber()
   @Min(0)
@@ -45,8 +36,8 @@ export class CreateMultiPaymentDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsArray()
   @ArrayMinSize(1)

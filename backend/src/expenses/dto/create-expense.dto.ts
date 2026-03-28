@@ -6,14 +6,16 @@ import {
   IsOptional,
   Min,
   Max,
+  MaxLength,
 } from 'class-validator';
+import { ExpenseType, PaymentMethod } from '@prisma/client';
 
 export class CreateExpenseDto {
   @IsEnum(['uac', 'mbcs', 'mec'])
   organization: string;
 
-  @IsEnum(['rent', 'electricity', 'water', 'internet', 'salary', 'other'])
-  expenseType: string;
+  @IsEnum(ExpenseType)
+  expenseType: ExpenseType;
 
   @IsNumber()
   @Min(0)
@@ -26,10 +28,11 @@ export class CreateExpenseDto {
   @IsDateString()
   paymentDate: string;
 
-  @IsEnum(['cash', 'bkash', 'nagad', 'bank_transfer'])
-  paymentMethod: string;
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

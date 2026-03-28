@@ -104,6 +104,26 @@ export class PaymentsService {
     private invoiceService: InvoiceService,
   ) {}
 
+  private async checkDuplicateTuition(
+    studentId: string,
+    paymentMonth: string,
+  ): Promise<void> {
+    const existing = await this.prisma.uacPayment.findFirst({
+      where: {
+        studentId,
+        paymentType: 'tuition',
+        paymentMonth: new Date(paymentMonth),
+        isActive: true,
+        isDueCollection: false,
+      },
+    });
+    if (existing) {
+      throw new ConflictException(
+        `Tuition payment for ${paymentMonth} already exists for this student`,
+      );
+    }
+  }
+
   async create(createPaymentDto: CreatePaymentDto, createdBy: string) {
     // Verify student exists
     const student = await this.prisma.uacStudent.findUnique({
@@ -113,6 +133,14 @@ export class PaymentsService {
     if (!student) {
       throw new NotFoundException(
         `Student with ID ${createPaymentDto.studentId} not found`,
+      );
+    }
+
+    // Check for duplicate tuition payment
+    if (createPaymentDto.paymentType === 'tuition' && createPaymentDto.paymentMonth) {
+      await this.checkDuplicateTuition(
+        createPaymentDto.studentId,
+        createPaymentDto.paymentMonth,
       );
     }
 
@@ -268,20 +296,7 @@ export class PaymentsService {
     // Check for duplicate tuition payments (skip for due collections)
     for (const item of dto.lineItems) {
       if (item.paymentType === 'tuition' && item.paymentMonth) {
-        const existing = await this.prisma.uacPayment.findFirst({
-          where: {
-            studentId: dto.studentId,
-            paymentType: 'tuition',
-            paymentMonth: new Date(item.paymentMonth),
-            isActive: true,
-            isDueCollection: false,
-          },
-        });
-        if (existing) {
-          throw new ConflictException(
-            `Tuition payment for ${item.paymentMonth} already exists for this student`,
-          );
-        }
+        await this.checkDuplicateTuition(dto.studentId, item.paymentMonth);
       }
     }
 
