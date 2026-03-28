@@ -19,8 +19,8 @@ import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
 import type { CreateMbcsPayrollDto } from "../../../services/mbcsPayrollService";
 import { teachersService } from "../../../services/teachersService";
 import type { Teacher } from "../../../services/teachersService";
-import { mbcsStaffService } from "../../../services/mbcsStaffService";
-import type { MbcsStaff } from "../../../services/mbcsStaffService";
+import { staffService } from "../../../services/staffService";
+import type { Staff } from "../../../services/staffService";
 import axios from "axios";
 import dayjs from "dayjs";
 
@@ -75,12 +75,12 @@ export default function MbcsCreatePayroll() {
   });
 
   const { data: staffData } = useQuery({
-    queryKey: ["mbcs-staff"],
-    queryFn: () => mbcsStaffService.getAll(1, 1000),
+    queryKey: ["mbcs", "staff"],
+    queryFn: () => staffService.getAll("mbcs", undefined, 1, 1000),
   });
 
   const teachers: Teacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);
-  const staff: MbcsStaff[] = useMemo(() => staffData?.data?.data || [], [staffData]);
+  const staff: Staff[] = useMemo(() => staffData?.data?.data || [], [staffData]);
 
   const initialTeacherApplied = useRef(false);
 
@@ -284,7 +284,7 @@ export default function MbcsCreatePayroll() {
               <Select
                 placeholder="Search and select staff"
                 showSearch
-                options={staff.map((s: MbcsStaff) => ({
+                options={staff.map((s: Staff) => ({
                   value: s.id,
                   label: `${s.name}${s.designation ? ` - ${s.designation}` : ""}`,
                 }))}

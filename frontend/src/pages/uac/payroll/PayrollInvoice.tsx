@@ -35,8 +35,8 @@ export default function PayrollInvoice() {
   });
 
   const { data: staffData } = useQuery({
-    queryKey: ["staff", payroll?.payableId],
-    queryFn: () => staffService.getOne(payroll!.payableId),
+    queryKey: ["uac", "staff", payroll?.payableId],
+    queryFn: () => staffService.getOne("uac", payroll!.payableId),
     enabled: !!payroll?.payableId && payroll?.payableType === "staff",
   });
 

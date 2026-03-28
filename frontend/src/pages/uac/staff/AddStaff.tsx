@@ -23,8 +23,8 @@ export default function AddStaff() {
 
   // Fetch existing staff for edit
   const { data: existingData } = useQuery({
-    queryKey: ["staff-member", id],
-    queryFn: () => staffService.getOne(id!),
+    queryKey: ["uac", "staff-member", id],
+    queryFn: () => staffService.getOne("uac", id!),
     enabled: isEditMode,
   });
 
@@ -38,10 +38,10 @@ export default function AddStaff() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateStaffDto) => staffService.create(data),
+    mutationFn: (data: CreateStaffDto) => staffService.create("uac", data),
     onSuccess: () => {
       message.success("Staff added successfully");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
       navigate("/uac/staff");
     },
     onError: () => {
@@ -51,10 +51,10 @@ export default function AddStaff() {
 
   const updateMutation = useMutation({
     mutationFn: (data: Partial<CreateStaffDto>) =>
-      staffService.update(id!, data),
+      staffService.update("uac", id!, data),
     onSuccess: () => {
       message.success("Staff updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
       navigate("/uac/staff");
     },
     onError: () => {

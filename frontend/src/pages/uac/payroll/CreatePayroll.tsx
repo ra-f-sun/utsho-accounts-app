@@ -75,8 +75,8 @@ export default function CreatePayroll() {
 
   // Fetch staff
   const { data: staffData } = useQuery({
-    queryKey: ["staff"],
-    queryFn: () => staffService.getAll(undefined, 1, 1000),
+    queryKey: ["uac", "staff"],
+    queryFn: () => staffService.getAll("uac", undefined, 1, 1000),
   });
 
   const teachers: Teacher[] = useMemo(() => teachersData?.data?.data || [], [teachersData]);

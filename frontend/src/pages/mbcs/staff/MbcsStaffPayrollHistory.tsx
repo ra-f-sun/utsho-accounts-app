@@ -12,7 +12,7 @@ import {
   UserAddOutlined,
 } from "@ant-design/icons";
 import { mbcsPayrollService } from "../../../services/mbcsPayrollService";
-import { mbcsStaffService } from "../../../services/mbcsStaffService";
+import { staffService } from "../../../services/staffService";
 import type { ColumnsType } from "antd/es/table";
 import QueryError from "../../../components/QueryError";
 import dayjs from "dayjs";
@@ -39,28 +39,28 @@ export default function MbcsStaffPayrollHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => mbcsStaffService.disassociate(id!),
+    mutationFn: () => staffService.disassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Staff marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff-detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff"] });
     },
     onError: () => message.error("Failed to disassociate staff"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => mbcsStaffService.reassociate(id!),
+    mutationFn: () => staffService.reassociate("mbcs", id!),
     onSuccess: () => {
       message.success("Staff re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff-detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff"] });
     },
     onError: () => message.error("Failed to re-associate staff"),
   });
 
   const { data: staffData, isLoading: loadingStaff } = useQuery({
-    queryKey: ["mbcs-staff-detail", id],
-    queryFn: () => mbcsStaffService.getOne(id!),
+    queryKey: ["mbcs", "staff-detail", id],
+    queryFn: () => staffService.getOne("mbcs", id!),
     enabled: !!id,
   });
 

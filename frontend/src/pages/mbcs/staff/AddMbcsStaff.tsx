@@ -11,8 +11,8 @@ import {
 } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { mbcsStaffService } from "../../../services/mbcsStaffService";
-import type { CreateMbcsStaffDto } from "../../../services/mbcsStaffService";
+import { staffService } from "../../../services/staffService";
+import type { CreateStaffDto } from "../../../services/staffService";
 
 export default function AddMbcsStaff() {
   const [form] = Form.useForm();
@@ -23,8 +23,8 @@ export default function AddMbcsStaff() {
 
   // Fetch existing staff for edit
   const { data: existingData } = useQuery({
-    queryKey: ["mbcs-staff-member", id],
-    queryFn: () => mbcsStaffService.getOne(id!),
+    queryKey: ["mbcs", "staff-member", id],
+    queryFn: () => staffService.getOne("mbcs", id!),
     enabled: isEditMode,
   });
 
@@ -38,27 +38,27 @@ export default function AddMbcsStaff() {
   }, [existingData, form]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateMbcsStaffDto) => mbcsStaffService.create(data),
+    mutationFn: (data: CreateStaffDto) => staffService.create("mbcs", data),
     onSuccess: () => {
       message.success("Staff member added successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff"] });
       navigate("/mbcs/staff");
     },
     onError: () => message.error("Failed to add staff member"),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<CreateMbcsStaffDto>) =>
-      mbcsStaffService.update(id!, data),
+    mutationFn: (data: Partial<CreateStaffDto>) =>
+      staffService.update("mbcs", id!, data),
     onSuccess: () => {
       message.success("Staff member updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["mbcs-staff"] });
+      queryClient.invalidateQueries({ queryKey: ["mbcs", "staff"] });
       navigate("/mbcs/staff");
     },
     onError: () => message.error("Failed to update staff member"),
   });
 
-  const onFinish = (values: CreateMbcsStaffDto) => {
+  const onFinish = (values: CreateStaffDto) => {
     if (isEditMode) {
       updateMutation.mutate(values);
     } else {

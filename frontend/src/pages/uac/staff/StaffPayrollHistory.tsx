@@ -39,28 +39,28 @@ export default function StaffPayrollHistory() {
   const queryClient = useQueryClient();
 
   const disassociateMutation = useMutation({
-    mutationFn: () => staffService.disassociate(id!),
+    mutationFn: () => staffService.disassociate("uac", id!),
     onSuccess: () => {
       message.success("Staff marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["staff-detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
     },
     onError: () => message.error("Failed to disassociate staff"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: () => staffService.reassociate(id!),
+    mutationFn: () => staffService.reassociate("uac", id!),
     onSuccess: () => {
       message.success("Staff re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["staff-detail", id] });
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff-detail", id] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
     },
     onError: () => message.error("Failed to re-associate staff"),
   });
 
   const { data: staffData, isLoading: loadingStaff } = useQuery({
-    queryKey: ["staff-detail", id],
-    queryFn: () => staffService.getOne(id!),
+    queryKey: ["uac", "staff-detail", id],
+    queryFn: () => staffService.getOne("uac", id!),
     enabled: !!id,
   });
 

@@ -27,8 +27,8 @@ export default function StaffList() {
 
   // Fetch staff with search
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["staff", debouncedSearch, page],
-    queryFn: () => staffService.getAll(debouncedSearch || undefined, page),
+    queryKey: ["uac", "staff", debouncedSearch, page],
+    queryFn: () => staffService.getAll("uac", debouncedSearch || undefined, page),
   });
 
   const staff = data?.data?.data || [];
@@ -36,10 +36,10 @@ export default function StaffList() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => staffService.delete(id),
+    mutationFn: (id: string) => staffService.delete("uac", id),
     onSuccess: () => {
       message.success("Staff deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
     },
     onError: () => {
       message.error("Failed to delete staff");
@@ -47,19 +47,19 @@ export default function StaffList() {
   });
 
   const disassociateMutation = useMutation({
-    mutationFn: (id: string) => staffService.disassociate(id),
+    mutationFn: (id: string) => staffService.disassociate("uac", id),
     onSuccess: () => {
       message.success("Staff member marked as no longer associated");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
     },
     onError: () => message.error("Failed to disassociate staff member"),
   });
 
   const reassociateMutation = useMutation({
-    mutationFn: (id: string) => staffService.reassociate(id),
+    mutationFn: (id: string) => staffService.reassociate("uac", id),
     onSuccess: () => {
       message.success("Staff member re-associated successfully");
-      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      queryClient.invalidateQueries({ queryKey: ["uac", "staff"] });
     },
     onError: () => message.error("Failed to re-associate staff member"),
   });
