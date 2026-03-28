@@ -277,13 +277,13 @@ export class PaymentsService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     // Check if payment exists
     await this.findOne(id);
 
     return this.prisma.uacPayment.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 

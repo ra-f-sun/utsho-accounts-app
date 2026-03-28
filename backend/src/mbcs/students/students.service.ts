@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateStudentDto } from './dto/create-student.dto';
@@ -198,6 +198,10 @@ export class StudentsService {
   async promote(id: string, dto: PromoteMbcsStudentDto, promotedBy: string) {
     const student = await this.findOne(id);
 
+    if (dto.toClass <= student.class) {
+      throw new BadRequestException(`Target class (${dto.toClass}) must be higher than current class (${student.class})`);
+    }
+
     const rows = await this.prisma.orgSettings.findMany({
       where: { organization: 'mbcs' },
     });
@@ -246,6 +250,10 @@ export class StudentsService {
     dto: PromoteMbcsBulkDto,
     promotedBy: string,
   ): Promise<{ promoted: number }> {
+    if (dto.toClass <= dto.fromClass) {
+      throw new BadRequestException(`Target class (${dto.toClass}) must be higher than source class (${dto.fromClass})`);
+    }
+
     const students = await this.prisma.mbcsStudent.findMany({
       where: { isActive: true, associationEndDate: null, class: dto.fromClass },
       select: { id: true, monthlyTuitionFee: true },

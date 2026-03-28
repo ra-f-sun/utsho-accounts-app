@@ -1,6 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +14,8 @@ const REFRESH_TOKEN_TTL_DAYS = 7;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -49,12 +52,23 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      this.logger.warn(`Login failed: unknown email ${dto.email}`);
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    if (!isPasswordValid) {
+      this.logger.warn(`Login failed: wrong password for ${dto.email}`);
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-    if (!user.isActive) throw new UnauthorizedException('Account is inactive');
+    if (!user.isActive) {
+      this.logger.warn(`Login blocked: inactive account ${dto.email}`);
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    this.logger.log(`Login success: ${dto.email} (${user.role})`);
 
     const accessToken = this.generateAccessToken(user.id, user.email, user.role);
     const refreshToken = await this.createRefreshToken(user.id);
@@ -79,10 +93,12 @@ export class AuthService {
     });
 
     if (!record || record.isRevoked || record.expiresAt < new Date()) {
+      this.logger.warn('Refresh token rejected: invalid, revoked, or expired');
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
 
     if (!record.user.isActive) {
+      this.logger.warn(`Refresh token rejected: inactive account ${record.user.email}`);
       throw new UnauthorizedException('Account is inactive');
     }
 

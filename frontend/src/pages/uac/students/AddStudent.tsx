@@ -191,6 +191,7 @@ export default function AddStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter student name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -330,7 +331,7 @@ export default function AddStudent() {
               <Form.Item
                 label="Father's Name"
                 name="fatherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input placeholder="Father's full name" maxLength={100} />
               </Form.Item>
@@ -364,7 +365,7 @@ export default function AddStudent() {
               <Form.Item
                 label="Mother's Name"
                 name="motherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input placeholder="Mother's full name" maxLength={100} />
               </Form.Item>
@@ -400,6 +401,7 @@ export default function AddStudent() {
                 name="guardianName"
                 rules={[
                   { required: true, message: "Please enter guardian name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -421,12 +423,19 @@ export default function AddStudent() {
                 <Input placeholder="+8801XXXXXXXXX" />
               </Form.Item>
             </Col>
+          </Row>
+          {typeof selectedClass !== "number" && (
+            <Typography.Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+              Select a class above to auto-fill default fees from settings.
+            </Typography.Text>
+          )}
+          <Row gutter={16}>
             <Col span={8}>
               <Form.Item
                 label={
                   <span>
                     Monthly Tuition Fee (৳)&nbsp;
-                    <Tooltip title="Auto-filled from Settings → Configure UAC. Select a class to apply the fee.">
+                    <Tooltip title="Auto-filled from Settings → Configure UAC. You can override the value after selection.">
                       <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -439,8 +448,7 @@ export default function AddStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select class to auto-fill"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -449,7 +457,7 @@ export default function AddStudent() {
                 label={
                   <span>
                     Admission Fee (৳)&nbsp;
-                    <Tooltip title="Auto-filled from Settings → Configure UAC">
+                    <Tooltip title="Auto-filled from Settings → Configure UAC. You can override the value after selection.">
                       <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -459,8 +467,7 @@ export default function AddStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select class to auto-fill"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -469,7 +476,7 @@ export default function AddStudent() {
                 label={
                   <span>
                     Re-Admission Fee (৳)&nbsp;
-                    <Tooltip title="Auto-filled from Settings → Configure UAC">
+                    <Tooltip title="Auto-filled from Settings → Configure UAC. You can override the value after selection.">
                       <InfoCircleOutlined style={{ color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -479,8 +486,7 @@ export default function AddStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select class to auto-fill"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>

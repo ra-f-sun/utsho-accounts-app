@@ -127,11 +127,11 @@ export class PayrollService {
     return this.prisma.mbcsPayroll.update({ where: { id }, data });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     await this.findOne(id);
     return this.prisma.mbcsPayroll.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 

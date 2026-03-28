@@ -152,6 +152,7 @@ export default function AddMecStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Name is required" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -224,6 +225,7 @@ export default function AddMecStudent() {
                 name="guardianName"
                 rules={[
                   { required: true },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -364,7 +366,7 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Father Name"
                 name="fatherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input maxLength={100} />
               </Form.Item>
@@ -392,7 +394,7 @@ export default function AddMecStudent() {
               <Form.Item
                 label="Mother Name"
                 name="motherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input maxLength={100} />
               </Form.Item>

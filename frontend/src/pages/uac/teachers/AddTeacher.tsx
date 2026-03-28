@@ -98,6 +98,7 @@ export default function AddTeacher() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter teacher name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >

@@ -77,7 +77,7 @@ export class PayrollController {
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.payrollService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtUser) {
+    return this.payrollService.remove(id, user.id);
   }
 }

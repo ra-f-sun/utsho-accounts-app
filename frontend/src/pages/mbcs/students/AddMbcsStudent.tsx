@@ -56,6 +56,7 @@ export default function AddMbcsStudent() {
   const [tuitionDiscounts, setTuitionDiscounts] = useState<number[]>([]);
   const [admissionDiscounts, setAdmissionDiscounts] = useState<number[]>([]);
   const [readmissionDiscounts, setReadmissionDiscounts] = useState<number[]>([]);
+  const selectedClass = Form.useWatch("class", form);
 
   useEffect(() => {
     void settingsService.getAllSettings("mbcs").then((rows) => {
@@ -177,6 +178,7 @@ export default function AddMbcsStudent() {
                 name="name"
                 rules={[
                   { required: true, message: "Please enter student name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -307,7 +309,7 @@ export default function AddMbcsStudent() {
               <Form.Item
                 label="Father's Name"
                 name="fatherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input placeholder="Father's full name" maxLength={100} />
               </Form.Item>
@@ -341,7 +343,7 @@ export default function AddMbcsStudent() {
               <Form.Item
                 label="Mother's Name"
                 name="motherName"
-                rules={[{ pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
+                rules={[{ min: 2, message: "Name must be at least 2 characters" }, { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE }]}
               >
                 <Input placeholder="Mother's full name" maxLength={100} />
               </Form.Item>
@@ -377,6 +379,7 @@ export default function AddMbcsStudent() {
                 name="guardianName"
                 rules={[
                   { required: true, message: "Please enter guardian name" },
+                  { min: 2, message: "Name must be at least 2 characters" },
                   { pattern: PERSON_NAME_REGEX, message: PERSON_NAME_MESSAGE },
                 ]}
               >
@@ -398,12 +401,19 @@ export default function AddMbcsStudent() {
                 <Input placeholder="+8801XXXXXXXXX" />
               </Form.Item>
             </Col>
+          </Row>
+          {typeof selectedClass !== "number" && (
+            <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+              Select a class above to auto-fill default fees from settings.
+            </Text>
+          )}
+          <Row gutter={16}>
             <Col span={8}>
               <Form.Item
                 label={
                   <span>
                     Monthly Tuition Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS. Change class to update.">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -416,8 +426,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select a class first"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -438,7 +447,7 @@ export default function AddMbcsStudent() {
                 label={
                   <span>
                     Admission Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -448,8 +457,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="Select a class first"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>
@@ -470,7 +478,7 @@ export default function AddMbcsStudent() {
                 label={
                   <span>
                     Re-Admission Fee (৳)
-                    <Tooltip title="Auto-filled from Settings → Configure MBCS">
+                    <Tooltip title="Auto-filled from Settings → Configure MBCS. You can override the value after selection.">
                       <InfoCircleOutlined style={{ marginLeft: 4, color: "#8c8c8c" }} />
                     </Tooltip>
                   </span>
@@ -480,8 +488,7 @@ export default function AddMbcsStudent() {
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
-                  placeholder="N/A"
-                  disabled
+                  placeholder={typeof selectedClass !== "number" ? "Select a class first" : "Enter amount"}
                 />
               </Form.Item>
             </Col>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Layout, Menu, Avatar, Dropdown, Button, Tooltip, Badge, Modal } from "antd";
 import {
@@ -18,7 +18,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  SearchOutlined,
   DownOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
@@ -44,7 +43,6 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, sessionExpired, clearSessionExpired } = useAuthStore();
-  const searchRef = useRef<HTMLInputElement>(null);
 
   /* ── Collapse state ── */
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -464,13 +462,6 @@ export default function DashboardLayout() {
               />
             </Tooltip>
 
-            <div
-              className="header-search"
-              onClick={() => searchRef.current?.focus()}
-            >
-              <SearchOutlined className="header-search-icon" />
-              <input ref={searchRef} placeholder="Search…" />
-            </div>
           </div>
 
           <div className="topbar-right">
@@ -490,7 +481,7 @@ export default function DashboardLayout() {
               trigger={["click"]}
             >
               <div className="user-card">
-                <Avatar size={32} className="user-avatar">
+                <Avatar size={32} className="user-avatar" aria-label={`User avatar for ${user?.fullName ?? "user"}`}>
                   {initials}
                 </Avatar>
                 <div className="user-info">

@@ -91,7 +91,7 @@ export class MecPaymentsController {
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.paymentsService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtUser) {
+    return this.paymentsService.remove(id, user.id);
   }
 }

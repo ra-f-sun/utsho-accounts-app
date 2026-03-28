@@ -85,6 +85,7 @@ export default function DashboardPage() {
           : undefined;
 
   const [orgFilter, setOrgFilter] = useState<string | undefined>(defaultOrg);
+  const [exporting, setExporting] = useState(false);
   const [periodPreset, setPeriodPreset] = useState<string>("yearly");
   const [dateRange, setDateRange] = useState<[string, string]>([
     dayjs().startOf("year").format("YYYY-MM-DD"),
@@ -305,6 +306,7 @@ export default function DashboardPage() {
   ];
 
   const handleExportExcel = () => {
+    setExporting(true);
     try {
       const filename = `revenue_report_${dayjs().format("YYYY-MM-DD")}.xlsx`;
       exportRevenueToExcel(
@@ -316,14 +318,19 @@ export default function DashboardPage() {
       message.success("Report exported to Excel successfully!");
     } catch {
       message.error("Failed to export report");
+    } finally {
+      setExporting(false);
     }
   };
 
   const handleExportPDF = () => {
+    setExporting(true);
     try {
       exportDashboardToPDF();
     } catch {
       message.error("Failed to export to PDF");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -355,7 +362,7 @@ export default function DashboardPage() {
                 menu={{ items: exportMenuItems }}
                 placement="bottomRight"
               >
-                <Button type="primary" icon={<DownloadOutlined />}>
+                <Button type="primary" icon={<DownloadOutlined />} loading={exporting} disabled={exporting}>
                   Export Report
                 </Button>
               </Dropdown>

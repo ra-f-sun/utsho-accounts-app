@@ -144,13 +144,13 @@ export class PayrollService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, updatedBy?: string) {
     // Check if payroll exists
     await this.findOne(id);
 
     return this.prisma.uacPayroll.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, ...(updatedBy && { updatedBy }) },
     });
   }
 
