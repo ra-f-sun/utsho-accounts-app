@@ -213,7 +213,7 @@ model UacPayment {
   paymentMonth  DateTime // YYYY-MM-01 format
   paymentDate   DateTime
   paymentMethod PaymentMethod
-  invoiceNumber String     @unique
+  invoiceNumber String
   notes         String? // Description when paymentType is 'other'
   createdBy     String // FK → users.id (audit trail)
   createdByUser User       @relation("UacPaymentCreator", fields: [createdBy], references: [id])
@@ -237,6 +237,7 @@ model UacPayment {
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@index([parentInvoiceNumber])
   @@map("uac_payments")
 }
@@ -380,7 +381,7 @@ model MbcsPayment {
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod PaymentMethod
-  invoiceNumber String      @unique
+  invoiceNumber String
   notes         String?
   createdBy     String // FK → users.id
   createdByUser User      @relation("MbcsPaymentCreator", fields: [createdBy], references: [id])
@@ -404,6 +405,7 @@ model MbcsPayment {
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@index([parentInvoiceNumber])
   @@map("mbcs_payments")
 }
@@ -512,7 +514,7 @@ model MecPayment {
   paymentMonth  DateTime
   paymentDate   DateTime
   paymentMethod PaymentMethod
-  invoiceNumber String     @unique
+  invoiceNumber String
   notes         String?
   createdBy     String // FK → users.id
   createdByUser User       @relation("MecPaymentCreator", fields: [createdBy], references: [id])
@@ -536,6 +538,7 @@ model MecPayment {
 
   @@index([studentId, paymentMonth])
   @@index([paymentDate])
+  @@index([invoiceNumber])
   @@index([parentInvoiceNumber])
   @@map("mec_payments")
 }
