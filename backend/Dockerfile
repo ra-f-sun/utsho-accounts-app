@@ -52,7 +52,8 @@ USER nestjs
 EXPOSE 3001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3001/api/health || exit 1
 
-CMD ["node", "dist/main"]
+# Run migrations then start — exec replaces sh so node receives signals
+CMD ["/bin/sh", "-c", "npx prisma migrate deploy && exec node dist/main"]
