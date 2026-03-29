@@ -43,7 +43,11 @@ const adapter = new adapter_pg_1.PrismaPg(pool);
 const prisma = new client_1.PrismaClient({ adapter });
 async function main() {
     console.log('🌱 Seeding database...');
-    const passwordHash = await bcrypt.hash('admin123', 10);
+    const seedPassword = process.env.SEED_PASSWORD || 'admin123';
+    if (process.env.NODE_ENV === 'production' && !process.env.SEED_PASSWORD) {
+        throw new Error('SEED_PASSWORD env var is required in production');
+    }
+    const passwordHash = await bcrypt.hash(seedPassword, 10);
     const users = await Promise.all([
         prisma.user.upsert({
             where: { email: 'admin@utsho.com' },
