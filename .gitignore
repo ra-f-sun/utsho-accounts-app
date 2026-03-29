@@ -25,7 +25,6 @@ desktop.ini
 *.sw?
 
 # Documentation & Temporary Files
-doc/
 docs/
 *.log
 npm-debug.log*
