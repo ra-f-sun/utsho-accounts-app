@@ -41,6 +41,7 @@ node_modules/
 backend/dist/
 backend/coverage/
 backend/generated/
+backend/tsconfig.build.tsbuildinfo
 backend/prisma/migrations/*/migration.sql # Keep specific migration files
 # backend/prisma/*.db (PostgreSQL used instead)
 
