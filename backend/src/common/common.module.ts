@@ -5,6 +5,7 @@ import { SharedStaffService } from './services/staff.service';
 import { SharedTeacherAttendanceService } from './services/teacher-attendance.service';
 import { SharedPayrollService } from './services/payroll.service';
 import { SharedStudentsService } from './services/students.service';
+import { SharedPaymentsService } from './services/payments.service';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Global()
@@ -17,6 +18,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SharedTeacherAttendanceService,
     SharedPayrollService,
     SharedStudentsService,
+    SharedPaymentsService,
   ],
   exports: [
     InvoiceService,
@@ -25,6 +27,7 @@ import { PrismaModule } from '../prisma/prisma.module';
     SharedTeacherAttendanceService,
     SharedPayrollService,
     SharedStudentsService,
+    SharedPaymentsService,
   ],
 })
 export class CommonModule {}
